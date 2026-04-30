@@ -132,7 +132,7 @@ Los agentes IA son sistemas capaces de...
 Desde la raíz del proyecto:
 
 ```bash
-uv run python quests/quest_01_first_agent/starter/main.py
+uv run python -m quests.quest_01_first_agent.starter.main
 ```
 
 ---
@@ -142,7 +142,7 @@ uv run python quests/quest_01_first_agent/starter/main.py
 Cuando termines, ejecuta el siguiente comando para validar:
 
 ```bash
-uv run python quests/quest_01_first_agent/check.py
+uv run python -m quests.quest_01_first_agent.check
 ```
 
 Mini nota: este check consume una llamada real a Gemini porque ejecuta el starter. Tenlo presente y no lo corras hasta terminar todos los TODOs para evitar pasarte de los límites.
