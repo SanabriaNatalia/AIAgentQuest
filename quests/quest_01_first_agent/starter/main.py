@@ -4,23 +4,29 @@ Quest 01 — La Primera Invocación
 Objetivo:
 Enviar un mensaje a Gemini y mostrar la respuesta en la terminal.
 
-Ejecutar desde la raíz del proyecto:
+Completa los TODOS en orden.
+No borres el código existente, solo añádele lo que se pide en cada paso.
 
-    uv run python quests/quest_01_first_agent/starter/main.py
+Puedes ejecutar el siguiente comando desde la raíz del proyecto 
+para validar que funcione:
+
+    uv run python -m quests.quest_01_first_agent.starter.main
+
+Una vez que funcione, ejecuta el comando de check para validar tu solución:
+
+    uv run python -m quests.quest_01_first_agent.check
 """
 
 import os
-from xmlrpc import client
+
 from dotenv import load_dotenv
 from google import genai
-from rich.console import Console
-from rich.panel import Panel
+
 from common.utils.ui import (
     show_quest_header,
     narrator,
     agent,
     success,
-    user_prompt
 )
 
 show_quest_header(
@@ -32,21 +38,18 @@ show_quest_header(
 # Carga las variables de entorno desde el archivo .env.
 # Pista: usa load_dotenv().
 
-
-
 # TODO 2:
 # Lee la variable GEMINI_API_KEY desde el entorno.
 # Pista: usa os.environ.get("GEMINI_API_KEY").
 
 
-
 # TODO 3:
-# Si no existe api_key, lanza un RuntimeError con un mensaje claro.
+# Si api_key no existe, lanza un RuntimeError.
 # Pista:
 # if api_key is None:
 #     raise RuntimeError("...")
-# El mensaje de error debe indicar que la clave no se encontró 
-# y que se debe configurar en el archivo .env.
+# Asegúrate de incluir un mensaje claro indicando que no se 
+# encontró la API key en el archivo .env.
 
 
 
@@ -58,25 +61,27 @@ success("API key encontrada.")
 
 
 
+success("Cliente de Gemini inicializado.")
+
 # TODO 5:
-# Define un prompt fijo.
-# Puedes cambiarlo después, pero por ahora mantén uno simple.
-# Es conveniente que añadas "máximo un párrafo" como condición 
-# (para minimizar el consumo de tokens)
+# Define un prompt fijo. 
+# Solicita al modelo que explique qué es un agente IA en un párrafo corto.
 prompt = ""
 
-
 narrator("Enviando la primera invocación al modelo...")
-user_prompt(prompt)
-
 
 # TODO 6:
 # Usa client.models.generate_content() para enviar el prompt al modelo.
 # Debe recibir:
 # - model="gemini-2.5-flash"
 # - contents=prompt
-# No olvides guardar el resultado en la variable llamada response.
+# Guarda la respuesta en la variable response.
 response = None
 
 
+
+success("Respuesta recibida.")
+
+# Para acceder al texto de la respuesta, se usa response.text.
+# El método agent() es solo para mostrar la respuesta en la terminal con formato.
 agent(response.text)

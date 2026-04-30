@@ -40,11 +40,15 @@ def main() -> None:
         fail(f"No se encontró el archivo:\n{STARTER_FILE}")
 
     result = subprocess.run(
-        [sys.executable, str(STARTER_FILE)],
+        [
+            sys.executable, 
+            "-m", 
+            "quests.quest_01_first_agent.starter.main"
+        ],
         cwd=ROOT_DIR,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=200,
     )
 
     output = result.stdout.strip()
@@ -62,7 +66,7 @@ def main() -> None:
             "Asegúrate de imprimir la respuesta de Gemini con response.text."
         )
 
-    if "Gemini" not in output:
+    if "Agente:" not in output:
         fail(
             "No encontré la sección de respuesta de Gemini.\n"
             "Asegúrate de usar agent(response.text) o imprimir la respuesta claramente."

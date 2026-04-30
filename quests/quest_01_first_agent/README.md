@@ -145,6 +145,6 @@ Cuando termines, ejecuta el siguiente comando para validar:
 uv run python quests/quest_01_first_agent/check.py
 ```
 
-Mini nota: este check consume una llamada real a Gemini porque ejecuta el starter. Para el Quest 01 está bien.
+Mini nota: este check consume una llamada real a Gemini porque ejecuta el starter. Tenlo presente y no lo corras hasta terminar todos los TODOs para evitar pasarte de los límites.
 
 ---

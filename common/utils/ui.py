@@ -5,7 +5,7 @@ from rich.text import Text
 console = Console()
 
 
-def show_quest_intro(title: str, subtitle: str) -> None:
+def show_quest_header(title: str, subtitle: str) -> None:
     console.print(
         Panel.fit(
             f"[bold magenta]{title}[/bold magenta]\n[cyan]{subtitle}[/cyan]",
@@ -32,3 +32,6 @@ def agent(message: str) -> None:
 
 def user_prompt() -> str:
     return console.input("[bold white]🧑 Tú > [/bold white]")
+
+def show_prompt(message: str) -> None:
+    console.print(f"[bold white]🧑 Prompt:[/bold white] {message}\n")

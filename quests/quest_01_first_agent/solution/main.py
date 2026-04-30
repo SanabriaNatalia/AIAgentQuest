@@ -1,12 +1,10 @@
 """
 Quest 01 — La Primera Invocación
 
-Objetivo:
-Enviar un mensaje a Gemini y mostrar la respuesta en la terminal.
-
-Ejecutar desde la raíz del proyecto:
-
-    uv run python quests/quest_01_first_agent/starter/main.py
+Archivo de Solución
+A continuación se muestra el código completo con la solución para este quest.
+Puedes usarlo como referencia para completar tu archivo starter/main.py,
+pero te recomendamos intentar resolverlo por tu cuenta primero.
 """
 
 import os
