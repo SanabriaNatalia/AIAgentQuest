@@ -27,6 +27,7 @@ from common.utils.ui import (
     narrator,
     agent,
     success,
+    show_prompt
 )
 
 show_quest_header(
@@ -69,6 +70,7 @@ success("Cliente de Gemini inicializado.")
 prompt = ""
 
 narrator("Enviando la primera invocación al modelo...")
+show_prompt(prompt)
 
 # TODO 6:
 # Usa client.models.generate_content() para enviar el prompt al modelo.
