@@ -1,7 +1,7 @@
-# Quest 02 — El Medidor Arcano
-
+<p align="center">
+    <img src="../../assets/images/quest-2-banner.png" alt="Quest 1 Banner" width="100%">
+</p>
 > *“Toda invocación consume energía.*
->
 > *Los aprendices imprudentes agotan sus recursos antes de comprender el costo de sus palabras.”*
 >
 > — Zhyréon
@@ -44,6 +44,23 @@ candidates_token_count
 ```
 
 Cantidad de tokens generados en la respuesta.
+
+---
+
+## Continuando el laboratorio
+
+A partir de este Quest, el agente evolucionará progresivamente.
+
+Cada nuevo Quest expandirá el código construido anteriormente:
+- agregando memoria
+- herramientas
+- contexto
+- workflows
+- capacidades autónomas
+
+No estás construyendo ejercicios separados.
+
+Estás construyendo un agente.
 
 ---
 
@@ -93,5 +110,4 @@ Completaste el Quest si:
 ## Pista de Zhyréon
 
 > *“Un buen arquitecto no solo observa las respuestas.*
->
 > *También comprende el costo de obtenerlas.”*

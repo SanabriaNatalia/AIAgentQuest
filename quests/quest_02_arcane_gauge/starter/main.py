@@ -30,7 +30,8 @@ show_quest_header(
 )
 
 # TODO 1:
-# Copia tu solución del Quest 01 en este archivo.
+# Copia tu solución del Quest 01 en este archivo. 
+# No copies los imports ni la función show_quest_header, solo el código que va después.
 #
 # Puedes usar:
 # - quests/quest_01_first_agent/solution/main.py o
