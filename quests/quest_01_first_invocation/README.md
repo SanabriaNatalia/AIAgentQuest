@@ -6,6 +6,12 @@
 >
 > — Zhyréon
 
+## Información del Quest
+
+| Dificultad | Tiempo estimado |
+|---|---|
+| 🟢 Fácil | 5–15 mins |
+
 ## Objetivo
 
 En este Quest vas a enviar tu primer mensaje a Gemini desde Python y mostrar la respuesta en la terminal.
