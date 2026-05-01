@@ -6,6 +6,12 @@
 >
 > — Zhyréon
 
+## Información del Quest
+
+| Dificultad | Tiempo estimado |
+|---|---|
+| 🟢 Fácil | 5–15 mins |
+
 ## Metadata de Tokens
 
 Cuando trabajamos con modelos de lenguaje, es importante entender cuántos tokens consumimos.
