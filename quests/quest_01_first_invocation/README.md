@@ -1,4 +1,6 @@
-# Quest 01 — Tu Primer Agente
+<p align="center">
+    <img src="../../assets/images/quest-1-banner.png" alt="Quest 1 Banner" width="100%">
+</p>
 
 > “Antes de otorgar memoria, herramientas o conocimiento, primero debes aprender a invocar una voz.”
 >
