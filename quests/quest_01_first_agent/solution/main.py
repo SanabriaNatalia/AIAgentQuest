@@ -16,7 +16,7 @@ from common.utils.ui import (
     narrator,
     agent,
     success,
-    user_prompt
+    show_prompt
 )
 
 show_quest_header(
@@ -47,7 +47,7 @@ success("Cliente de Gemini inicializado.")
 prompt = "Explícame qué es un agente IA en un párrafo corto."
 
 narrator("Enviando la primera invocación al modelo...")
-user_prompt(prompt)
+show_prompt(prompt)
 
 # TODO 6:
 response = client.models.generate_content(

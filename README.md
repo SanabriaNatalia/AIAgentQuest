@@ -142,6 +142,7 @@ uv sync
 
 ### 3. Configurar variables de entorno
 
+Crea un archivo `.env` a partir del ejemplo `.env.example` 
 ```bash
 cp .env.example .env
 ```
