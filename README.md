@@ -61,16 +61,62 @@ Cada Quest introduce:
 
 ## Roadmap
 
-- Quest 01 — Tu Primer Agente
-- Quest 02 — Memoria y Contexto
-- Quest 03 — Herramientas y Function Calling
-- Quest 04 — El Directorio Prohibido
-- Quest 05 — RAG y Bibliotecas de Conocimiento
-- Quest 06 — Frameworks de Agentes
-- Quest 07 — Workflows y Orquestación
-- Quest 08 — Protocolos MCP
-- Quest 09 — Sistemas Multi-Agente
-- Quest Final — El Arquitecto de Agentes
+AI Agent Quest está dividido en 4 grandes actos.
+
+Cada acto representa una nueva etapa en la evolución del agente:
+
+desde una simple invocación hasta sistemas capaces de actuar, razonar y colaborar.
+
+---
+
+# ACTO I — Fundamentos del Agente
+
+> *“Antes de construir inteligencia, debes comprender conversación, contexto y memoria.”*
+> — Zhyréon
+
+En este acto aprenderás los fundamentos detrás de los agentes modernos:
+
+- prompts
+- contexto
+- memoria
+- roles
+- instrucciones del sistema
+- consumo de tokens
+
+Aquí construiremos el núcleo conversacional del agente.
+
+# ACTO II — Capacidad de Acción
+
+> *“Una voz inteligente es útil.*
+> *Un agente capaz de actuar cambia el mundo.”*
+> — Zhyréon
+
+El agente aprenderá a utilizar herramientas y operar sobre el mundo exterior.
+
+⚠️ Este acto se encuentra en desarrollo.
+
+---
+
+# ACTO III — Inteligencia Extendida
+
+> *“La memoria individual es limitada.*
+> *Los grandes arquitectos construyen bibliotecas.”*
+> — Zhyréon
+
+Exploraremos recuperación de conocimiento, workflows y protocolos modernos para agentes.
+
+⚠️ Este acto se encuentra en desarrollo.
+
+---
+
+# ACTO IV — Arquitectura de Agentes
+
+> *“Cuando múltiples inteligencias cooperan, nace una arquitectura.”*
+> — Zhyréon
+
+Construiremos sistemas multi-agente, evaluación y proyectos finales.
+
+⚠️ Este acto se encuentra en desarrollo.
 
 ---
 
