@@ -26,7 +26,7 @@ def success() -> None:
             "[bold green]QUEST COMPLETADO ✨[/bold green]\n\n"
             "🧙 Zhyréon:\n"
             "El agente ha escuchado la voz del aprendiz.\n\n"
-            "🏆 Rango desbloqueado: Portador de la Voz\n\n"
+            "🏆 Rango desbloqueado: Heraldo arcano\n\n"
             "🎉 ✨ 🎉 ✨ 🎉",
             border_style="green",
         )
