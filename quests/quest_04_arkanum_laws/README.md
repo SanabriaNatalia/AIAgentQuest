@@ -196,9 +196,3 @@ Completaste el Quest si:
 - el modelo obedece las instrucciones del sistema
 
 ---
-
-## Referencias del Códex
-
-- `docs/llms/roles_and_messages.md`
-- `docs/llms/what_is_an_agent.md`
-- `docs/llms/prompts.md`

@@ -18,7 +18,7 @@
 
 En este Quest vas a enviar tu primer mensaje a Gemini desde Python y mostrar la respuesta en la terminal.
 
-Antes de construir memoria, herramientas o [agentes](../../docs/LLMs/agents.md) que actúen sobre archivos, necesitamos entender la pieza más básica del sistema:
+Antes de construir memoria, herramientas o [agentes](../../docs/agents/agents.md) que actúen sobre archivos, necesitamos entender la pieza más básica del sistema:
 
 > tu programa envía un texto a un modelo, y el modelo devuelve una respuesta.
 
