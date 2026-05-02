@@ -7,7 +7,8 @@ Puedes usarlo como referencia para completar tu archivo starter/main.py,
 pero te recomendamos intentar resolverlo por tu cuenta primero.
 
 Ejecutar este archivo desde la raíz del proyecto usando:
-    uv run python -m quests.quest_03_aprentice_voice.solution.solution
+
+    uv run python -m quests.quest_03_apprentice_voice.solution.solution
 """
 
 # TODO 1:

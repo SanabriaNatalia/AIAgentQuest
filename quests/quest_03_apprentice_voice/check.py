@@ -25,8 +25,8 @@ def success() -> None:
         Panel.fit(
             "[bold green]QUEST COMPLETADO ✨[/bold green]\n\n"
             "🧙 Zhyréon:\n"
-            "Ahora puedes percibir el costo de una invocación.\n\n"
-            "🏆 Rango desbloqueado: Tasador de respuestas\n\n"
+            "El agente ha escuchado la voz del aprendiz.\n\n"
+            "🏆 Rango desbloqueado: Portador de la Voz\n\n"
             "🎉 ✨ 🎉 ✨ 🎉",
             border_style="green",
         )
@@ -34,16 +34,19 @@ def success() -> None:
 
 
 def main() -> None:
+    prompt = "¿Qué es un agente IA? Responde en un párrafo corto."
+
     result = subprocess.run(
         [
             sys.executable,
             "-m",
-            "quests.quest_02_arcane_gauge.starter.main",
+            "quests.quest_03_apprentice_voice.starter.main",
+            prompt,
         ],
         cwd=ROOT_DIR,
         capture_output=True,
         text=True,
-        timeout=20,
+        timeout=30,
     )
 
     output = result.stdout
@@ -52,23 +55,23 @@ def main() -> None:
     if result.returncode != 0:
         fail(
             "El programa terminó con errores.\n\n"
-            f"{error}"
+            f"{error or output}"
+        )
+
+    if prompt not in output:
+        fail(
+            "No encontré el prompt del usuario en la salida.\n"
+            "Asegúrate de recibirlo desde argparse y mostrarlo con show_prompt(prompt)."
         )
 
     if "Prompt tokens:" not in output:
-        fail(
-            "No encontré 'Prompt tokens:' en la salida."
-        )
+        fail("No encontré 'Prompt tokens:' en la salida.")
 
     if "Response tokens:" not in output:
-        fail(
-            "No encontré 'Response tokens:' en la salida."
-        )
+        fail("No encontré 'Response tokens:' en la salida.")
 
-    if "Agente:" not in output:
-        fail(
-            "No encontré la respuesta del agente."
-        )
+    if "Gemini" not in output:
+        fail("No encontré la respuesta del agente.")
 
     success()
 

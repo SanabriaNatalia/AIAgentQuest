@@ -28,7 +28,7 @@ def success() -> None:
             "🧙 Zhyréon:\n"
             "Excelente trabajo, aprendiz.\n\n"
             "Has realizado la primera invocación correctamente.\n\n"
-            "🏆 Rango desbloqueado: Aprendiz\n\n"
+            "🏆 Rango desbloqueado: Invocador Principiante\n\n"
             "🎉 ✨ 🎉 ✨ 🎉",
             border_style="green",
         )

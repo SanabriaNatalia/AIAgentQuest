@@ -11,6 +11,10 @@ que construiste en el Quest 01.
 Ejecutar desde la raíz del proyecto:
 
     uv run python -m quests.quest_02_arcane_gauge.starter.main
+
+Una vez que hayas terminado, valida tu solución ejecutando:
+
+    uv run python -m quests.quest_02_arcane_gauge.check
 """
 import os
 

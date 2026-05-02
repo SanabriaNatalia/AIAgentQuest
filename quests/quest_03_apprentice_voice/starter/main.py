@@ -11,6 +11,10 @@ construido en el Quest 02.
 Ejecutar desde la raíz del proyecto:
 
     uv run python -m quests.quest_03_user_input.starter.main "¿Qué es un agente IA?"
+
+Una vez que hayas terminado, valida tu solución ejecutando:
+
+    uv run python -m quests.quest_03_apprentice_voice.check
 """
 import os
 
