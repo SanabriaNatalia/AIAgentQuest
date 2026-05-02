@@ -55,6 +55,7 @@ Conceptos fundamentales sobre LLMs y sistemas basados en agentes.
 - [prompts](./llms/prompts.md)
 - [tokens](./llms/tokens.md)
 - [roles y mensajes](./llms/roles_and_messages.md)
+- [Prompts de sistema](./LLMs/system_prompts.md)
 
 ---
 

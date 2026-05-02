@@ -1,3 +1,5 @@
+# Quest 02 — El Medidor Arcano
+
 <p align="center">
     <img src="../../assets/images/quest-2-banner.png" alt="Quest 2 Banner" width="100%">
 </p>

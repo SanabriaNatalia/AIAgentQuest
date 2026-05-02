@@ -1,3 +1,5 @@
+# Quest 03 — La Voz del Aprendiz
+
 <p align="center">
     <img src="../../assets/images/quest-3-banner.png" alt="Quest 3 Banner" width="100%">
 </p>
