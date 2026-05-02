@@ -16,14 +16,14 @@
 
 En este Quest vas a enviar tu primer mensaje a Gemini desde Python y mostrar la respuesta en la terminal.
 
-Antes de construir memoria, herramientas o agentes que actúen sobre archivos, necesitamos entender la pieza más básica del sistema:
+Antes de construir memoria, herramientas o [agentes](../../docs/LLMs/agents.md) que actúen sobre archivos, necesitamos entender la pieza más básica del sistema:
 
 > tu programa envía un texto a un modelo, y el modelo devuelve una respuesta.
 
 ## Conceptos importantes
 ### LLMs
 
-Los Large Language Models (LLMs) son la tecnología detrás de herramientas modernas como:
+Los [Large Language Models (LLMs)](../../docs/LLMs/llms.md) son la tecnología detrás de herramientas modernas como:
 
 - ChatGPT
 - Claude
@@ -44,7 +44,7 @@ Durante este curso utilizaremos la API de Gemini para construir nuestro agente (
 
 Los modelos no “leen texto” exactamente como nosotros.
 
-Procesan unidades llamadas **tokens**.
+Procesan unidades llamadas [**tokens**](../../docs/LLMs/tokens.md).
 
 Un token suele equivaler aproximadamente a:
 - una palabra corta
@@ -66,7 +66,7 @@ La API key es una llave secreta que autentica tus peticiones contra la API.
 
 ⚠️ Nunca deberías escribir una API key directamente en el código.
 
-En su lugar, la guardaremos en un archivo `.env`.
+En su lugar, la guardaremos en un archivo `.env`. (Puedes consultar más información al respecto [aquí](../../docs/python/environment_variables.md)).
 
 ---
 

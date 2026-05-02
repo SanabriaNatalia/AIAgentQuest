@@ -1,6 +1,7 @@
 <p align="center">
-    <img src="../../assets/images/quest-2-banner.png" alt="Quest 1 Banner" width="100%">
+    <img src="../../assets/images/quest-2-banner.png" alt="Quest 2 Banner" width="100%">
 </p>
+
 > *“Toda invocación consume energía.*
 > *Los aprendices imprudentes agotan sus recursos antes de comprender el costo de sus palabras.”*
 >
@@ -22,6 +23,8 @@ Mientras más contexto enviamos y más texto genera el modelo:
 - más tokens consumimos
 - más costo tiene la invocación
 - más cerca estamos de los límites de uso
+
+(Puedes consultar más [aquí](../../docs/LLMs/tokens.md))
 
 ---
 
@@ -112,8 +115,6 @@ Completaste el Quest si:
 - la respuesta sigue funcionando correctamente
 
 ---
-
-## Pista de Zhyréon
 
 > *“Un buen arquitecto no solo observa las respuestas.*
 > *También comprende el costo de obtenerlas.”*

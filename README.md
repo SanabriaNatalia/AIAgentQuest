@@ -44,22 +44,10 @@ Buscamos comprender el mecanismo detrás de ellos.
 
 ---
 
-## El Camino del Aprendiz
+<p align="center">
+    <img src="./assets/images/ai-quest-roadmap-main-banner-image.png" alt="Roadmap del Curso" width="100%">
+</p>
 
-```text
-Prompt → Memoria → Herramientas → Conocimiento → Protocolos → Sistemas
-```
-
-Cada Quest introduce:
-
-- un concepto clave
-- un laboratorio práctico
-- un reto técnico
-- una nueva habilidad para el agente
-
----
-
-## Roadmap
 
 AI Agent Quest está dividido en 4 grandes actos.
 
@@ -67,9 +55,13 @@ Cada acto representa una nueva etapa en la evolución del agente:
 
 desde una simple invocación hasta sistemas capaces de actuar, razonar y colaborar.
 
+```text
+Prompt → Memoria → Herramientas → Conocimiento → Protocolos → Sistemas
+```
+
 ---
 
-# ACTO I — Fundamentos del Agente
+### ACTO I — Fundamentos del Agente
 
 > *“Antes de construir inteligencia, debes comprender conversación, contexto y memoria.”*
 > — Zhyréon
@@ -85,7 +77,7 @@ En este acto aprenderás los fundamentos detrás de los agentes modernos:
 
 Aquí construiremos el núcleo conversacional del agente.
 
-# ACTO II — Capacidad de Acción
+### ACTO II — Capacidad de Acción
 
 > *“Una voz inteligente es útil.*
 > *Un agente capaz de actuar cambia el mundo.”*
@@ -95,9 +87,7 @@ El agente aprenderá a utilizar herramientas y operar sobre el mundo exterior.
 
 ⚠️ Este acto se encuentra en desarrollo.
 
----
-
-# ACTO III — Inteligencia Extendida
+### ACTO III — Inteligencia Extendida
 
 > *“La memoria individual es limitada.*
 > *Los grandes arquitectos construyen bibliotecas.”*
@@ -107,9 +97,7 @@ Exploraremos recuperación de conocimiento, workflows y protocolos modernos para
 
 ⚠️ Este acto se encuentra en desarrollo.
 
----
-
-# ACTO IV — Arquitectura de Agentes
+### ACTO IV — Arquitectura de Agentes
 
 > *“Cuando múltiples inteligencias cooperan, nace una arquitectura.”*
 > — Zhyréon
@@ -117,6 +105,15 @@ Exploraremos recuperación de conocimiento, workflows y protocolos modernos para
 Construiremos sistemas multi-agente, evaluación y proyectos finales.
 
 ⚠️ Este acto se encuentra en desarrollo.
+
+---
+
+Cada Quest introduce:
+
+- un concepto clave
+- un laboratorio práctico
+- un reto técnico
+- una nueva habilidad para el agente
 
 ---
 
@@ -131,6 +128,31 @@ Los agentes no son magia.
 Son sistemas.
 
 ---
+
+<p align="center">
+    <img src="./assets/images/arcane-codex-main-banner-image.png" alt="The Arcane Codex" width="100%">
+</p>
+
+El laboratorio incluye una biblioteca de referencia llamada:
+
+```text
+docs/
+```
+
+El Códex contiene explicaciones sobre:
+- terminal
+- Python
+- LLMs
+- agentes
+- tokens
+- memoria
+- contexto conversacional
+
+Puedes consultarlo en cualquier momento durante el laboratorio y usarlo para ampliar tus conocimientos o consultar cosas que te llamen la atención. Se incluyen referencias a las entradas relevantes en los README de cada quest.
+
+```text
+docs/README.md
+```
 
 ## Requisitos previos
 
@@ -201,8 +223,37 @@ GEMINI_API_KEY=your_api_key
 
 ### 4. Iniciar el primer Quest
 
+Cada Quest contiene:
+
+- teoría breve
+- objetivos
+- instrucciones paso a paso
+- starter code
+- validaciones
+- solución final
+
+Comienza abriendo el README del primer Quest:
+
+```text
+quests/quest_01_first_agent/README.md
+```
+
+o desde terminal:
+
 ```bash
-uv run python quests/quest_01_first_agent/starter/agent.py
+code quests/quest_01_first_agent/README.md
+```
+
+Sigue las instrucciones del Quest y trabaja sobre:
+
+```text
+starter/main.py
+```
+
+Cuando termines, puedes validar tu solución ejecutando:
+
+```bash
+uv run python -m quests.quest_01_first_agent.check
 ```
 
 ---
