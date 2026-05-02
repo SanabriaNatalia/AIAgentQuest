@@ -141,13 +141,13 @@ Los valores exactos dependen del modelo y del proveedor.
 
 | Temperatura | Comportamiento |
 |---|---|
-| `0` | muy determinístico |
-| `0.2` | estable |
-| `0.5` | balanceado |
-| `0.8` | creativo moderado |
-| `1.0` | bastante variado |
-| `1.5+` | empieza el caos |
-| `2.0` | goblin mode |
+| `0` | 🔢 muy determinístico |
+| `0.2` | ⚙️ estable |
+| `0.5` | ⚖️ balanceado |
+| `0.8` | ✨ creativo moderado |
+| `1.0` | 🎭 bastante variado |
+| `1.5+` | 🌀 empieza el caos |
+| `2.0` | 👹 goblin mode |
 
 En agentes modernos, especialmente aquellos que:
 - usan tools
