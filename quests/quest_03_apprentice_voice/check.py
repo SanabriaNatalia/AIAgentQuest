@@ -1,7 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
-
+from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
 
@@ -21,12 +21,16 @@ def fail(message: str) -> None:
 
 
 def success() -> None:
+    record_quest_completion(
+        "La Voz del Aprendiz", 
+        "Proclamador Arcano"
+    )
     console.print(
         Panel.fit(
             "[bold green]QUEST COMPLETADO ✨[/bold green]\n\n"
             "🧙 Zhyréon:\n"
             "El agente ha escuchado la voz del aprendiz.\n\n"
-            "🏆 Rango desbloqueado: Proclamador arcano\n\n"
+            "🏆 Rango desbloqueado: Proclamador Arcano\n\n"
             "🎉 ✨ 🎉 ✨ 🎉",
             border_style="green",
         )

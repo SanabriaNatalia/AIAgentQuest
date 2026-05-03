@@ -2,11 +2,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
-STARTER_FILE = ROOT_DIR / "quests" / "quest_01_first_agent" / "starter" / "main.py"
+STARTER_FILE = ROOT_DIR / "quests" / "quest_01_first_invocation" / "starter" / "main.py"
 
 console = Console()
 
@@ -22,6 +23,10 @@ def fail(message: str) -> None:
 
 
 def success() -> None:
+    record_quest_completion(
+        "La Primera Invocación", 
+        "Invocador Principiante"
+    )
     console.print(
         Panel.fit(
             "[bold green]QUEST COMPLETADO ✨[/bold green]\n\n"
@@ -43,7 +48,7 @@ def main() -> None:
         [
             sys.executable, 
             "-m", 
-            "quests.quest_01_first_agent.starter.main"
+            "quests.quest_01_first_invocation.starter.main"
         ],
         cwd=ROOT_DIR,
         capture_output=True,

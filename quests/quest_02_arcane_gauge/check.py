@@ -1,7 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
-
+from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
 
@@ -21,12 +21,16 @@ def fail(message: str) -> None:
 
 
 def success() -> None:
+    record_quest_completion(
+        "El Medidor Arcano", 
+        "Tasador de Respuestas"
+    )
     console.print(
         Panel.fit(
             "[bold green]QUEST COMPLETADO ✨[/bold green]\n\n"
             "🧙 Zhyréon:\n"
             "Ahora puedes percibir el costo de una invocación.\n\n"
-            "🏆 Rango desbloqueado: Tasador de respuestas\n\n"
+            "🏆 Rango desbloqueado: Tasador de Respuestas\n\n"
             "🎉 ✨ 🎉 ✨ 🎉",
             border_style="green",
         )

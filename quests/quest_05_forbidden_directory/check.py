@@ -1,7 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
-
+from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
 
@@ -32,6 +32,10 @@ def fail(message: str) -> None:
 
 
 def success() -> None:
+    record_quest_completion(
+        "El Directorio Prohibido", 
+        "Guardián del Umbral"
+    )
     console.print(
         Panel.fit(
             "[bold green]QUEST COMPLETADO ✨[/bold green]\n\n"
