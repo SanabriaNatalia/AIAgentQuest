@@ -221,7 +221,29 @@ Agrega tu API key:
 GEMINI_API_KEY=your_api_key
 ```
 
-### 4. Iniciar el primer Quest
+### 4. Registrar tu aprendiz
+
+Antes de comenzar, crea tu perfil local de progreso:
+
+```bash
+uv run python -m common.progress.init_user
+```
+
+Esto creará una base SQLite local llamada:
+
+```text
+.quest_progress.db
+```
+
+El archivo es personal y no debe subirse a Git.
+
+Puedes consultar tu progreso con:
+
+```bash
+uv run python -m common.progress.show_progress
+```
+
+### 5. Comenzar el primer Quest
 
 Cada Quest contiene:
 
