@@ -72,14 +72,12 @@ Este Quest construye ese puente.
 
 Ahora el proceso se ve así:
 
-```text
 1. Registramos herramientas
 2. El usuario envía un prompt
 3. El modelo decide qué tool usar
 4. El modelo genera function_calls
 5. Nuestro programa ejecuta herramientas reales
 6. El programa devuelve resultados estructurados
-```
 
 En este Quest llegaremos hasta el paso 6.
 
@@ -160,6 +158,8 @@ return types.Content(
 
 Esto transforma el resultado en una observación estructurada que el sistema puede procesar.
 
+**Recomendamos leer la [entrada del códice](../../docs/agents/function_dispatch.md) que explica esto a detalle antes de proceder con este laboratorio.**
+
 ---
 
 ## El working_directory sigue protegido
@@ -176,7 +176,7 @@ Tu programa debe inyectarlo manualmente:
 args["working_directory"] = ...
 ```
 
-Esto sigue siendo un guardrail importante.
+Esto sigue siendo un [guardrail](../../docs/agents/guardrails.md) importante.
 
 ---
 
@@ -269,6 +269,8 @@ Cuando esté activo, el programa debe mostrar:
 - response tokens
 - resultados de herramientas
 
+Si no estás familiarizado con `verbose` te recomendamos leer [esta entrada del Códice](../../docs/terminal/verbose_mode.md).
+
 ---
 
 ### 4. Ejecutar herramientas reales
@@ -331,12 +333,3 @@ Por ahora solo queremos:
 - ejecutar tools reales
 - observar resultados
 - conectar intención con acción
-
----
-
-## Referencias del Códex
-
-- `docs/agents/function_calling.md`
-- `docs/agents/tool_schemas.md`
-- `docs/agents/error_handling.md`
-- `docs/agents/guardrails.md`
