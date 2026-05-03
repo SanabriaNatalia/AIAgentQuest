@@ -1,16 +1,40 @@
 import os
 
-def get_valid_target_path(working_directory, target_path):
-    try:
-        working_dir_abs = os.path.abspath(working_directory)
-        target_path_abs = os.path.normpath(os.path.join(working_dir_abs, target_path))
-        valid_target_path = os.path.commonpath([working_dir_abs, target_path_abs]) == working_dir_abs
-    
-        if not valid_target_path:
-            raise RuntimeError(f"Cannot access '{target_path}' as it is outside the permitted working directory")
 
-        return target_path_abs
+def get_valid_target_path(
+    working_directory: str,
+    target_path: str
+) -> str:
+    """
+    Construye una ruta segura dentro del working_directory.
 
-    except Exception as e:
-        error_str = f"Error: {e}"
-        return error_str
+    Si target_path intenta escapar del working_directory,
+    debe lanzar RuntimeError.
+    """
+
+    # TODO 1:
+    # Convierte working_directory en una ruta absoluta.
+    working_dir_abs = ""
+
+    # TODO 2:
+    # Construye la ruta objetivo uniendo working_dir_abs y target_path.
+    raw_target_path = ""
+
+    # TODO 3:
+    # Normaliza la ruta objetivo.
+    resolved_target_path = ""
+
+    # TODO 4:
+    # Verifica que resolved_target_path siga dentro de working_dir_abs.
+    is_valid_path = ...
+
+    # TODO 5:
+    # Si la ruta no es válida, lanza RuntimeError.
+    if not is_valid_path:
+        raise RuntimeError(
+            f"'{target_path}' is outside the permitted working directory"
+        )
+
+    # TODO 6:
+    # Retorna la ruta validada.
+    return ...

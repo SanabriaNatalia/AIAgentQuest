@@ -3,13 +3,12 @@ Quest 05 — El Directorio Prohibido
 
 Archivo de Solución
 A continuación se muestra el código completo con la solución para este quest.
-Puedes usarlo como referencia para completar tu archivo starter/main.py,
-pero te recomendamos intentar resolverlo por tu cuenta primero.
 
 A diferencia de los quests anteriores, este quest no se centra en la interacción con el modelo, 
 sino en la seguridad de las operaciones de archivos que el agente puede realizar.
 
 Por esto, esta solución corresponde a la función que hay que implementar en el archivo common/functions/get_valid_target_path.py
+Puedes usarlo como referencia, pero te recomendamos intentar resolverlo por tu cuenta primero.
 """
 
 import os

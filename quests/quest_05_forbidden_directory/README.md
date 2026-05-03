@@ -29,7 +29,7 @@ En este Quest construiremos la frontera de seguridad del agente: su **working di
 - por qué un agente necesita límites
 - cómo evitar acceso a rutas no permitidas
 - cómo validar rutas con `abspath`, `normpath` y `commonpath`
-- por qué las tools deben devolver errores como texto
+- por qué las herramientas (tools) deben devolver errores como texto
 
 ---
 
@@ -43,7 +43,7 @@ workspace/
 
 en los Quests anteriores y te preguntaste:
 
-> “¿Para qué existe esto?”
+> “¿Y esto para qué es?”
 
 La respuesta es simple:
 
@@ -101,6 +101,8 @@ Cada una representa una posible acción del agente sobre el sistema de archivos.
 Pero antes de usarlas libremente, deben obedecer una regla:
 
 > ninguna herramienta puede acceder a archivos por fuera del directorio permitido.
+
+> Nota: Puedes abrir las funciones si lo deseas, allí encontrarás algunos TODOs, pero no corresponden a este quest. Los veremos más adelante.
 
 ## La idea clave
 
@@ -165,39 +167,16 @@ o:
 
 Incluso si el usuario no lo pidió maliciosamente, el modelo puede equivocarse.
 
-Por eso las tools deben tener guardrails.
+Por eso las tools deben tener [guardrails](../../docs/agents/guardrails.md).
 
 
 ## La frontera del agente
 
 Usaremos un `working_directory` como frontera segura.
 
-Ejemplo:
+### Cómo validar la frontera
 
-```python
-working_directory = "./workspace"
-```
-
-El agente podrá actuar dentro de:
-
-```text
-workspace/
-```
-
-Pero no debería poder escapar a rutas como:
-
-```text
-../
-../../
-/home/user
-/etc
-```
-
----
-
-## Cómo validar la frontera
-
-La función que debes completar está en:
+La función que debes completar en este quest está en:
 
 ```text
 common/functions/get_valid_target_path.py
@@ -260,7 +239,6 @@ except Exception as e:
 
 Esto es importante porque el agente necesita poder leer el error y decidir qué hacer después.
 
-
 ---
 
 ## Resultado esperado
@@ -285,6 +263,10 @@ Error: Cannot list '../' as it is outside the permitted working directory
 
 ## Tu misión
 
+En este quest trabajarás en dos archivos.
+
+### 1. Completar la frontera del agente
+
 Debes completar:
 
 ```text
@@ -299,6 +281,22 @@ La función debe:
 4. validar que siga dentro del `working_directory`
 5. lanzar `RuntimeError` si intenta escapar
 6. retornar la ruta validada si es segura
+
+### 2. Completar el runner de pruebas
+
+También debes completar:
+
+```
+quests/quest_05_forbidden_directory/starter/main.py
+```
+
+Este archivo ejecuta casos de prueba manuales para validar rutas permitidas y prohibidas.
+
+Tu tarea será completar los bloques `try/except` para que:
+
+* las rutas permitidas muestren PASS
+* las rutas prohibidas también muestren PASS cuando sean bloqueadas correctamente
+* cualquier comportamiento inesperado muestre FAIL
 
 ---
 
