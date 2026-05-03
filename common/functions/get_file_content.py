@@ -1,7 +1,11 @@
 from common.config import MAX_CHARS
 from common.functions.get_valid_target_path import get_valid_target_path
+from google.genai import types
 import os
 
+# TODO 3 - Quest 6: Define el schema para la función get_file_content, 
+# similar a schema_get_files_info
+schema_get_file_content = None
 
 def get_file_content(working_directory, file_path):
     try:

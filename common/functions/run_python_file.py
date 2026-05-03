@@ -5,6 +5,10 @@ from google.genai import types
 from common.functions.get_valid_target_path import get_valid_target_path
 
 
+# TODO 3 - Quest 6: Define el schema para la función run_python_file, 
+# similar a schema_get_files_info
+schema_get_file_content = None
+
 def run_python_file(working_directory, file_path, args=None):
     try:
         target_file = get_valid_target_path(

@@ -1,6 +1,21 @@
 from common.functions.get_valid_target_path import get_valid_target_path
+from google.genai import types
 import os
 
+
+schema_get_files_info = types.FunctionDeclaration(
+    name="get_files_info",
+    description="Lists files in a specified directory relative to the working directory",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "directory": types.Schema(
+                type=types.Type.STRING,
+                description="Directory path relative to the working directory",
+            ),
+        },
+    ),
+)
 
 def get_files_info(working_directory, directory="."):
     
