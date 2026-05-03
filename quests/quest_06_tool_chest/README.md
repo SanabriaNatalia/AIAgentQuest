@@ -1,5 +1,9 @@
 # Quest 06 — El Cofre de Instrumentos
 
+<p align="center">
+    <img src="../../assets/images/quest-6-banner.png" alt="Quest 6 Banner" width="100%">
+</p>
+
 > *“Un agente deja de ser solo una voz cuando aprende a utilizar herramientas.”*  
 > — Zhyréon
 

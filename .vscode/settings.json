@@ -14,5 +14,6 @@
         "quest_04_arkanum_laws": "rules",
         "quest_05_forbidden_directory": "private",
         "quest_06_tool_chest": "tools",
+        "quest_07_agent_incarnation": "scripts",
     }
 }

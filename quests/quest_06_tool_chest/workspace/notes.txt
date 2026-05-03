@@ -1,0 +1,2 @@
+# notes.txt
+El agente solo debería poder leer archivos dentro de workspace.

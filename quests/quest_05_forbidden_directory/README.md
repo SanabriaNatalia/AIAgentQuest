@@ -1,5 +1,9 @@
 # Quest 05 — El Directorio Prohibido
 
+<p align="center">
+    <img src="../../assets/images/quest-5-banner.png" alt="Quest 5 Banner" width="100%">
+</p>
+
 > *“Antes de entregar herramientas a un agente, traza los límites del mundo donde puede actuar.”*  
 > — Zhyréon
 
