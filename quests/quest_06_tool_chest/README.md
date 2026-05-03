@@ -259,6 +259,8 @@ schema_write_file
 schema_run_python_file
 ```
 
+Puedes guiarte del esquema que ya existe, pero si tienes dudas o quieres más información puedes consultar [esta entrada del Códice](../../docs/agents/tool_schemas.md).
+
 ---
 
 ### 2. Registrar herramientas

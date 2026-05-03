@@ -84,6 +84,9 @@ show_quest_header(
 # Usa como referencia el schema ya existente en:
 #
 # common/functions/get_files_info.py
+#
+# También puedes revisar esta entrada del códice:
+# docs/agents/tool_schemas.md
 
 # TODO 4:
 

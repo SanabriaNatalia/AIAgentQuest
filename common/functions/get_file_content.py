@@ -5,6 +5,8 @@ import os
 
 # TODO 3 - Quest 6: Define el schema para la función get_file_content, 
 # similar a schema_get_files_info
+# Puedes revisar esta entrada si tienes dudas:
+# docs/agents/tool_schemas.md
 schema_get_file_content = None
 
 def get_file_content(working_directory, file_path):

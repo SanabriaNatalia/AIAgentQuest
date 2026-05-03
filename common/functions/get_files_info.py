@@ -14,6 +14,7 @@ schema_get_files_info = types.FunctionDeclaration(
                 description="Directory path relative to the working directory",
             ),
         },
+        required=["directory"],
     ),
 )
 
