@@ -1,0 +1,16 @@
+{
+    "material-icon-theme.folders.associations": 
+    {
+        "quests": "tasks",
+        "starter": "src",
+        "solution": "archive",
+        "workspace": "container",
+        "terminal": "command",
+        "LLMs": "robot",
+        "quest_01_first_invocation": "robot",
+        "quest_02_arcane_gauge": "benchmark",
+        "quest_03_apprentice_voice": "messages",
+        "quest_04_arkanum_laws": "rules",
+        "quest_05_forbidden_directory": "private",
+    }
+}

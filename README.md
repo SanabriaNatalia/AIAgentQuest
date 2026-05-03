@@ -257,3 +257,17 @@ uv run python -m quests.quest_01_first_agent.check
 ```
 
 ---
+
+## Opcional: Experiencia visual arcana en VSCode
+
+Este curso fue diseñado con una pequeña capa estética inspirada en un laboratorio arcano, solo por diversión y ambientación ✨
+
+Para una mejor experiencia visual, se recomienda utilizar VSCode e instalar:
+
+- [Material Icon Theme](https://marketplace.visualstudio.com/items?itemName=PKief.material-icon-theme)
+
+El repositorio ya incluye un archivo de configuración de VSCode con asociaciones de íconos personalizadas para las quests y carpetas del laboratorio.
+
+Una vez instalado el plugin, la ambientación visual debería aplicarse automáticamente al abrir el proyecto. 
+
+Esto es completamente opcional, pero ayuda a que la academia se sienta un poco más viva ✨
