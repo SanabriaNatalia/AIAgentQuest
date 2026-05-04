@@ -63,29 +63,52 @@ Prompt → Memoria → Herramientas → Conocimiento → Protocolos → Sistemas
 
 ### ACTO I — Fundamentos del Agente
 
-> *“Antes de construir inteligencia, debes comprender conversación, contexto y memoria.”*
+> *“Antes de construir inteligencia, debes comprender conversación, contexto y voluntad.”*
 > — Zhyréon
 
-En este acto aprenderás los fundamentos detrás de los agentes modernos:
+En este acto aprenderás los fundamentos detrás de los modelos conversacionales modernos:
 
 - prompts
+- temperatura
 - contexto
-- memoria
 - roles
 - instrucciones del sistema
 - consumo de tokens
+- debugging básico
+- estructura de interacción con LLMs
 
-Aquí construiremos el núcleo conversacional del agente.
+Aquí construiremos la primera voz del agente.
 
 ### ACTO II — Capacidad de Acción
 
-> *“Una voz inteligente es útil.*
-> *Un agente capaz de actuar cambia el mundo.”*
+> *“Una voz inteligente puede responder preguntas.  
+> Un agente encarnado puede transformar el mundo.”*  
 > — Zhyréon
 
-El agente aprenderá a utilizar herramientas y operar sobre el mundo exterior.
+El aprendiz abandona la teoría.
 
-⚠️ Este acto se encuentra en desarrollo.
+En este acto construiremos los primeros componentes reales de un sistema agéntico:
+
+- working directories
+- guardrails
+- tool schemas
+- function calling
+- function dispatch
+- tool execution
+- agent loops iterativos
+- observaciones estructuradas
+- verbose mode
+- ciclos de razonamiento y manifestación
+
+Al finalizar este acto, el agente podrá:
+
+- explorar archivos
+- leer contenido
+- escribir programas
+- ejecutar código
+- observar resultados
+- iterar sobre problemas
+- corregir errores utilizando tools reales
 
 ### ACTO III — Inteligencia Extendida
 
