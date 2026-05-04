@@ -10,9 +10,9 @@
 
 ## Información del Quest
 
-| Dificultad | Tiempo estimado |
-|---|---|
-| 🟢 Fácil | 5–15 mins |
+|Acto | Dificultad | Tiempo estimado |
+|---|---|---|
+| I - Fundamentos del Agente |🟢 Fácil | 5–15 mins |
 
 ## Objetivo
 

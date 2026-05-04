@@ -9,9 +9,9 @@
 
 ## Información del Quest
 
-| Dificultad | Tiempo estimado |
-|---|---|
-| 🟡 Intermedio | 15–25 mins |
+|Acto| Dificultad | Tiempo estimado |
+|---|---|---|
+| II — Capacidad de Acción | 🟡 Intermedio | 15–25 mins |
 
 ---
 

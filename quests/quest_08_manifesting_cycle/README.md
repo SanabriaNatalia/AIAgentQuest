@@ -10,9 +10,9 @@
 
 ## Información del Quest
 
-| Dificultad | Tiempo estimado |
-|---|---|
-| 🔴 Avanzado | 40–60 mins |
+| Acto | Dificultad | Tiempo estimado |
+|---|---|---|
+| II — Capacidad de Acción | 🔴 Avanzado | 40–60 mins |
 
 ---
 
