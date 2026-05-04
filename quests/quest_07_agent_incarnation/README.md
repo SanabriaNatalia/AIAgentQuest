@@ -250,6 +250,8 @@ La función debe:
 - inyectar `working_directory`
 - ejecutar funciones reales
 - devolver `types.Content(...)`
+  
+Recomendamos leer [esta entrada sobre Content y Parts](../../docs/agents/content_and_parts.md) para entender mejor cómo y por qué funciona.
 
 ---
 

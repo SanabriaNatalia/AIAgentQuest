@@ -128,6 +128,9 @@ show_quest_header(
 #   - .function_response (si no existe, lanza un error: Function response is missing)
 #   - .response dentro de .function_response (si no existe, lanza un error: Function response content is missing)
 # - guardar resultados en function_results usando function_results.append(part)
+#
+# Puedes consultar la entrada del códice sobre content y parts para más detalles:
+# docs/agents/content_and_parts.md
 
 # TODO 6:
 # Si verbose=True,
