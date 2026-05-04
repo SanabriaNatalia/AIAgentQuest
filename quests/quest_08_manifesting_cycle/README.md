@@ -224,20 +224,60 @@ En este Quest trabajarás en cinco partes.
 
 ---
 
-### 1. Refactorizar generate_content()
+### 1. Refactorizar la arquitectura principal
 
-Debes mover la lógica principal de generación a:
+Debes reorganizar tu programa utilizando:
 
 ```python
-generate_content(messages, verbose)
+
+def main():
+
 ```
 
-Esta función será responsable de:
+y:
+
+```python
+
+def generate_content(messages, verbose):
+
+```
+
+La idea es separar:
+
+- orquestación
+- generación de respuestas
+- ejecución del ciclo
+
+[`main()`](../../docs/python/main_function.md) será responsable de:
+
+- validar API key
+- crear el parser
+- leer argumentos
+- inicializar `messages`
+- ejecutar el agent loop
+
+`generate_content(...)` será responsable de:
+
 - llamar Gemini
 - manejar tools
 - ejecutar function calls
 - agregar observaciones
 - devolver respuesta final
+
+Al final del archivo debes agregar:
+
+```python
+if __name__ == "__main__":
+    main()
+```
+
+Esto permitirá:
+
+- mantener el programa organizado
+- separar definición y ejecución
+- facilitar testing y reutilización
+
+Si no estás familiarizado con el **método main en Python** puedes leer [esta entrada del Códice](../../docs/python/main_function.md).
 
 ---
 
@@ -303,23 +343,77 @@ Debes:
 
 ---
 
-## Resultado esperado
+## El primer ciclo real
 
-Prompt:
+Dentro del `workspace/` encontrarás un pequeño programa llamado:
 
 ```text
-Lee notes.txt y luego dime qué contiene.
+calculator.py
 ```
 
-Resultado aproximado:
+y una suite de tests:
 
 ```text
+tests.py
+```
+
+Uno de los tests está fallando.
+
+Tu agente debería ser capaz de:
+- explorar archivos
+- leer contenido
+- ejecutar tests
+- identificar el problema
+- corregir el bug
+- volver a ejecutar los tests
+
+Todo utilizando el ciclo de manifestación.
+
+---
+
+## Prompt sugerido
+
+Prueba ejecutar el agente usando:
+
+```bash
+uv run python -m quests.quest_08_manifesting_cycle.starter.main \
+"Los tests de calculator están fallando. Ayúdame a corregir el error."
+```
+
+---
+
+## Qué deberías observar
+
+Si todo funciona correctamente, el agente debería:
+
+1. listar archivos
+2. leer el código fuente
+3. ejecutar tests
+4. observar el error
+5. modificar el archivo correcto
+6. volver a ejecutar tests
+7. generar una respuesta final
+
+Verás algo parecido a:
+
+```text
+- Calling function: get_files_info
 - Calling function: get_file_content
--> {'result': 'Hello apprentice...'}
+- Calling function: run_python_file
+- Calling function: write_file
+- Calling function: run_python_file
 
 Final response:
-El archivo contiene...
+El problema fue corregido correctamente.
 ```
+
+Este será el primer momento donde el agente:
+- itera
+- aprende de observaciones
+- ajusta comportamiento
+- persiste hasta resolver un problema
+
+Ese patrón es el corazón de los sistemas agénticos modernos.
 
 ---
 
