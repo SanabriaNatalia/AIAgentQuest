@@ -37,6 +37,21 @@ def success() -> None:
             border_style="green",
         )
     )
+    console.print()
+    console.print(
+        Panel.fit(
+            "[bold magenta]ACTO I COMPLETADO[/bold magenta]\n\n"
+            "🌟 Fundamentos del Agente 🌟\n\n"
+            "🧙 Zhyréon:\n"
+            "¡Felicitaciones aprendiz!\n\n"
+            "Ya no eres un simple observador.\n"
+            "Has forjado las bases que te permitirán avanzar en tu camino\n"
+            "El verdadero viaje apenas comienza.\n\n"
+            "✨ Nuevo acto desbloqueado:\n"
+            "ACTO II — La Manifestación del Agente",
+            border_style="magenta",
+        )
+    )
 
 
 def main() -> None:
