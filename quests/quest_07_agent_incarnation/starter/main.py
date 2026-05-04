@@ -36,7 +36,7 @@ from common.utils.ui import (
 
 show_quest_header(
     "Quest 07 — La Encarnación del Agente",
-    "El agente da su primer paso hacia la autonomía.",
+    "El agente manifiesta su voluntad en el mundo.",
 )
 
 # TODO 1:
@@ -121,19 +121,18 @@ show_quest_header(
 # Debes:
 #
 # - iterar sobre response.function_calls
-# - ejecutar cada tool
+# - ejecutar cada tool usando call_function, es importante guardar su resultado en una variable (ej: result) para los siguientes pasos
+# - valida result.parts (si no existe, lanza un error: Function call result has no parts)
+# Obtén el primer part de la respuesta de la función (nuestras funciones solo retornan un part, así que no es necesario iterar sobre ellos)
 # - validar:
-#   - .parts
-#   - .function_response
-#   - .response
-# - guardar resultados en:
-#
-# function_results = []
+#   - .function_response (si no existe, lanza un error: Function response is missing)
+#   - .response dentro de .function_response (si no existe, lanza un error: Function response content is missing)
+# - guardar resultados en function_results usando function_results.append(part)
 
 # TODO 6:
 # Si verbose=True,
 # imprime el resultado de cada tool usando:
 #
 # print(
-#     f"-> {function_call_result.parts[0].function_response.response}"
+#     f"-> {result.parts[0].function_response.response}"
 # )
