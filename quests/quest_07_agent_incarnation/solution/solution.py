@@ -102,15 +102,15 @@ if args.verbose:
 function_results = []
 
 for function_call in response.function_calls or []:
-    function_call_result = call_function(
+    result = call_function(
         function_call,
         verbose=args.verbose,
     )
 
-    if not function_call_result.parts:
+    if not result.parts:
         raise RuntimeError("Function call result has no parts")
 
-    part = function_call_result.parts[0]
+    part = result.parts[0]
 
     if part.function_response is None:
         raise RuntimeError("Function response is missing")

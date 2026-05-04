@@ -91,7 +91,7 @@ def call_function(function_call, verbose=False):
 
 
     # TODO 8 — Quest 07:
-    # Ejecuta la función real.
+    # Ejecuta la función real y guarda su resultado en una variable llamada function_result.
     #
     # Pista:
     #
