@@ -34,8 +34,9 @@ El Códice a comprender.
 
 Fundamentos para navegar e interactuar con herramientas desde consola.
 
-- [`cli_basics.md`](./terminal/cli_basics.md)
-- [`help_flags.md`](./terminal/help_flags.md)
+- [cli basics](./terminal/cli_basics.md)
+- [help flags](./terminal/help_flags.md)
+- [`--verbose` mode](./terminal/verbose_mode.md)
 
 ---
 
@@ -44,6 +45,7 @@ Fundamentos para navegar e interactuar con herramientas desde consola.
 Herramientas y conceptos utilizados durante el laboratorio.
 
 - [`argparse.md`](./python/argparse.md)
+- [`__main__` function](./python/main_function.md)
 - [variables de entorno](./python/environment_variables.md)
 
 ---
@@ -52,11 +54,18 @@ Herramientas y conceptos utilizados durante el laboratorio.
 
 Conceptos fundamentales sobre LLMs y sistemas basados en agentes.
 
+- [agents](./agents/agents.md)
+- [`Content` y `Parts`](./agents/content_and_parts.md)
+- [definir herramientas para agentes](./agents/tool_schemas.md)
+- [expedición de funciones](./agents/function_dispatch.md)
+- [guardrails](./agents/guardrails.md)
+- [manejo de errores](./agents/error_handling.md)
 - [prompts](./llms/prompts.md)
-- [tokens](./llms/tokens.md)
 - [roles y mensajes](./llms/roles_and_messages.md)
-- [Prompts de sistema](./LLMs/system_prompts.md)
-- [Temperatura](./LLMs/temperature.md)
+- [prompts de sistema](./LLMs/system_prompts.md)
+- [temperatura](./LLMs/temperature.md)
+- [tokens](./llms/tokens.md)
+
 
 ---
 
