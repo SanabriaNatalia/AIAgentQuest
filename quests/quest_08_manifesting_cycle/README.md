@@ -35,7 +35,7 @@ Por primera vez, el agente podrá:
 - continuar iterando
 - perseguir un objetivo durante múltiples pasos
 
-El agente entra en el ciclo de la manifestación.
+**El agente entra en el ciclo de la manifestación.**
 
 ---
 
@@ -73,7 +73,7 @@ objetivo
 → nueva acción
 ```
 
-Ese ciclo iterativo es el corazón de los sistemas agénticos.
+**Ese ciclo iterativo es el corazón de los sistemas agénticos.**
 
 ---
 
@@ -202,13 +202,11 @@ Esto permite que el modelo:
 
 ## ¿Qué rompe el loop?
 
-El loop termina cuando:
+El loop termina cuando contiene una respuesta final del modelo.
 
 ```python
 response.text
 ```
-
-contiene una respuesta final del modelo.
 
 Si el modelo todavía quiere usar herramientas:
 - el loop continúa

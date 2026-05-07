@@ -16,7 +16,8 @@ También puedes usar modo verbose:
     "Lee notes.txt y dime qué contiene" \
     --verbose
 
-Una vez hayas terminado, valida tu solución ejecutando:
+Una vez hayas terminado, y el agente haya solucionado el bug, 
+valida tu solución ejecutando:
 
     uv run python -m quests.quest_08_manifesting_cycle.check
 """
@@ -148,6 +149,9 @@ def generate_content(messages, verbose=False):
 #         parts=function_results,
 #     )
 # )
+#
+# Esto permitirá que el agente reflexione sobre los resultados 
+# de las tools en la siguiente iteración.
 
 
 # TODO 9:
