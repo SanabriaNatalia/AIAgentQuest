@@ -22,7 +22,8 @@ def fail(message: str) -> None:
 
 def success() -> None:
     record_quest_completion(
-        "La Voz del Aprendiz", 
+        "La Voz del Aprendiz",
+        1, 
         "Proclamador Arcano"
     )
     console.print(

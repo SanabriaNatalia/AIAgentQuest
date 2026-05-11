@@ -39,6 +39,7 @@ def success() -> None:
     try:
         record_quest_completion(
             "El Cofre de Instrumentos",
+            3,
             "Artífice de Herramientas",
         )
 

@@ -24,7 +24,8 @@ def fail(message: str) -> None:
 
 def success() -> None:
     record_quest_completion(
-        "La Primera Invocación", 
+        "La Primera Invocación",
+        1, 
         "Invocador Principiante"
     )
     console.print(

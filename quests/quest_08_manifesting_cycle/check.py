@@ -30,6 +30,7 @@ def success() -> None:
     try:
         record_quest_completion(
             "El Ciclo de la Manifestación",
+            3,
             "Conjurador Encarnado",
         )
     except Exception as e:

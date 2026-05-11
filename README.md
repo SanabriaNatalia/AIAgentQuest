@@ -206,7 +206,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ---
 
-## Verificar instalación
+### Verificar instalación
 
 ```bash
 uv --version

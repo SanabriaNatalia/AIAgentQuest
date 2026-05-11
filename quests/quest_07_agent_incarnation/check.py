@@ -40,6 +40,7 @@ def success() -> None:
     try:
         record_quest_completion(
             "La Encarnación del Agente",
+            3,
             "Conjurador de Encarnaciones",
         )
 

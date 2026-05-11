@@ -6,12 +6,12 @@ STARTING_RANK = "Aprendiz del Arkanum"
 def main() -> None:
     show_quest_header(
         "Registro del Aprendiz",
-        "El laboratorio reconoce a un nuevo viajero.",
+        "Bienvenido al laboratorio, aprendiz. ¿Cómo debería llamarte?",
     )
 
     init_db()
 
-    username = input("Nombre del aprendiz: ").strip()
+    username = input("Ingresa tu nombre: ").strip()
 
     if not username:
         warning("El nombre no puede estar vacío.")

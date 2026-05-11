@@ -1,5 +1,5 @@
 from common.progress.db import get_connection, init_db
-from common.utils.ui import show_quest_header, success, warning
+from common.utils.ui import show_quest_header, warning
 
 
 def main() -> None:
@@ -12,7 +12,7 @@ def main() -> None:
 
     with get_connection() as conn:
         apprentice = conn.execute(
-            "SELECT username, current_rank FROM apprentice WHERE id = 1"
+            "SELECT username, current_rank, level FROM apprentice WHERE id = 1"
         ).fetchone()
 
         if apprentice is None:
@@ -28,10 +28,11 @@ def main() -> None:
             """
         ).fetchall()
 
-    username, current_rank = apprentice
+    username, current_rank, level = apprentice
 
-    success(f"Aprendiz: {username}")
-    success(f"Rango actual: {current_rank}")
+    print(f"🧙 Aprendiz: {username}")
+    print(f"Rango actual: {current_rank}")
+    print(f"Nivel: {level}")
 
     if not completed:
         warning("Aún no hay Quests completados.")

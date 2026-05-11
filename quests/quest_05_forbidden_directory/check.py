@@ -33,7 +33,8 @@ def fail(message: str) -> None:
 
 def success() -> None:
     record_quest_completion(
-        "El Directorio Prohibido", 
+        "El Directorio Prohibido",
+        2, 
         "Guardián del Umbral"
     )
     console.print(

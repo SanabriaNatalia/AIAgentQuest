@@ -10,11 +10,11 @@ No borres el código existente, solo añádele lo que se pide en cada paso.
 Puedes ejecutar el siguiente comando desde la raíz del proyecto 
 para validar que funcione:
 
-    uv run python -m quests.quest_01_first_agent.starter.main
+    uv run python -m quests.quest_01_first_invocation.starter.main
 
 Una vez que funcione, ejecuta el comando de check para validar tu solución:
 
-    uv run python -m quests.quest_01_first_agent.check
+    uv run python -m quests.quest_01_first_invocation.check
 """
 
 import os

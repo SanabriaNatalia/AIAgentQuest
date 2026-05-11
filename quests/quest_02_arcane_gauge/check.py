@@ -22,7 +22,8 @@ def fail(message: str) -> None:
 
 def success() -> None:
     record_quest_completion(
-        "El Medidor Arcano", 
+        "El Medidor Arcano",
+        1, 
         "Tasador de Respuestas"
     )
     console.print(

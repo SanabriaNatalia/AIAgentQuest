@@ -24,7 +24,8 @@ def fail(message: str) -> None:
 
 def success() -> None:
     record_quest_completion(
-        "Las Leyes del Arkanum", 
+        "Las Leyes del Arkanum",
+        1, 
         "Ejecutor de Leyes"
     )
     console.print(
