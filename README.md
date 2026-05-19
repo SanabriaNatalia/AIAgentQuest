@@ -222,7 +222,7 @@ Si todo salió correctamente, ya puedes continuar con la instalación del labora
 
 ```bash
 git clone <repo-url>
-cd ai-agent-quest
+cd AIAgentQuest
 ```
 
 ### 2. Instalar dependencias
