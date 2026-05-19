@@ -280,13 +280,13 @@ Cada Quest contiene:
 Comienza abriendo el README del primer Quest:
 
 ```text
-quests/quest_01_first_agent/README.md
+quests/quest_01_first_invocation/README.md
 ```
 
 o desde terminal:
 
 ```bash
-code quests/quest_01_first_agent/README.md
+code quests/quest_01_first_invocation/README.md
 ```
 
 Sigue las instrucciones del Quest y trabaja sobre:
@@ -298,7 +298,7 @@ starter/main.py
 Cuando termines, puedes validar tu solución ejecutando:
 
 ```bash
-uv run python -m quests.quest_01_first_agent.check
+uv run python -m quests.quest_01_first_invocation.check
 ```
 
 ---
