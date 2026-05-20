@@ -49,7 +49,7 @@
 | 8 | Wizard init + CLI básico | ✅ | `f84af06` _(bitácora sin commit)_ | 4h | Legacy `init_user.py` / `show_progress.py` se conservan intactos (no se borran); módulo `next.py` renombrado a `next_quest.py` porque `next` es builtin de Python |
 | 9 | Actualizar READMEs quests | ✅ | `cce7dd9` _(bitácora sin commit)_ | 2h | `arkanum start N` ahora acepta args extras (cambio mini-scope en start.py); 5 READMEs tenían typos de paths viejos (`quest_01_first_agent`, etc.) — corregidos |
 | 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora `109d8a6`)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
-| 11 | Pistas (mecánica) | ✅ | _(pendiente de commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
+| 11 | Pistas (mecánica) | ✅ | `4388260` _(bitácora sin commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
 | 12 | Pistas (contenido) | ⏳ | — | 5h | Trabajo pedagógico, no de código |
 | 13 | Tracking tiempo/intentos | ⏳ | — | 4h | — |
 | 14 | Tracking costo | ⏳ | — | 2h | — |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 11 — Sistema de pistas, mecánica _(pendiente de commit)_
+### Fase 11 — Sistema de pistas, mecánica (`4388260`, bitácora sin commitear)
 
 **Entregado**
 - **24 placeholders `.md`** en `quests/quest_NN_*/hints/{1_susurro,2_revelacion,3_manifestacion}.md`. Cada uno renderiza ya con markdown-it y trae un H1 + blockquote "Contenido pendiente — F12" + una línea describiendo la naturaleza de la pista. Pensados para no quedar mudos durante F11; el contenido pedagógico real llega en F12.
@@ -465,7 +465,7 @@
 
 ---
 
-_Plan original de F11 (cerrado pendiente de commit):_
+_Plan original de F11 (cerrado en `4388260`):_
 
 ### Fase 11 — Sistema de pistas, mecánica (~5h)
 
