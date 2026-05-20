@@ -55,7 +55,7 @@
 | 14 | Tracking costo | ✅ | `e0467ee` _(bitácora sin commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
 | 15 | Detección cierre acto | ✅ | `d382967` _(bitácora sin commit)_ | 2h | Hook en `record_quest_completion` detecta + cierra todos los actos elegibles (con backfill retroactivo); `/milestones` con cards arcanas; banner luminoso en `/map`; evento `act_closed` con redirect a `/milestones` |
 | 16 | Visualización agent loop | ✅ | `a4afddb` _(bitácora sin commit)_ | 6h | `arkanum run N "prompt"` con parser regex de stdout; `agent_traces` tabla nueva; `/live-agent` con polling vanilla 1s y animación de entrada; `run_module_capturing` extendido con callback `on_line` y `env_extra` |
-| 17 | Pulido | ✅ | _(pendiente de commit)_ | 4h | Fuentes Cinzel/Inter embebidas (latin subset, 74KB total); skip-link de teclado; ARIA en nav/cards/modal/live regions; contraste WCAG AA subido en muted; prefers-reduced-motion extendido a todas las animaciones nuevas |
+| 17 | Pulido | ✅ | `4e1aaec` _(bitácora sin commit)_ | 4h | Fuentes Cinzel/Inter embebidas (latin subset, 74KB total); skip-link de teclado; ARIA en nav/cards/modal/live regions; contraste WCAG AA subido en muted; prefers-reduced-motion extendido a todas las animaciones nuevas |
 
 **Total acumulado:** Fases 0-17 = ~68h reales / 68h planificadas — **plan completado**.
 
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 17 — Pulido final _(pendiente de commit)_
+### Fase 17 — Pulido final (`4e1aaec`, bitácora sin commitear)
 
 **Entregado**
 - **Fuentes embebidas en `common/dashboard/static/fonts/`**:
@@ -871,7 +871,7 @@ Lo que NO entrega (queda para v2): PDFs de certificados, reto/boss del acto, gri
 
 ---
 
-_Plan original de F17 (cerrado pendiente de commit):_
+_Plan original de F17 (cerrado en `4e1aaec`):_
 
 ### Fase 17 — Pulido (~4h)
 
