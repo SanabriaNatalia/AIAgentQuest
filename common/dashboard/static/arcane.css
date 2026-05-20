@@ -1,7 +1,22 @@
 /* === Arcane Theme v1 ===
-   Paleta arcana, tipografías de sistema (sin dependencias online).
-   Las fuentes embebidas se agregan en Fase 17 (pulido).
+   Paleta arcana, tipografías embebidas (latin subset).
 */
+
+@font-face {
+  font-family: "Cinzel";
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url("/static/fonts/cinzel.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 600;
+  font-display: swap;
+  src: url("/static/fonts/inter.woff2") format("woff2");
+}
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -18,15 +33,36 @@
   --arkanum-purple: #8b5cf6;
   --arkanum-glow: #c084fc;
   --arkanum-text: #e8e3f0;
-  --arkanum-muted: #8a82a8;
+  --arkanum-muted: #a89fc4;
   --arkanum-locked: #3d3856;
   --arkanum-success: #65d196;
   --arkanum-warn: #e8b94d;
   --arkanum-fail: #e87a7a;
 
-  --font-serif: Georgia, "Times New Roman", "Iowan Old Style", serif;
-  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  --font-serif: "Cinzel", Georgia, "Times New Roman", serif;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: "Cascadia Code", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+}
+
+/* Skip link para teclado / lectores de pantalla (F17). */
+.arkanum-skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--arkanum-gold);
+  color: var(--arkanum-bg);
+  padding: 0.6rem 1rem;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-110%);
+  transition: transform 0.18s ease;
+  z-index: 200;
+}
+
+.arkanum-skip-link:focus {
+  transform: translateY(0);
+  outline: 3px solid var(--arkanum-glow);
 }
 
 html, body {
@@ -1607,6 +1643,7 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Animaciones de celebrate (F7) */
   .celebrate-confetti { display: none; }
   .celebrate-header,
   .celebrate-banner,
@@ -1616,8 +1653,18 @@ code {
   .celebrate-actions,
   .celebrate-level,
   .celebrate-rank-badge,
-  .notification-toast {
+  .notification-toast,
+  /* Animaciones del mapa (F3): pulse de la quest current */
+  .quest-card--current,
+  /* Hints + cards (F11): cualquier transition que tenga */
+  .hint-card,
+  /* Cierre de acto (F15): glow del act-band--closed */
+  .act-band--closed::before,
+  /* Live agent (F16): pulse del dot + entrada de cada step */
+  .live-agent-dot,
+  .trace-step {
     animation: none !important;
+    transition: none !important;
   }
 }
 

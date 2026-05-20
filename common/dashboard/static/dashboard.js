@@ -392,7 +392,11 @@
       }
 
       if (added > 0 && stepsHost && stepsHost.lastElementChild) {
-        stepsHost.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
+        var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        stepsHost.lastElementChild.scrollIntoView({
+          behavior: reducedMotion ? "auto" : "smooth",
+          block: "end",
+        });
       }
     }
 

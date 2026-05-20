@@ -10,9 +10,9 @@
   </p>
 </header>
 
-<section class="live-agent" data-trace-poll-url="/api/trace/current">
+<section class="live-agent" data-trace-poll-url="/api/trace/current" aria-label="Agente en directo">
   <header class="live-agent-toolbar">
-    <div class="live-agent-status">
+    <div class="live-agent-status" role="status" aria-live="polite">
       <span class="live-agent-dot" aria-hidden="true"></span>
       <span data-trace-status>Esperando trace…</span>
     </div>
@@ -30,6 +30,6 @@
     </p>
   </div>
 
-  <ol class="live-agent-steps" data-trace-steps></ol>
+  <ol class="live-agent-steps" data-trace-steps aria-live="polite"></ol>
 </section>
 {% endblock %}

@@ -121,6 +121,8 @@
             <button
               type="button"
               class="hint-card-button"
+              aria-haspopup="dialog"
+              aria-controls="hint-modal"
               data-hint-request-url="/api/quests/{{ quest.slug }}/hints/{{ hint.level }}"
             >Solicitar pista</button>
           {% elif not hint.file_exists %}

@@ -43,9 +43,12 @@
           {% set status = status_map[quest.slug] %}
           {% set is_link = status in ["completed", "current"] %}
           {% set tag = "a" if is_link else "article" %}
+          {% set status_label = {"completed": "completado", "current": "en curso", "locked": "sellado"}[status] %}
           <{{ tag }}
             class="quest-card quest-card--{{ status }}{% if is_link %} quest-card--link{% endif %}"
             {% if is_link %}href="/quest/{{ quest.slug }}"{% endif %}
+            aria-label="Quest {{ quest.order }} — {{ quest.title }} · {{ status_label }}"
+            {% if status == "current" %}aria-current="step"{% endif %}
           >
             <div class="quest-card-banner">
               <img src="/assets/images/{{ quest.banner }}" alt="{{ quest.title }}" loading="lazy">

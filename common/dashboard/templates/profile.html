@@ -5,6 +5,8 @@
 <div
   id="event-toast"
   class="notification-toast notification-toast--hidden"
+  role="status"
+  aria-live="polite"
   data-event-poll-url="/api/events/peek"
   data-event-poll-interval="15000"
   data-event-dismiss-url="/api/events/{id}/dismiss"
@@ -23,7 +25,11 @@
       <cite>— Zhyréon</cite>
     </blockquote>
     <p class="arkanum-instruction">Ejecuta en tu terminal:</p>
-    <pre><code>uv run python -m common.progress.init_user</code></pre>
+    <pre><code>arkanum init</code></pre>
+    <p class="arkanum-muted">
+      El wizard te pedirá tu nombre, validará tu <code>GEMINI_API_KEY</code> y
+      dejará todo listo para empezar tu primer quest.
+    </p>
   </section>
 {% else %}
   <section class="profile-hero">

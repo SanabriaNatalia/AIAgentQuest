@@ -9,8 +9,9 @@
   <script src="/static/dashboard.js" defer></script>
 </head>
 <body>
-  <nav class="arkanum-nav">
-    <a href="/" class="arkanum-logo">⚜ Arkanum</a>
+  <a href="#arkanum-main" class="arkanum-skip-link">Saltar al contenido</a>
+  <nav class="arkanum-nav" aria-label="Navegación principal">
+    <a href="/" class="arkanum-logo" aria-label="Arkanum — inicio">⚜ Arkanum</a>
     <ul class="arkanum-nav-links">
       <li><a href="/">Perfil</a></li>
       <li><a href="/map">Mapa</a></li>
@@ -20,7 +21,7 @@
     </ul>
   </nav>
 
-  <main class="arkanum-main">
+  <main id="arkanum-main" class="arkanum-main">
     {% block content %}{% endblock %}
   </main>
 
