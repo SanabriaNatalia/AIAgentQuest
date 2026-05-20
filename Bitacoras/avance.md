@@ -44,7 +44,7 @@
 | 3 | Mapa + rangos | ✅ | `09e0c41` | 4h | Sin desviaciones |
 | 4 | Setup global + doctor | ✅ | `170b57a` | 5h | Vanilla JS polling en vez de HTMX (HTMX se vendoriza en F5) |
 | 5 | Viewer READMEs + Códex | ✅ | `3ffc6da` | 5h | HTMX **no vendorizado** — vanilla JS basta; theme Pygments monokai servido via `/api/pygments.css` |
-| 6 | Integración CLI + notif | ✅ | _pendiente commit_ | 3h | `celebrate.html` placeholder creado aquí (la animación completa es F7); `kind` interno en BD usa snake_case, URL kebab-case |
+| 6 | Integración CLI + notif | ✅ | `dc71ecc` | 3h | `celebrate.html` placeholder creado aquí (la animación completa es F7); `kind` interno en BD usa snake_case, URL kebab-case |
 | 7 | Celebración | ⏳ | — | 3h | — |
 | 8 | Wizard init + CLI básico | ⏳ | — | 4h | Aquí se resuelve el bug UTF-8 de `show_progress`/`init_user` legacy |
 | 9 | Actualizar READMEs quests | ⏳ | — | 2h | — |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 6 — Integración CLI + notificaciones (_pendiente commit_)
+### Fase 6 — Integración CLI + notificaciones (`dc71ecc`)
 
 **Entregado**
 - `common/progress/notify.py`:
