@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Arkanum{% endblock %}</title>
+  <link rel="stylesheet" href="/static/arcane.css">
+</head>
+<body>
+  <nav class="arkanum-nav">
+    <a href="/" class="arkanum-logo">⚜ Arkanum</a>
+    <ul class="arkanum-nav-links">
+      <li><a href="/">Perfil</a></li>
+      <li><a href="/map">Mapa</a></li>
+      <li><a href="/ranks">Rangos</a></li>
+    </ul>
+  </nav>
+
+  <main class="arkanum-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="arkanum-footer">
+    <span>Laboratorio Arkanum · Dirigido por Zhyréon</span>
+  </footer>
+</body>
+</html>

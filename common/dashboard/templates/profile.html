@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Perfil del Aprendiz · Arkanum{% endblock %}
+
+{% block content %}
+{% if not apprentice %}
+  <section class="arkanum-empty">
+    <h1>El laboratorio aguarda</h1>
+    <blockquote class="zhyreon-quote">
+      Aún no has sido registrado en los pergaminos del Arkanum.
+      Antes de iniciar la travesía, deberás dar tu nombre al maestro.
+      <cite>— Zhyréon</cite>
+    </blockquote>
+    <p class="arkanum-instruction">Ejecuta en tu terminal:</p>
+    <pre><code>uv run python -m common.progress.init_user</code></pre>
+  </section>
+{% else %}
+  <section class="profile-hero">
+    <div class="profile-avatar">⚜</div>
+    <div class="profile-identity">
+      <h1>{{ apprentice.username }}</h1>
+      <p class="profile-rank">{{ apprentice.current_rank }}</p>
+    </div>
+  </section>
+
+  <section class="profile-level">
+    <header>
+      <span class="profile-level-label">Nivel {{ level }}</span>
+      <span class="profile-level-xp">{{ xp_in_level }} / {{ xp_required }} XP</span>
+    </header>
+    <div class="xp-bar" aria-label="Progreso de XP">
+      <div class="xp-bar-fill" style="width: {{ xp_pct }}%"></div>
+    </div>
+  </section>
+
+  <section class="profile-stats">
+    <div class="stat">
+      <span class="stat-value">{{ completed_count }}<span class="stat-divisor">/8</span></span>
+      <span class="stat-label">Quests</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ apprentice.xp }}</span>
+      <span class="stat-label">XP total</span>
+    </div>
+    <div class="stat stat-act">
+      <span class="stat-value-text">{{ act_info }}</span>
+      <span class="stat-label">Travesía</span>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}

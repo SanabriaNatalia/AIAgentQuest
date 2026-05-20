@@ -1,0 +1,343 @@
+/* === Arcane Theme v1 ===
+   Paleta arcana, tipografías de sistema (sin dependencias online).
+   Las fuentes embebidas se agregan en Fase 17 (pulido).
+*/
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --arkanum-bg: #0d0a1f;
+  --arkanum-bg-soft: #1a1535;
+  --arkanum-bg-soft-2: #221b42;
+  --arkanum-gold: #c9a961;
+  --arkanum-gold-soft: #a88c4e;
+  --arkanum-purple: #8b5cf6;
+  --arkanum-glow: #c084fc;
+  --arkanum-text: #e8e3f0;
+  --arkanum-muted: #8a82a8;
+  --arkanum-locked: #3d3856;
+  --arkanum-success: #65d196;
+  --arkanum-warn: #e8b94d;
+  --arkanum-fail: #e87a7a;
+
+  --font-serif: Georgia, "Times New Roman", "Iowan Old Style", serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  --font-mono: "Cascadia Code", "JetBrains Mono", "Fira Code", "Consolas", monospace;
+}
+
+html, body {
+  min-height: 100vh;
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(139, 92, 246, 0.10), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(201, 169, 97, 0.06), transparent 70%),
+    var(--arkanum-bg);
+  background-attachment: fixed;
+  color: var(--arkanum-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--arkanum-gold);
+}
+
+/* === Navigation === */
+.arkanum-nav {
+  background: rgba(13, 10, 31, 0.7);
+  border-bottom: 1px solid rgba(201, 169, 97, 0.18);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.arkanum-logo {
+  font-family: var(--font-serif);
+  font-size: 1.4rem;
+  color: var(--arkanum-gold);
+  text-decoration: none;
+  letter-spacing: 0.18em;
+}
+
+.arkanum-nav-links {
+  list-style: none;
+  display: flex;
+  gap: 1.75rem;
+  margin-left: auto;
+}
+
+.arkanum-nav-links a {
+  color: var(--arkanum-muted);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: color 0.2s ease, text-shadow 0.2s ease;
+}
+
+.arkanum-nav-links a:hover {
+  color: var(--arkanum-glow);
+  text-shadow: 0 0 12px rgba(192, 132, 252, 0.4);
+}
+
+/* === Main layout === */
+.arkanum-main {
+  max-width: 920px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  flex: 1;
+}
+
+.arkanum-footer {
+  border-top: 1px solid rgba(201, 169, 97, 0.12);
+  padding: 1.5rem 2rem;
+  color: var(--arkanum-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* === Quote de Zhyréon === */
+.zhyreon-quote {
+  border-left: 3px solid var(--arkanum-gold);
+  padding: 1rem 1.5rem;
+  margin: 1.75rem auto;
+  max-width: 640px;
+  font-style: italic;
+  color: var(--arkanum-text);
+  background: rgba(201, 169, 97, 0.05);
+  border-radius: 0 4px 4px 0;
+}
+
+.zhyreon-quote cite {
+  display: block;
+  margin-top: 0.75rem;
+  font-style: normal;
+  color: var(--arkanum-muted);
+  font-size: 0.9rem;
+}
+
+/* === Code === */
+pre {
+  background: var(--arkanum-bg-soft);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  padding: 1rem 1.25rem;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  margin: 1.25rem auto;
+  max-width: 640px;
+  overflow-x: auto;
+  color: var(--arkanum-glow);
+}
+
+code {
+  font-family: var(--font-mono);
+}
+
+/* === Empty state === */
+.arkanum-empty {
+  text-align: center;
+  padding: 3rem 0 4rem;
+}
+
+.arkanum-empty h1 {
+  font-size: 2.4rem;
+  margin-bottom: 1.5rem;
+}
+
+.arkanum-instruction {
+  margin-top: 1.5rem;
+  color: var(--arkanum-muted);
+}
+
+.arkanum-muted {
+  color: var(--arkanum-muted);
+}
+
+.arkanum-soon {
+  text-align: center;
+  padding: 4rem 0;
+}
+
+.arkanum-soon h1 {
+  font-size: 2.1rem;
+  margin-bottom: 1.25rem;
+}
+
+/* === Profile hero === */
+.profile-hero {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+  padding: 1.5rem 0 2.5rem;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.15);
+}
+
+.profile-avatar {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--arkanum-purple) 0%, var(--arkanum-gold) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: var(--arkanum-bg);
+  box-shadow:
+    0 0 30px rgba(139, 92, 246, 0.35),
+    inset 0 0 20px rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.profile-identity h1 {
+  font-size: 2.2rem;
+}
+
+.profile-rank {
+  color: var(--arkanum-gold);
+  font-style: italic;
+  font-size: 1.05rem;
+  margin-top: 0.4rem;
+  letter-spacing: 0.02em;
+}
+
+/* === Level + XP === */
+.profile-level {
+  padding: 2rem 0;
+  border-bottom: 1px solid rgba(201, 169, 97, 0.15);
+}
+
+.profile-level header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+}
+
+.profile-level-label {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  color: var(--arkanum-gold);
+  letter-spacing: 0.08em;
+}
+
+.profile-level-xp {
+  color: var(--arkanum-muted);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.xp-bar {
+  height: 12px;
+  background: var(--arkanum-bg-soft);
+  border: 1px solid rgba(201, 169, 97, 0.15);
+  border-radius: 7px;
+  overflow: hidden;
+  position: relative;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--arkanum-purple) 0%,
+    var(--arkanum-glow) 50%,
+    var(--arkanum-gold) 100%
+  );
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.5);
+  transition: width 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 7px;
+}
+
+/* === Stats grid === */
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  padding: 2rem 0;
+}
+
+.stat {
+  background: rgba(26, 21, 53, 0.5);
+  border: 1px solid rgba(201, 169, 97, 0.18);
+  border-radius: 8px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+
+.stat:hover {
+  border-color: rgba(201, 169, 97, 0.4);
+  transform: translateY(-2px);
+}
+
+.stat-value {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  color: var(--arkanum-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-divisor {
+  color: var(--arkanum-muted);
+  font-size: 1.4rem;
+}
+
+.stat-value-text {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--arkanum-gold);
+  line-height: 1.3;
+  padding: 0.4rem 0;
+}
+
+.stat-label {
+  display: block;
+  margin-top: 0.6rem;
+  color: var(--arkanum-muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.stat-act {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* === Responsive === */
+@media (max-width: 640px) {
+  .profile-hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .profile-stats {
+    grid-template-columns: 1fr;
+  }
+  .arkanum-nav {
+    padding: 0.75rem 1rem;
+  }
+  .arkanum-nav-links {
+    gap: 1rem;
+  }
+}
