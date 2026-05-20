@@ -48,7 +48,7 @@
 | 7 | Celebración | ✅ | `a76a32d` | 3h | Toast del perfil usa endpoint `peek` (no consume) + `dismiss` explícito en vez de marcar `seen=1` al renderizar; service `celebration.py` reconstruye contexto desde el último evento `quest_completed` |
 | 8 | Wizard init + CLI básico | ✅ | `f84af06` _(bitácora sin commit)_ | 4h | Legacy `init_user.py` / `show_progress.py` se conservan intactos (no se borran); módulo `next.py` renombrado a `next_quest.py` porque `next` es builtin de Python |
 | 9 | Actualizar READMEs quests | ✅ | `cce7dd9` _(bitácora sin commit)_ | 2h | `arkanum start N` ahora acepta args extras (cambio mini-scope en start.py); 5 READMEs tenían typos de paths viejos (`quest_01_first_agent`, etc.) — corregidos |
-| 10 | Pre-check local | ✅ | _(pendiente de commit)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
+| 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora sin commit)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
 | 11 | Pistas (mecánica) | ⏳ | — | 5h | — |
 | 12 | Pistas (contenido) | ⏳ | — | 5h | Trabajo pedagógico, no de código |
 | 13 | Tracking tiempo/intentos | ⏳ | — | 4h | — |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 10 — Pre-check local _(pendiente de commit)_
+### Fase 10 — Pre-check local (`a17d8e3`, bitácora sin commitear)
 
 **Entregado**
 - `common/cli/pre_checks/_ast_helpers.py` (nuevo): helpers ligeros mezclando AST y regex:
@@ -424,7 +424,7 @@
 
 ---
 
-_Plan original de F10 (cerrado pendiente de commit):_
+_Plan original de F10 (cerrado en `a17d8e3`):_
 
 ### Fase 10 — Pre-check local (~4h)
 
