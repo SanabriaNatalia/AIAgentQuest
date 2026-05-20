@@ -54,7 +54,7 @@
 | 13 | Tracking tiempo/intentos | ✅ | `1428745` _(bitácora sin commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
 | 14 | Tracking costo | ✅ | `e0467ee` _(bitácora sin commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
 | 15 | Detección cierre acto | ✅ | `d382967` _(bitácora sin commit)_ | 2h | Hook en `record_quest_completion` detecta + cierra todos los actos elegibles (con backfill retroactivo); `/milestones` con cards arcanas; banner luminoso en `/map`; evento `act_closed` con redirect a `/milestones` |
-| 16 | Visualización agent loop | ✅ | _(pendiente de commit)_ | 6h | `arkanum run N "prompt"` con parser regex de stdout; `agent_traces` tabla nueva; `/live-agent` con polling vanilla 1s y animación de entrada; `run_module_capturing` extendido con callback `on_line` y `env_extra` |
+| 16 | Visualización agent loop | ✅ | `a4afddb` _(bitácora sin commit)_ | 6h | `arkanum run N "prompt"` con parser regex de stdout; `agent_traces` tabla nueva; `/live-agent` con polling vanilla 1s y animación de entrada; `run_module_capturing` extendido con callback `on_line` y `env_extra` |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
 **Total acumulado:** Fases 0-16 = ~65h reales / 64h planificadas (cercano al estimado).
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 16 — Visualización del agent loop _(pendiente de commit)_
+### Fase 16 — Visualización del agent loop (`a4afddb`, bitácora sin commitear)
 
 **Entregado**
 - **Tabla nueva `agent_traces`** en `common/progress/db.py`:
@@ -820,7 +820,7 @@
 
 ---
 
-_Plan original de F16 (cerrado pendiente de commit):_
+_Plan original de F16 (cerrado en `a4afddb`):_
 
 ### Fase 16 — Visualización del agent loop (~6h)
 
