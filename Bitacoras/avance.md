@@ -53,7 +53,7 @@
 | 12 | Pistas (contenido) | ✅ | `25c2b9b` _(bitácora sin commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
 | 13 | Tracking tiempo/intentos | ✅ | `1428745` _(bitácora sin commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
 | 14 | Tracking costo | ✅ | `e0467ee` _(bitácora sin commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
-| 15 | Detección cierre acto | ✅ | _(pendiente de commit)_ | 2h | Hook en `record_quest_completion` detecta + cierra todos los actos elegibles (con backfill retroactivo); `/milestones` con cards arcanas; banner luminoso en `/map`; evento `act_closed` con redirect a `/milestones` |
+| 15 | Detección cierre acto | ✅ | `d382967` _(bitácora sin commit)_ | 2h | Hook en `record_quest_completion` detecta + cierra todos los actos elegibles (con backfill retroactivo); `/milestones` con cards arcanas; banner luminoso en `/map`; evento `act_closed` con redirect a `/milestones` |
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 15 — Detección de cierre de acto + /milestones _(pendiente de commit)_
+### Fase 15 — Detección de cierre de acto + /milestones (`d382967`, bitácora sin commitear)
 
 **Entregado**
 - **Helper `_check_and_close_acts(conn)` en `db.py`**: recorre todos los actos `available` con `quest_slugs` no vacío y, si todas sus quests están en `quest_completion`, hace `INSERT OR IGNORE` en `act_milestones`. Devuelve la lista de actos recién cerrados (que `rowcount > 0`). Idempotente y soporta cierre **retroactivo**: si el aprendiz cerró el Acto I antes de F15 (sin row en `act_milestones`), la primera completación post-F15 lo backfillea automáticamente.
@@ -717,7 +717,7 @@
 
 ---
 
-_Plan original de F15 (cerrado pendiente de commit):_
+_Plan original de F15 (cerrado en `d382967`):_
 
 ### Fase 15 — Detección de cierre de acto + /milestones (~2h)
 
