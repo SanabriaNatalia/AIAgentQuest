@@ -43,7 +43,7 @@
 | 2 | Catálogo + perfil | ✅ | `71f5729` | 4h | Fuentes de sistema en vez de Cinzel/Inter (diferido a F17) |
 | 3 | Mapa + rangos | ✅ | `09e0c41` | 4h | Sin desviaciones |
 | 4 | Setup global + doctor | ✅ | `170b57a` | 5h | Vanilla JS polling en vez de HTMX (HTMX se vendoriza en F5) |
-| 5 | Viewer READMEs + Códex | ✅ | _pendiente commit_ | 5h | HTMX **no vendorizado** — vanilla JS basta; theme Pygments monokai servido via `/api/pygments.css` |
+| 5 | Viewer READMEs + Códex | ✅ | `3ffc6da` | 5h | HTMX **no vendorizado** — vanilla JS basta; theme Pygments monokai servido via `/api/pygments.css` |
 | 6 | Integración CLI + notif | ⏳ | — | 3h | — |
 | 7 | Celebración | ⏳ | — | 3h | — |
 | 8 | Wizard init + CLI básico | ⏳ | — | 4h | Aquí se resuelve el bug UTF-8 de `show_progress`/`init_user` legacy |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 5 — Viewer de READMEs y Códex (_pendiente commit_)
+### Fase 5 — Viewer de READMEs y Códex (`3ffc6da`)
 
 **Entregado**
 - `common/dashboard/services/markdown.py`: render con `markdown-it-py` (CommonMark + tablas + strikethrough, `html=True` para permitir banners `<p align="center"><img>`); syntax highlight con `pygments` (theme **monokai**, `cssclass="hl"`); reescritura de links/imágenes:
