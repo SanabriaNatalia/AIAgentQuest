@@ -142,16 +142,16 @@ def quest_page(request: Request, slug: str):
 
 @router.get("/celebrate", response_class=HTMLResponse)
 def celebrate_page(request: Request, quest: str | None = None):
+    from common.dashboard.services.quest_catalog import quest_by_db_id
+    from common.dashboard.services.celebration import build_celebration_context
+
     quest_meta = quest_by_slug(quest) if quest else None
     if quest_meta is None and quest:
-        from common.dashboard.services.quest_catalog import quest_by_db_id
-
         quest_meta = quest_by_db_id(quest)
-    return templates.TemplateResponse(
-        request,
-        "celebrate.html",
-        {"request": request, "quest": quest_meta},
-    )
+
+    context = build_celebration_context(quest_meta)
+    context["request"] = request
+    return templates.TemplateResponse(request, "celebrate.html", context)
 
 
 @router.get("/codex", response_class=HTMLResponse)

@@ -31,21 +31,16 @@ def pygments_stylesheet() -> Response:
     return Response(content=pygments_css(), media_type="text/css")
 
 
-@router.get("/api/events/recent")
-def recent_events(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
-    """Devuelve eventos no vistos y los marca como `seen=1`.
-
-    El cliente lo consume vía polling. La transición a seen=1 se hace en
-    el mismo commit que la SELECT para evitar repetir notificaciones.
-    """
+def _read_events(only_unseen: bool, limit: int, mark_seen: bool) -> list[dict]:
     init_db()
+    where = "WHERE seen = 0" if only_unseen else ""
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT id, kind, payload, created_at FROM events "
-            "WHERE seen = 0 ORDER BY id DESC LIMIT ?",
+            f"SELECT id, kind, payload, created_at FROM events "
+            f"{where} ORDER BY id DESC LIMIT ?",
             (limit,),
         ).fetchall()
-        if rows:
+        if mark_seen and rows:
             ids = [r[0] for r in rows]
             placeholders = ",".join(["?"] * len(ids))
             conn.execute(
@@ -53,7 +48,7 @@ def recent_events(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
                 ids,
             )
 
-    items = []
+    items: list[dict] = []
     for ev_id, kind, payload, created_at in rows:
         try:
             parsed = json.loads(payload)
@@ -62,7 +57,36 @@ def recent_events(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
         items.append(
             {"id": ev_id, "kind": kind, "payload": parsed, "created_at": created_at}
         )
-    return JSONResponse({"events": items})
+    return items
+
+
+@router.get("/api/events/recent")
+def recent_events(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
+    """Consume eventos: devuelve los no vistos y los marca como `seen=1`.
+
+    Usado por `webbrowser.open` auto-flow. La transición a seen=1 se hace
+    en el mismo commit que la SELECT para evitar repetir notificaciones.
+    """
+    return JSONResponse({"events": _read_events(only_unseen=True, limit=limit, mark_seen=True)})
+
+
+@router.get("/api/events/peek")
+def peek_events(limit: int = Query(5, ge=1, le=50)) -> JSONResponse:
+    """Mira los eventos no vistos sin marcarlos. Usado por el toast del perfil.
+
+    El cliente decide cuándo "dismiss" via POST /api/events/{id}/dismiss.
+    """
+    return JSONResponse({"events": _read_events(only_unseen=True, limit=limit, mark_seen=False)})
+
+
+@router.post("/api/events/{event_id}/dismiss")
+def dismiss_event(event_id: int) -> JSONResponse:
+    init_db()
+    with get_connection() as conn:
+        cur = conn.execute("UPDATE events SET seen = 1 WHERE id = ?", (event_id,))
+        if cur.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Evento no encontrado.")
+    return JSONResponse({"ok": True, "event_id": event_id})
 
 
 @router.post("/api/quests/{slug}/mark-read")

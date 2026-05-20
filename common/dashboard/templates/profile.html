@@ -2,6 +2,14 @@
 {% block title %}Perfil del Aprendiz · Arkanum{% endblock %}
 
 {% block content %}
+<div
+  id="event-toast"
+  class="notification-toast notification-toast--hidden"
+  data-event-poll-url="/api/events/peek"
+  data-event-poll-interval="15000"
+  data-event-dismiss-url="/api/events/{id}/dismiss"
+></div>
+
 <div data-poll-url="/api/setup/status" data-poll-interval="30000" class="setup-panel-wrapper">
   {% include "partials/setup_panel.html" %}
 </div>

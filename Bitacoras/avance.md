@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 6 — Integración CLI + notificaciones |
-| **Próxima fase** | Fase 7 — Página de celebración |
-| **Tiempo invertido aprox.** | ~28h (acumulado Fases 0-6) |
-| **Tiempo restante estimado** | ~40h (Fases 7-17) |
+| **Última fase completada** | Fase 7 — Página de celebración |
+| **Próxima fase** | Fase 8 — Wizard init_user + CLI básico |
+| **Tiempo invertido aprox.** | ~31h (acumulado Fases 0-7) |
+| **Tiempo restante estimado** | ~37h (Fases 8-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -45,7 +45,7 @@
 | 4 | Setup global + doctor | ✅ | `170b57a` | 5h | Vanilla JS polling en vez de HTMX (HTMX se vendoriza en F5) |
 | 5 | Viewer READMEs + Códex | ✅ | `3ffc6da` | 5h | HTMX **no vendorizado** — vanilla JS basta; theme Pygments monokai servido via `/api/pygments.css` |
 | 6 | Integración CLI + notif | ✅ | `dc71ecc` | 3h | `celebrate.html` placeholder creado aquí (la animación completa es F7); `kind` interno en BD usa snake_case, URL kebab-case |
-| 7 | Celebración | ⏳ | — | 3h | — |
+| 7 | Celebración | ✅ | _pendiente commit_ | 3h | Toast del perfil usa endpoint `peek` (no consume) + `dismiss` explícito en vez de marcar `seen=1` al renderizar; service `celebration.py` reconstruye contexto desde el último evento `quest_completed` |
 | 8 | Wizard init + CLI básico | ⏳ | — | 4h | Aquí se resuelve el bug UTF-8 de `show_progress`/`init_user` legacy |
 | 9 | Actualizar READMEs quests | ⏳ | — | 2h | — |
 | 10 | Pre-check local | ⏳ | — | 4h | — |
@@ -57,7 +57,7 @@
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-6 = ~28h reales / 27h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-7 = ~31h reales / 30h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,33 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 7 — Página de celebración (_pendiente commit_)
+
+**Entregado**
+- `common/progress/db.py`: `record_quest_completion` ahora captura `xp_before` y `level_before` antes del UPDATE y los pasa en el payload de `emit_event`. La firma interna de `_notify_dashboard` se hizo kwargs-only para evitar errores de orden.
+- `common/dashboard/routes/events.py`: `QuestCompletedPayload` extendida con `xp_before` / `xp_after` / `xp_reward` / `level_before` / `level_after` (todos opcionales, retrocompatible).
+- `common/dashboard/services/celebration.py` (nuevo): `build_celebration_context(quest_meta)` busca el último evento `quest_completed` cuyo `quest_id` coincida (por slug o `db_id`), extrae stats, calcula `leveled_up = level_after > level_before`. Si no hay evento, cae a `apprentice.xp/level` para mostrar al menos la versión "diferida".
+- `common/dashboard/routes/pages.py`: `/celebrate` ahora usa el servicio nuevo.
+- `common/dashboard/templates/celebrate.html`: reescrito por completo. Hero con eyebrow ("Asciendes" si level-up, "Quest completado" si no), banner del quest, badge de rango con glow animado, quote de Zhyréon, stats (XP ganado / XP total / Nivel con highlight si level-up), dos CTAs (Volver al perfil / Continuar travesía).
+- `common/dashboard/static/celebrate.js` (nuevo): confetti DOM-based, 36 partículas, 2.6s base + jitter, drift horizontal aleatorio, respeta `prefers-reduced-motion: reduce`.
+- `common/dashboard/static/arcane.css` +400 líneas: bloque `Celebrate` (header, banner, rank-badge con `celebrate-glow` pulsante, stats con `celebrate-fade-in` escalonado), keyframes `confetti-fall` con custom properties `--drift` y `--rotate`, `viewer-cta--ghost` (variante del CTA existente), bloque `notification-toast` para el perfil, y un media query `(prefers-reduced-motion: reduce)` que apaga todas las animaciones y el confetti.
+- **Toast en el perfil**:
+  - `common/dashboard/routes/api.py`: refactor a `_read_events(only_unseen, limit, mark_seen)` reutilizable; nuevos endpoints `GET /api/events/peek` (no marca seen) y `POST /api/events/{id}/dismiss`.
+  - `common/dashboard/templates/profile.html`: contenedor `#event-toast` con `data-event-poll-url=/api/events/peek` y `data-event-dismiss-url=/api/events/{id}/dismiss`.
+  - `common/dashboard/static/dashboard.js`: `initToast()` con polling cada 15s; si encuentra un `quest_completed` no visto y no es el ya mostrado, renderiza un toast con título "⚜ Asciendes" o "⚜ Quest completado", body con rango + XP, CTA a `/celebrate?quest=...` y botón ✕ que hace POST al endpoint dismiss.
+
+**Desviaciones del plan**
+- **`peek` + `dismiss` explícito en lugar de marcar `seen=1` al renderizar**. El plan original sugería un partial server-side que renderizara el toast directamente. Lo cambié a JSON + JS porque (a) si marcáramos `seen=1` al hacer GET del partial, refrescar la página perdería el toast antes de que el usuario lo viera, (b) el dismiss explícito por el usuario es semánticamente correcto: solo se "ve" cuando el usuario lo descarta o lo abre, (c) `recent_events` ya consume + marca seen para el flujo `webbrowser.open`; el del perfil necesita una semántica distinta. Documentado en docstrings de `api.py`.
+- **No se creó `partials/notifications.html`**. La razón: el toast se renderiza enteramente en JS desde el payload del evento, no desde HTML server-rendered. Esto evita un round-trip extra. El partial seguirá siendo útil cuando haya múltiples tipos de eventos a tipear (F15 cierre de acto, F8 wizard, etc.); por ahora un solo tipo no justifica el partial.
+
+**Hallazgos / tech debt**
+- Smoke test TestClient cubre: `/celebrate` sin evento (versión diferida), POST evento con level-up, `/celebrate` rehidratada (detecta "Asciendes Nivel 2", muestra +50 XP y rango), peek idempotente, dismiss específico, dismiss inexistente → 404.
+- Sanity con server real arrancado en puerto 8765: `/celebrate` y `/api/events/peek` responden 200.
+- Compatibilidad: el endpoint POST `/events/quest-completed` acepta payloads viejos (sin los campos `xp_before` etc.) porque todos son `| None = None`. F6 no rompe.
+- El throttle de `open_celebration` (5s, F6) se mantiene; abrir manualmente `/celebrate` no lo afecta.
 
 ---
 
@@ -235,45 +262,51 @@
 
 ## Próxima fase
 
-### Fase 7 — Página de celebración (~3h)
+### Fase 8 — Wizard init_user + CLI básico (~4h)
 
 **Objetivo**
-> Done cuando: al terminar un quest, el aprendiz ve una pantalla con animación de level-up, banner del rango obtenido y un eco de Zhyréon. El template placeholder de F6 se reemplaza por la versión completa.
+> Done cuando: `arkanum init` reemplaza al `init_user.py` legacy con un wizard arcano (nombre del aprendiz, ping a Gemini, opt-in a abrir el dashboard). Los comandos `arkanum current`, `arkanum next`, `arkanum progress`, `arkanum start <N>`, `arkanum check <N>` funcionan desde la raíz del repo y respetan UTF-8.
 
 **Plan**
-1. **Detección de level-up**: comparar `level_before` (capturado antes del UPDATE en `record_quest_completion`) con `apprentice.level` actual. Si subió, mostrar variante "Asciendes a nivel N".
-2. **Reemplazar `celebrate.html`** placeholder por la versión completa:
-   - Hero con banner del quest completado (`/assets/images/quest-N-banner.png`).
-   - Quote del rango obtenido (de `QuestMeta.quote_zhyreon`).
-   - Stats: XP ganado, XP total, level antes → después.
-   - Animación CSS: fade-in del banner, glow pulsante en el rank badge.
-3. **`static/celebrate.js`**: confetti DOM-based sin librerías (~40 líneas). Spawn via `requestAnimationFrame`, density configurable.
-4. **`static/arcane.css`**: bloque "Celebrate" con `@keyframes` (`celebrate-fade-in`, `celebrate-glow`, `confetti-fall`); respetar `prefers-reduced-motion`.
-5. **Notificación en el perfil**: partial `partials/notifications.html` que en `/` muestra un toast "¡Quest completado!" si `/api/events/recent` devuelve un `quest_completed` sin ver, con link a `/celebrate?quest=...`.
+1. **`common/cli/commands/init.py`** — `arkanum init`:
+   - Rich `Prompt` para nombre del aprendiz (default si ya existe).
+   - Verifica `.env` y `GEMINI_API_KEY`; ofrece pegar key si falta.
+   - Ping real a Gemini (con timeout) usando `setup_diagnostics`.
+   - Insert/update en `apprentice` con rank inicial "Aprendiz del Arkanum".
+   - Pregunta "¿Abrir el dashboard?" → si sí, `lifecycle.start()` + `webbrowser.open`.
+2. **`common/cli/commands/current.py`** — muestra quest actual + comando para empezar (`arkanum start N`).
+3. **`common/cli/commands/next.py`** — muestra próxima quest (la que sigue a la `current`).
+4. **`common/cli/commands/progress.py`** — wrapper sobre `show_progress` legacy, sin el bug UTF-8 (todo via el reconfigure de `main.py`).
+5. **`common/cli/commands/start.py`** — `arkanum start <N>` ejecuta `python -m quests.quest_NN_*.starter.main` resolviendo N → slug.
+6. **`common/cli/commands/check.py`** — `arkanum check <N>` ejecuta `python -m quests.quest_NN_*.check`; flag `--dry-run` que solo corre pre-checks (la implementación de pre-checks reales llega en F10, aquí solo el flag con un mensaje placeholder).
+7. **Compatibilidad**: `uv run python -m quests.quest_XX.starter.main` sigue funcionando; las nuevas commands son atajos.
 
 **Pre-condiciones**
-- `/celebrate` ya responde (✅ F6, placeholder).
-- Evento `quest_completed` ya se persiste y se recoge (✅ F6).
-- Banners en `/assets/images/` (✅ F2).
+- `arkanum` ya está como entry point (✅ F0).
+- `lifecycle.start()` arranca server detached (✅ F1).
+- `setup_diagnostics` ya pinguea API key (✅ F4).
+- `record_quest_completion` emite eventos al dashboard (✅ F6).
 
 **Archivos a tocar / crear**
-- ✏️ `common/dashboard/templates/celebrate.html` (versión completa).
-- ➕ `common/dashboard/static/celebrate.js` (confetti).
-- ✏️ `common/dashboard/static/arcane.css` (keyframes + estilos hero celebrate).
-- ✏️ `common/dashboard/routes/pages.py` (cálculo de level-up usando payload del evento).
-- ✏️ `common/dashboard/routes/events.py` (extender `QuestCompletedPayload` con `xp_before` / `level_before`).
-- ✏️ `common/progress/db.py` (capturar `xp_before` / `level_before` antes del UPDATE y pasarlos en el payload).
-- ➕ `common/dashboard/templates/partials/notifications.html`.
-- ✏️ `common/dashboard/templates/profile.html` (incluir el partial).
+- ➕ `common/cli/commands/init.py`
+- ➕ `common/cli/commands/current.py`
+- ➕ `common/cli/commands/next.py`
+- ➕ `common/cli/commands/progress.py`
+- ➕ `common/cli/commands/start.py`
+- ➕ `common/cli/commands/check.py`
+- ✏️ `common/cli/main.py` (registrar las nuevas commands en typer app)
+- ✏️ `common/cli/helpers.py` (resolución `N → slug` y descubrimiento de quests)
 
 **Riesgos detectados**
-- Si el aprendiz completa un quest sin tener el dashboard abierto, al abrirlo después el evento sigue `seen=0` y se disparará la celebración tardía. Comportamiento esperado: el aprendiz nunca pierde la celebración.
-- Confetti puede pesar en máquinas modestas: density baja (~30 partículas) y desactivado con `prefers-reduced-motion: reduce`.
-- `xp_before` / `level_before` no se conocían antes del INSERT en F6 — hay que capturarlos justo antes del UPDATE de `apprentice`. Cambio menor pero requiere tocar `record_quest_completion`.
+- `init_user.py` legacy puede tener lógica que no esté en `setup_diagnostics`. Revisar antes de borrarlo o reemplazarlo. Decisión preliminar: dejar el legacy intacto y solo añadir `arkanum init` como alternativa; el legacy se removerá en una fase de pulido posterior.
+- `arkanum start N` debe pasar correctamente `argv` al subprocess Python, no via shell. Usar `subprocess.run([sys.executable, "-m", ...])`.
+- El bug UTF-8 del legacy `show_progress.py` se resuelve naturalmente: `arkanum progress` pasa por `main.py` que reconfigura UTF-8 antes de invocar.
 
 **Criterio de cierre de la fase**
-- Visitar `/celebrate?quest=quest_01_first_invocation` muestra hero arcano, banner, quote, XP ganado y rank obtenido. Si fue level-up, "Asciendes a nivel N".
-- Confetti corre 2-3 segundos. Con `prefers-reduced-motion: reduce` no aparece.
-- Visitar `/` con un evento sin ver muestra toast "¡Quest completado!" con link a `/celebrate`.
-- Cierre con commit `feat(dashboard): fase 7 - pagina de celebracion`.
+- `arkanum init` corre, pregunta nombre, valida API key, opcionalmente abre dashboard, inserta apprentice.
+- `arkanum current` imprime quest actual con quote y comando para empezar.
+- `arkanum start 1` ejecuta el starter de Q01.
+- `arkanum check 1 --dry-run` imprime mensaje "pre-checks aún no implementados (F10)" sin invocar Gemini.
+- `arkanum progress` muestra XP/level/quests sin error de cp1252.
+- Cierre con commit `feat(dashboard): fase 8 - wizard init_user + CLI basico`.
 - Actualizar este archivo (sección "Detalle por fase" + tabla + "Próxima fase").

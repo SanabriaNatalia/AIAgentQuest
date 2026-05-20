@@ -94,10 +94,82 @@
     });
   }
 
+  // --- Toast de eventos: peek + render + dismiss ------------------------
+  function renderToast(host, event) {
+    var quest = (event.payload && (event.payload.quest_id || "")) || "";
+    var rank = (event.payload && event.payload.rank) || null;
+    var leveled = !!(event.payload &&
+      event.payload.level_after && event.payload.level_before &&
+      event.payload.level_after > event.payload.level_before);
+
+    var title = leveled ? "⚜ Asciendes" : "⚜ Quest completado";
+    var bodyParts = [];
+    if (rank) bodyParts.push("Rango: " + rank);
+    if (event.payload && event.payload.xp_reward != null) {
+      bodyParts.push("+" + event.payload.xp_reward + " XP");
+    }
+    var body = bodyParts.length ? bodyParts.join(" · ") : "El laboratorio recordará este momento.";
+
+    var ctaUrl = "/celebrate" + (quest ? "?quest=" + encodeURIComponent(quest) : "");
+
+    host.innerHTML = (
+      '<div class="notification-toast-title">' + title + '</div>' +
+      '<div class="notification-toast-body">' + body + '</div>' +
+      '<div class="notification-toast-actions">' +
+        '<a class="notification-toast-cta" href="' + ctaUrl + '">Ver celebración</a>' +
+        '<button type="button" class="notification-toast-dismiss" aria-label="Cerrar">✕</button>' +
+      '</div>'
+    );
+    host.classList.remove("notification-toast--hidden");
+    host.dataset.currentEventId = String(event.id);
+
+    var dismissBtn = host.querySelector(".notification-toast-dismiss");
+    if (dismissBtn) {
+      dismissBtn.addEventListener("click", function () { dismissToast(host); });
+    }
+  }
+
+  function dismissToast(host) {
+    var id = host.dataset.currentEventId;
+    var template = host.dataset.eventDismissUrl;
+    host.classList.add("notification-toast--hidden");
+    host.innerHTML = "";
+    host.dataset.currentEventId = "";
+    if (!id || !template) return;
+    var url = template.replace("{id}", encodeURIComponent(id));
+    fetch(url, { method: "POST", headers: { Accept: "application/json" } })
+      .catch(function () { /* best-effort */ });
+  }
+
+  function pollToast(host) {
+    var url = host.dataset.eventPollUrl;
+    if (!url) return;
+    fetch(url, { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.events || !data.events.length) return;
+        var completed = data.events.filter(function (e) { return e.kind === "quest_completed"; });
+        if (!completed.length) return;
+        var top = completed[0];
+        if (host.dataset.currentEventId === String(top.id)) return;
+        renderToast(host, top);
+      })
+      .catch(function () { /* best-effort */ });
+  }
+
+  function initToast() {
+    var host = document.getElementById("event-toast");
+    if (!host) return;
+    pollToast(host);
+    var interval = parseInt(host.dataset.eventPollInterval || "15000", 10);
+    setInterval(function () { pollToast(host); }, interval);
+  }
+
   function init() {
     initPolling();
     initCopyButtons();
     initMarkRead();
+    initToast();
   }
 
   if (document.readyState === "loading") {

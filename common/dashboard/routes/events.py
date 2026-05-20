@@ -22,7 +22,14 @@ class QuestCompletedPayload(BaseModel):
     quest_id: str
     difficulty: int | None = None
     rank: str | None = None
-    xp_total: int | None = None
+    # Snapshot del estado del aprendiz antes/después del INSERT.
+    # Permite que /celebrate detecte level-up sin volver a consultar la BD
+    # del estado anterior (que ya cambió).
+    xp_before: int | None = None
+    xp_after: int | None = None
+    xp_reward: int | None = None
+    level_before: int | None = None
+    level_after: int | None = None
 
 
 def _store_event(kind: str, payload: dict[str, Any]) -> int:
@@ -39,7 +46,7 @@ def _store_event(kind: str, payload: dict[str, Any]) -> int:
 
 @router.post("/events/quest-completed")
 def quest_completed(payload: QuestCompletedPayload) -> dict:
-    event_id = _store_event("quest_completed", payload.model_dump())
+    event_id = _store_event("quest_completed", payload.model_dump(exclude_none=False))
     return {
         "ok": True,
         "event_id": event_id,

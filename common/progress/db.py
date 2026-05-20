@@ -93,11 +93,15 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
     init_db()
 
     completion_was_new = False
+    xp_before = 0
+    level_before = 1
     new_xp = 0
+    new_level = 1
+    xp_reward = 0
 
     with get_connection() as conn:
         apprentice = conn.execute(
-            "SELECT id, xp FROM apprentice WHERE id = 1"
+            "SELECT id, xp, level FROM apprentice WHERE id = 1"
         ).fetchone()
 
         if apprentice is None:
@@ -106,7 +110,7 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
                 "Corre primero: uv run python -m common.progress.init_user"
             )
 
-        _, current_xp = apprentice
+        _, xp_before, level_before = apprentice
 
         existing_completion = conn.execute(
             """
@@ -121,7 +125,7 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
             return
 
         xp_reward = get_xp_reward(difficulty)
-        new_xp = current_xp + xp_reward
+        new_xp = xp_before + xp_reward
         new_level = calculate_level(new_xp)
 
         conn.execute(
@@ -150,10 +154,29 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
         completion_was_new = True
 
     if completion_was_new:
-        _notify_dashboard(quest_id, difficulty, rank, new_xp)
+        _notify_dashboard(
+            quest_id=quest_id,
+            difficulty=difficulty,
+            rank=rank,
+            xp_before=xp_before,
+            xp_after=new_xp,
+            xp_reward=xp_reward,
+            level_before=level_before,
+            level_after=new_level,
+        )
 
 
-def _notify_dashboard(quest_id: str, difficulty: int, rank: str, xp_total: int) -> None:
+def _notify_dashboard(
+    *,
+    quest_id: str,
+    difficulty: int,
+    rank: str,
+    xp_before: int,
+    xp_after: int,
+    xp_reward: int,
+    level_before: int,
+    level_after: int,
+) -> None:
     """Side-effects best-effort. Cualquier fallo aquí NO debe revertir el commit."""
     try:
         from common.dashboard.lifecycle import ensure_started
@@ -173,7 +196,11 @@ def _notify_dashboard(quest_id: str, difficulty: int, rank: str, xp_total: int) 
                 "quest_id": quest_id,
                 "difficulty": difficulty,
                 "rank": rank,
-                "xp_total": xp_total,
+                "xp_before": xp_before,
+                "xp_after": xp_after,
+                "xp_reward": xp_reward,
+                "level_before": level_before,
+                "level_after": level_after,
             },
         )
     except Exception:

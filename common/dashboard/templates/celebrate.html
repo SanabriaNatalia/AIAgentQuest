@@ -1,20 +1,84 @@
 {% extends "base.html" %}
-{% block title %}Celebración · Arkanum{% endblock %}
+{% block title %}Quest completado · Arkanum{% endblock %}
 
 {% block content %}
-{# Placeholder de F6. La animación completa llega en F7. #}
-<section class="celebrate-placeholder">
-  <h1>⚜ Quest completado</h1>
-  {% if quest %}
-    <p class="celebrate-quest-title">{{ quest.title }}</p>
-    <p class="celebrate-rank">Rango: <strong>{{ quest.rank_unlocked }}</strong></p>
+{% set c = celebration %}
+<section class="celebrate" data-confetti="true">
+  <div class="celebrate-confetti" aria-hidden="true"></div>
+
+  <header class="celebrate-header">
+    {% if c.leveled_up %}
+      <p class="celebrate-eyebrow celebrate-eyebrow--levelup">Asciendes</p>
+      <h1 class="celebrate-level">Nivel {{ c.level_after }}</h1>
+      <p class="celebrate-level-from">desde nivel {{ c.level_before }}</p>
+    {% else %}
+      <p class="celebrate-eyebrow">Quest completado</p>
+      {% if c.quest %}
+        <h1 class="celebrate-quest-title">{{ c.quest.title }}</h1>
+      {% else %}
+        <h1 class="celebrate-quest-title">Un nuevo conjuro ha sido sellado</h1>
+      {% endif %}
+    {% endif %}
+  </header>
+
+  {% if c.quest %}
+    <figure class="celebrate-banner">
+      <img src="/assets/images/{{ c.quest.banner }}" alt="{{ c.quest.title }}">
+      <figcaption>
+        <span class="celebrate-act">Acto · {{ c.act_name }}</span>
+        {% if c.leveled_up %}
+          <span class="celebrate-quest-subtitle">{{ c.quest.title }}</span>
+        {% endif %}
+      </figcaption>
+    </figure>
+
+    <div class="celebrate-rank">
+      <div class="celebrate-rank-badge">
+        <span class="celebrate-rank-glyph">⚜</span>
+      </div>
+      <p class="celebrate-rank-label">Rango obtenido</p>
+      <p class="celebrate-rank-name">{{ c.quest.rank_unlocked }}</p>
+    </div>
+
+    <blockquote class="zhyreon-quote celebrate-quote">
+      {{ c.quest.quote_zhyreon }}
+      <cite>— Zhyréon</cite>
+    </blockquote>
   {% else %}
-    <p class="celebrate-quest-title">Un nuevo conjuro ha sido sellado.</p>
+    <blockquote class="zhyreon-quote celebrate-quote">
+      “Toda invocación deja un eco. El laboratorio recordará este momento.”
+      <cite>— Zhyréon</cite>
+    </blockquote>
   {% endif %}
-  <blockquote class="zhyreon-quote">
-    “Toda invocación deja un eco. El laboratorio recordará este momento.”
-    <cite>— Zhyréon</cite>
-  </blockquote>
-  <a href="/" class="viewer-cta">Volver al perfil</a>
+
+  <div class="celebrate-stats">
+    {% if c.xp_reward is not none %}
+      <div class="celebrate-stat">
+        <span class="celebrate-stat-value">+{{ c.xp_reward }}</span>
+        <span class="celebrate-stat-label">XP ganado</span>
+      </div>
+    {% endif %}
+    {% if c.xp_total is not none %}
+      <div class="celebrate-stat">
+        <span class="celebrate-stat-value">{{ c.xp_total }}</span>
+        <span class="celebrate-stat-label">XP total</span>
+      </div>
+    {% endif %}
+    {% if c.level_after is not none %}
+      <div class="celebrate-stat{% if c.leveled_up %} celebrate-stat--highlight{% endif %}">
+        <span class="celebrate-stat-value">{{ c.level_after }}</span>
+        <span class="celebrate-stat-label">
+          {% if c.leveled_up %}Nivel ↑{% else %}Nivel{% endif %}
+        </span>
+      </div>
+    {% endif %}
+  </div>
+
+  <div class="celebrate-actions">
+    <a href="/" class="viewer-cta">Volver al perfil</a>
+    <a href="/map" class="viewer-cta viewer-cta--ghost">Continuar la travesía</a>
+  </div>
 </section>
+
+<script src="/static/celebrate.js" defer></script>
 {% endblock %}
