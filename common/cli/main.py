@@ -11,6 +11,7 @@ if sys.platform == "win32":
 import typer
 
 from common.cli.commands.dashboard import dashboard_app
+from common.cli.commands.doctor import doctor
 
 app = typer.Typer(
     name="arkanum",
@@ -19,6 +20,7 @@ app = typer.Typer(
 )
 
 app.add_typer(dashboard_app, name="dashboard")
+app.command(name="doctor")(doctor)
 
 
 @app.callback()

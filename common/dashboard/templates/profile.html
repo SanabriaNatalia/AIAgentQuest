@@ -2,6 +2,10 @@
 {% block title %}Perfil del Aprendiz · Arkanum{% endblock %}
 
 {% block content %}
+<div data-poll-url="/api/setup/status" data-poll-interval="30000" class="setup-panel-wrapper">
+  {% include "partials/setup_panel.html" %}
+</div>
+
 {% if not apprentice %}
   <section class="arkanum-empty">
     <h1>El laboratorio aguarda</h1>

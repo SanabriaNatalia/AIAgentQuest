@@ -1,0 +1,26 @@
+<div class="setup-panel">
+  <header class="setup-panel-header">
+    <h3>Estado del Laboratorio</h3>
+    <div class="setup-pills">
+      <span class="setup-pill setup-pill--ok">{{ counts.ok }} ok</span>
+      {% if counts.warn %}<span class="setup-pill setup-pill--warn">{{ counts.warn }} avisos</span>{% endif %}
+      {% if counts.fail %}<span class="setup-pill setup-pill--fail">{{ counts.fail }} errores</span>{% endif %}
+    </div>
+  </header>
+  <ul class="setup-checks">
+    {% for check in checks %}
+      <li class="setup-check setup-check--{{ check.status }}">
+        <span class="setup-check-icon" aria-hidden="true">
+          {% if check.status == "ok" %}✓
+          {% elif check.status == "warn" %}⚠
+          {% else %}✗
+          {% endif %}
+        </span>
+        <span class="setup-check-label">{{ check.label }}</span>
+        {% if check.detail %}
+          <span class="setup-check-detail">{{ check.detail }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+</div>

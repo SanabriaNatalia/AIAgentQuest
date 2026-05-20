@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from common.dashboard.routes import health, pages
+from common.dashboard.routes import api, health, pages
 
 _DASHBOARD_DIR = Path(__file__).resolve().parent
 _STATIC_DIR = _DASHBOARD_DIR / "static"
@@ -28,6 +28,7 @@ def create_app() -> FastAPI:
         app.mount("/assets", StaticFiles(directory=str(_ASSETS_DIR)), name="assets")
 
     app.include_router(health.router)
+    app.include_router(api.router)
     app.include_router(pages.router)
 
     return app

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Estado del Laboratorio · Arkanum{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Estado del Laboratorio</h1>
+  <p class="page-header-subtitle">
+    Diagnóstico continuo de los prerrequisitos del aprendiz.
+    El panel se refresca automáticamente cada 30 segundos.
+  </p>
+</header>
+
+<div data-poll-url="/api/setup/status" data-poll-interval="30000">
+  {% include "partials/setup_panel.html" %}
+</div>
+
+<section class="setup-help">
+  <h2>¿Algo en rojo o ámbar?</h2>
+  <ul class="setup-help-list">
+    <li><strong>Archivo .env</strong> — copia <code>.env.example</code> como <code>.env</code> en la raíz.</li>
+    <li><strong>GEMINI_API_KEY</strong> — obtén una clave en
+      <a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a>
+      y agrégala como <code>GEMINI_API_KEY='tu_clave'</code> dentro de <code>.env</code>.</li>
+    <li><strong>uv</strong> — instala desde
+      <a href="https://docs.astral.sh/uv/getting-started/installation/" target="_blank" rel="noopener">astral.sh/uv</a>
+      o usa <code>pip install --user uv</code> como atajo.</li>
+    <li><strong>Dependencias</strong> — ejecuta <code>uv sync</code> en la raíz del proyecto.</li>
+    <li><strong>Dashboard activo</strong> — si estás viendo esta página, ya está activo. Si lo paras, <code>arkanum dashboard start</code> lo levanta.</li>
+  </ul>
+</section>
+{% endblock %}

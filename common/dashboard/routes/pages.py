@@ -10,6 +10,7 @@ from common.dashboard.services.progress import (
     get_xp_breakdown,
 )
 from common.dashboard.services.quest_catalog import ACTS, QUESTS
+from common.dashboard.services.setup_check import build_setup_context
 from common.dashboard.templating import templates
 
 ROMAN = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII"}
@@ -21,6 +22,7 @@ router = APIRouter()
 def profile_page(request: Request):
     apprentice = get_apprentice()
     context: dict = {"request": request, "apprentice": apprentice}
+    context.update(build_setup_context())
 
     if apprentice:
         level, xp_in_level, xp_required, xp_pct = get_xp_breakdown(apprentice.xp)
@@ -40,6 +42,15 @@ def profile_page(request: Request):
         )
 
     return templates.TemplateResponse(request, "profile.html", context)
+
+
+@router.get("/setup", response_class=HTMLResponse)
+def setup_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "setup.html",
+        {"request": request, **build_setup_context()},
+    )
 
 
 @router.get("/map", response_class=HTMLResponse)
