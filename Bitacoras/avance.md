@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 7 — Página de celebración |
-| **Próxima fase** | Fase 8 — Wizard init_user + CLI básico |
-| **Tiempo invertido aprox.** | ~31h (acumulado Fases 0-7) |
-| **Tiempo restante estimado** | ~37h (Fases 8-17) |
+| **Última fase completada** | Fase 10 — Pre-check local |
+| **Próxima fase** | Fase 11 — Sistema de pistas (mecánica) |
+| **Tiempo invertido aprox.** | ~41h (acumulado Fases 0-10) |
+| **Tiempo restante estimado** | ~27h (Fases 11-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -46,9 +46,9 @@
 | 5 | Viewer READMEs + Códex | ✅ | `3ffc6da` | 5h | HTMX **no vendorizado** — vanilla JS basta; theme Pygments monokai servido via `/api/pygments.css` |
 | 6 | Integración CLI + notif | ✅ | `dc71ecc` | 3h | `celebrate.html` placeholder creado aquí (la animación completa es F7); `kind` interno en BD usa snake_case, URL kebab-case |
 | 7 | Celebración | ✅ | `a76a32d` | 3h | Toast del perfil usa endpoint `peek` (no consume) + `dismiss` explícito en vez de marcar `seen=1` al renderizar; service `celebration.py` reconstruye contexto desde el último evento `quest_completed` |
-| 8 | Wizard init + CLI básico | ⏳ | — | 4h | Aquí se resuelve el bug UTF-8 de `show_progress`/`init_user` legacy |
-| 9 | Actualizar READMEs quests | ⏳ | — | 2h | — |
-| 10 | Pre-check local | ⏳ | — | 4h | — |
+| 8 | Wizard init + CLI básico | ✅ | `f84af06` _(bitácora sin commit)_ | 4h | Legacy `init_user.py` / `show_progress.py` se conservan intactos (no se borran); módulo `next.py` renombrado a `next_quest.py` porque `next` es builtin de Python |
+| 9 | Actualizar READMEs quests | ✅ | `cce7dd9` _(bitácora sin commit)_ | 2h | `arkanum start N` ahora acepta args extras (cambio mini-scope en start.py); 5 READMEs tenían typos de paths viejos (`quest_01_first_agent`, etc.) — corregidos |
+| 10 | Pre-check local | ✅ | _(pendiente de commit)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
 | 11 | Pistas (mecánica) | ⏳ | — | 5h | — |
 | 12 | Pistas (contenido) | ⏳ | — | 5h | Trabajo pedagógico, no de código |
 | 13 | Tracking tiempo/intentos | ⏳ | — | 4h | — |
@@ -57,7 +57,7 @@
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-7 = ~31h reales / 30h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-10 = ~41h reales / 40h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,103 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 10 — Pre-check local _(pendiente de commit)_
+
+**Entregado**
+- `common/cli/pre_checks/_ast_helpers.py` (nuevo): helpers ligeros mezclando AST y regex:
+  - `parse_source(path)` y `read_source(path)` (tratan archivo inexistente / SyntaxError devolviendo `None` en vez de explotar).
+  - `has_import(tree, module, name=None)`, `has_call(tree, "client.models.generate_content")`, `has_attribute_access(tree, "response.usage_metadata")` — todos soportan dotted paths arbitrariamente largos vía `_matches_dotted`.
+  - `has_function_def`, `has_for_range(range_arg_name)`, `call_has_kwarg(tree, qualified, kwarg)`, `regex_in_source(path, pattern)`.
+- `common/cli/pre_checks/runner.py` (nuevo): `PreCheckResult` dataclass + `run_pre_checks(quest)` que importa `common.cli.pre_checks.qNN` por número, captura `ModuleNotFoundError`, ausencia de `checks(quest)` y crashes del módulo devolviendo un único `PreCheckResult` informativo (nunca propaga excepciones al CLI). Helper `all_passed(results)`.
+- `common/cli/pre_checks/q01.py … q08.py` (nuevos): un módulo por quest con 7-9 checks conservadores cada uno, redactados sobre los starters reales:
+  - **Q01**: `load_dotenv` import + llamada, `genai.Client(...)`, `client.models.generate_content(...)`, prompt no vacío.
+  - **Q02**: hereda Q01 + `response.usage_metadata` + literales `"Prompt tokens:"`/`"Response tokens:"`/`prompt_token_count`/`candidates_token_count`.
+  - **Q03**: `argparse`, `types` desde `google.genai`, `ArgumentParser`, `add_argument("user_prompt", ...)`, `types.Content(role="user", ...)`, `contents=` kwarg en `generate_content`.
+  - **Q04**: import + valor de `common.prompts.system_prompt`, frase clave `LAS LEYES DEL ARKANUM SON ABSOLUTAS`, `types.GenerateContentConfig` con `system_instruction=`, `temperature=0` (regex excluye `0.X` con dígito no-cero).
+  - **Q05**: chequea TAMBIÉN `common/functions/get_valid_target_path.py` (existe, parsea, usa `os.path.abspath`, contención por `commonpath`/`startswith`, placeholders reemplazados). Starter: `get_valid_target_path(...)` invocado, `pass_test`/`fail_test` presentes.
+  - **Q06**: 3 schemas faltantes (`schema_get_file_content`/`schema_write_file`/`schema_run_python_file`) declarados como `types.FunctionDeclaration`; `call_function.py` con ≥5 refs a `schema_`; starter importa `available_functions`, pasa `tools=`, itera `response.function_calls`, imprime `Calling function:`, system_prompt actualizado.
+  - **Q07**: 4 funciones reales en `function_map` (detectadas por nombre con quotes); `call_function` devuelve `types.Content` con `role="tool"` y `Part.from_function_response`; starter importa `call_function`, agrega `--verbose`, llama `call_function(...)`, hace `function_results.append(...)`.
+  - **Q08**: `from common.config import MAX_ITERS`; `def main()` y `def generate_content(messages, verbose=False)` con cuerpo (no `pass` solo); `for _ in range(MAX_ITERS)` real; literal `Maximum iterations`; `role="tool"` en append al historial.
+- `common/cli/commands/check.py` (reescrito): `--dry-run` corre los pre-checks y renderiza tabla Rich con icono ✔/✘ + detalle; exit 0 si pasaron todos, 1 si no. Modo normal corre pre-checks primero; si fallan, `typer.confirm(default=False)` antes de gastar cuota. Flag nuevo `--yes`/`-y` para auto-confirmar (útil en scripts).
+
+**Smoke test ejecutado**
+- `arkanum check 1..8 --dry-run` contra los starters actuales (todos con TODOs): tablas se renderizan, exit code 1 en todos, los fallos describen lo que falta de forma legible.
+- Q01 con `solution/solution.py` pegado en el starter: las 8 checks pasan ✔, exit 0, mensaje "Pre-checks OK".
+- `SyntaxError` artificial en el starter: el runner reporta "El starter tiene un SyntaxError." sin propagar la excepción al CLI.
+
+**Desviaciones del plan**
+- **Flag `--yes` agregado** (no estaba en el plan F10). Razón: al integrar con scripts/CI el `typer.confirm` colgaría; con `-y` se puede correr `arkanum check N -y` aceptando el riesgo de gastar cuota.
+- **No se creó `parse_source` como helper de import (q-module)**. En la práctica cada `qNN.py` llama `parse_source` directamente del `_ast_helpers`. El plan mencionaba "Helpers — parse_source(quest)" como API por-quest, pero el helper actual recibe `path: Path` y los `qNN.py` resuelven el path con `starter_path(quest)`; es más reutilizable.
+- **Pre-checks de Q05 cubren DOS archivos** (validador + starter). El plan los listaba juntos; queda explícito en la tabla de salida con checks separados para `get_valid_target_path.py` y para el starter.
+
+**Hallazgos / tech debt**
+- **`regex_in_source` matchea comentarios y docstrings**. Por ejemplo, los starters de Q02/Q04/Q06 ya mencionan en sus TODOs los strings `"Prompt tokens:"`, `temperature=0` o `Calling function:` — la regex los marca como ✔ aunque el aprendiz no haya implementado nada. Es **consciente**: los pre-checks son una pista, no un validador; los checks AST más fuertes (`has_attribute_access`, `has_call`, `has_function_def`) sí discriminan correctamente. Si en el futuro queremos endurecerlo, hay que hacer strip de comentarios antes de regex.
+- **`has_function_def("main")` en Q01-Q07**: los starters no requieren `def main()`, así que no se valida. Sólo Q08 lo exige y tiene su propio check.
+- **`function_map` de Q07 se detecta por nombre con quotes** (heurística textual sobre `call_function.py`). No es AST — un usuario que use comillas distintas (no `"..."`/`'...'`) rompería el check. Aceptable: PEP 8 + el repo usa siempre comillas dobles/simples estándar.
+- **Smoke contra solution** sólo se hizo para Q01 (los otros 7 quests tienen `solution/main.py` o `solution/solution.py` pero requieren copiar manualmente la respuesta del archivo system_prompt o tocar varios archivos). Cuando se cierre F11 con su propia validación end-to-end, se puede ampliar el smoke programático.
+
+**Tech debt cerrado**
+- ~~Pre-checks no implementados~~ — `arkanum check N --dry-run` ahora corre validaciones AST + regex reales.
+
+---
+
+### Fase 9 — Actualizar READMEs de quests (`cce7dd9`, bitácora sin commitear)
+
+**Entregado**
+- Los 8 READMEs (`quests/quest_NN_*/README.md`) ahora muestran como camino principal `arkanum start N` y `arkanum check N`. El comando legacy `uv run python -m quests.quest_NN_*.starter.main` se preserva dentro de un `<details>` con título "Alternativa con uv run".
+- Cada README añade al inicio de la sección "Ejecutar el Quest" la pista `> 💡 Para saber en qué quest estás: arkanum current`.
+- Cada README menciona el [dashboard arcano](http://127.0.0.1:8765) y la celebración automática al pasar el check.
+- Q06 y Q05 no tenían sección "Ejecutar el Quest" / "Criterio de éxito" — agregadas.
+- Q08 añade nota sobre el evento de cierre de acto en el dashboard.
+- **Typos corregidos** en 5 READMEs (paths viejos de carpetas que ya fueron renombradas):
+  - Q01: `quest_01_first_agent` → `quest_01_first_invocation`
+  - Q02: `quest_02_token_metadata` → `quest_02_arcane_gauge`
+  - Q03: `quest_03_user_input` → `quest_03_apprentice_voice`
+  - Q04: `quest_04_laws_of_arkanum` → `quest_04_arkanum_laws`
+  - Q07: `quest_07_agent_embodiment` → `quest_07_agent_incarnation`
+
+**Cambio mini-scope en F8**: `common/cli/commands/start.py`
+- `arkanum start N` ahora acepta argumentos extras y los reenvía al starter como `python -m quests.quest_NN_*.starter.main args...`. Esto se descubrió necesario al actualizar Q03/Q04/Q07/Q08 cuyos starters esperan un prompt como argumento.
+- Implementado con `typer.Context` + `ctx.args` y `context_settings={"allow_extra_args": True, "ignore_unknown_options": True}` en `main.py`.
+- Sin esto, `arkanum start 3 "¿Qué es un agente IA?"` habría fallado con typer "Got unexpected extra argument".
+
+**Desviaciones del plan**
+- **Argumentos extras al starter** no estaba en el plan original de F8 ni F9. Lo añado aquí porque sin esto los READMEs mostrarían un comando que no funciona. Documentado en este detalle.
+- **No se modificaron los starter.py ni check.py de los quests** — el plan F9 era solo READMEs (contenido pedagógico). Confirmado.
+
+**Hallazgos / tech debt**
+- Smoke test (TestClient) confirma que los 8 READMEs renderizan en `/quest/{slug}` con: `arkanum start N`, `arkanum check N`, `arkanum current`, banner correcto, cero typos de paths viejos.
+- El bloque `<details>` con título "Alternativa con uv run" funciona porque `markdown-it-py` con `html=True` (configurado en F5) preserva HTML inline.
+- Renderizado en el viewer del dashboard mantiene la jerarquía visual: bloques de código resaltados, links a docs (`/codex/...`) navegables.
+
+---
+
+### Fase 8 — Wizard init_user + CLI básico (`f84af06`, bitácora sin commitear)
+
+**Entregado**
+- `common/cli/helpers.py` (nuevo): `resolve_quest_by_number(n)` traduce 1..8 → `QuestMeta` (lanza `typer.BadParameter` si está fuera de rango); `starter_module`, `check_module`, `starter_path`, `check_path` para resolver los `python -m` targets; `run_module(module, args)` ejecuta el subprocess en `REPO_ROOT`.
+- `common/cli/commands/init.py` (nuevo): wizard `arkanum init` con Rich Panel/Prompt/Confirm. Si ya existe aprendiz, ofrece actualizar nombre (default=no). Verifica `.env`, `GEMINI_API_KEY`, pinguea Gemini (omitible con `--skip-ping`). Pregunta si abrir el dashboard (omitible con `--no-dashboard`). Cierra con panel de comandos útiles.
+- `common/cli/commands/current.py` (nuevo): muestra quest actual con quote de Zhyréon, rango por obtener, XP en juego y el comando para empezar (`arkanum start N`).
+- `common/cli/commands/next_quest.py` (nuevo): muestra la siguiente quest tras la actual. **Renombrado de `next.py` a `next_quest.py`** porque `next` es builtin Python y causaría sombreado del nombre al importar.
+- `common/cli/commands/progress.py` (nuevo): tabla Rich con todos los quests, su estado (completed/current/locked), rango. Encabezado con XP/level/quests completados.
+- `common/cli/commands/start.py` (nuevo): `arkanum start <N>` ejecuta `python -m quests.quest_NN_*.starter.main` resolviendo N→slug.
+- `common/cli/commands/check.py` (nuevo): `arkanum check <N>` ejecuta `python -m quests.quest_NN_*.check`. Flag `--dry-run` imprime mensaje placeholder explicando que los pre-checks reales llegan en F10.
+- `common/cli/main.py`: registra las 6 nuevas commands (`init`, `current`, `next`, `progress`, `start`, `check`).
+
+**Desviaciones del plan**
+- **Módulo Python `next_quest.py`** en lugar de `next.py`. La función expuesta sigue siendo `next_quest()`, pero registrada en typer con `app.command(name="next")` para que el CLI se invoque como `arkanum next`. El detalle es solo organizativo: `import next` colisionaría con el builtin.
+- **`init_user.py` / `show_progress.py` legacy NO se borran**. El plan sugería que `arkanum init` "reemplaza" al legacy, pero seguir manteniendo `python -m common.progress.init_user` funcionando da compatibilidad con READMEs viejos hasta que F9 los actualice. Decisión: dejar legacy intacto en F8, dejar la baja para una fase de pulido posterior si el bug UTF-8 ya no afecta.
+
+**Hallazgos / tech debt**
+- **Bug UTF-8 del legacy resuelto vía la ruta nueva**. `arkanum progress` pasa por `main.py` que ya reconfigura stdout/stderr a UTF-8 (F1). El legacy `show_progress.py` sigue rompiéndose si se invoca directo, pero ya no es el camino recomendado.
+- `arkanum check N` muestra el aviso "este check consume cuota de Gemini" antes de ejecutar — comportamiento conservador que pide F4 plan original.
+- Smoke test: `arkanum --help` lista las 8 commands; `arkanum current` muestra Quest 1 con quote; `arkanum next` muestra Quest 1 → Quest 2; `arkanum progress` renderiza tabla con icons; `arkanum check 9` da error útil; `arkanum check 1 --dry-run` muestra placeholder; `arkanum init --skip-ping --no-dashboard` detecta apprentice existente y declina sin escribir.
+
+**Tech debt cerrado**
+- ~~`show_progress.py` / `init_user.py` legacy con bug UTF-8~~ — resuelto: la ruta nueva (`arkanum progress` / `arkanum init`) no tiene el bug. Legacy sigue ahí por compatibilidad con READMEs viejos hasta F9.
 
 ---
 
@@ -250,17 +347,100 @@
 | Vanilla JS polling | F4 | HTMX se vendoriza en F5 |
 | HTMX descartado | F5 | Vanilla `fetch` cubre polling + mark-read + copy |
 | Pygments CSS servido dinámico | F5 | `/api/pygments.css` permite cambiar theme sin regenerar |
+| Toast `peek`+`dismiss` | F7 | En vez de `seen=1` al renderizar; preserva el toast hasta que el usuario lo descarta |
+| Legacy `init_user`/`show_progress` intacto | F8 | `arkanum init`/`progress` lo reemplazan; legacy queda hasta F9 actualice los READMEs |
+| Pre-checks mix AST + regex | F10 | AST para imports/llamadas/atributos; regex para literales tipo "Prompt tokens:" — consciente de que regex matchea comentarios |
+| Flag `--yes` en `arkanum check` | F10 | Para scripts/CI que no pueden responder al `typer.confirm` |
 
 ## Tech debt acumulado
 
-1. **`show_progress.py` / `init_user.py` legacy** siguen con bug UTF-8 (resolución natural en F8 al reemplazar por `arkanum progress` / `arkanum init`).
-2. **Fuentes Cinzel/Inter no embebidas** (F17).
-3. ~~**HTMX no vendorizado**~~ — descartado en F5, no se necesita.
-4. ~~**Cartas del mapa no clickeables**~~ — resuelto en F5.
+1. **Fuentes Cinzel/Inter no embebidas** (F17).
+2. ~~**HTMX no vendorizado**~~ — descartado en F5.
+3. ~~**Cartas del mapa no clickeables**~~ — resuelto en F5.
+4. ~~**`show_progress.py` / `init_user.py` legacy con bug UTF-8**~~ — ruta nueva (`arkanum *`) no tiene el bug; legacy se mantiene por compat hasta F9.
 
 ---
 
 ## Próxima fase
+
+### Fase 11 — Sistema de pistas, mecánica (~5h)
+
+**Objetivo**
+> Done cuando: cada quest expone hasta 3 pistas (Susurro / Revelación / Manifestación) en el dashboard, solicitables en orden estricto, con confirmación explícita y persistencia en `hint_usage`. La pista I no se puede saltar; la II requiere la I; la III requiere la II. Una vez pedidas, las pistas siguen visibles. Esta fase entrega la **mecánica** (servicio + endpoints + UI); el contenido pedagógico va en F12.
+
+**Plan**
+1. **Estructura de carpetas por quest** (vacías de contenido):
+   - `quests/quest_NN_*/hints/1_susurro.md`
+   - `quests/quest_NN_*/hints/2_revelacion.md`
+   - `quests/quest_NN_*/hints/3_manifestacion.md`
+   - Inicialmente con placeholder "Contenido pendiente — F12".
+2. **`common/dashboard/services/hints.py`** (nuevo):
+   - `HintMeta` dataclass (nivel, título, slug del archivo, eligible, requested).
+   - `list_hints_for(quest)` → 3 entradas con estado dinámico calculado contra `hint_usage`.
+   - `get_hint(quest, level)` → renderiza el `.md` correspondiente con `services/markdown.py` (sólo si `requested=True`).
+   - `request_hint(quest, level)` → valida orden estricto (II requiere I), inserta en `hint_usage` (idempotente). Devuelve `(ok, error_message)`.
+   - `used_hints(quest)` → `set[int]` para el viewer.
+   - `is_no_red_eligible(quest)` → `not used_hints(quest)`.
+3. **Endpoints** (`common/dashboard/routes/api.py`):
+   - `GET /api/quests/{slug}/hints` → estado actual de las 3 pistas (JSON o partial HTML).
+   - `POST /api/quests/{slug}/hints/{level}` → marca como solicitada con confirmación previa (cuerpo: `{ "confirm": true }`). Devuelve el HTML renderizado de la pista.
+4. **UI** en `templates/quest_view.html`:
+   - Bloque al final del README "Las ofrendas del aprendiz" con 3 cartas (Susurro / Revelación / Manifestación).
+   - Cartas locked muestran candado y label "Requiere pista anterior".
+   - Cartas eligible muestran botón "Solicitar pista" → modal de confirmación.
+   - Cartas ya pedidas muestran su contenido renderizado.
+5. **CSS** (`arcane.css`):
+   - Bloque `.hint-card` con variantes `--locked`, `--available`, `--revealed` (paleta púrpura / dorado).
+   - Modal de confirmación reutilizable.
+6. **Tests**:
+   - Smoke test con TestClient: estado inicial, solicitar pista II sin I → 400, solicitar I → 200, II después → 200, contenido del .md aparece renderizado.
+
+**Pre-condiciones**
+- Tabla `hint_usage` ya existe (✅ F0).
+- Service `markdown.py` con renderizado de `.md` (✅ F5).
+- Catálogo de quests con slug y db_id (✅ F2).
+
+**Archivos a tocar / crear**
+- ➕ `quests/quest_NN_*/hints/{1,2,3}_*.md` (24 archivos placeholder)
+- ➕ `common/dashboard/services/hints.py`
+- ✏️ `common/dashboard/routes/api.py` (3 endpoints)
+- ✏️ `common/dashboard/templates/quest_view.html` (bloque al final)
+- ✏️ `common/dashboard/static/arcane.css` (estilos de hints)
+- ✏️ `common/dashboard/static/dashboard.js` (init modal + POST)
+
+**Riesgos detectados**
+- **Orden estricto** debe validarse del lado del servidor; el front nunca decide. Sin esto, un usuario podría pedir la III sin haber visto I/II.
+- **Sin penalización XP** (sólo afecta logro "Sin red"): documentar esto en el modal de confirmación para que el aprendiz no sienta que está "perdiendo" puntos.
+- **Persistencia idempotente**: `INSERT OR IGNORE INTO hint_usage(quest_id, hint_level, requested_at)` para que recargar no duplique filas.
+- **Markdown de las pistas** debe renderizar dentro del layout del quest sin romper el TOC. Probar que `markdown-it-py` + reescritura de links no rompe con docs internos.
+
+**Criterio de cierre de la fase**
+- `GET /api/quests/quest_01_first_invocation/hints` devuelve 3 pistas con estado correcto.
+- Solicitar pista II sin haber pedido la I devuelve 400 con mensaje claro.
+- Después de pedir las 3 pistas en orden, recargar `/quest/quest_01_first_invocation` muestra el bloque "Las ofrendas del aprendiz" con las 3 reveladas.
+- `is_no_red_eligible(quest)` retorna `False` después de pedir cualquier pista.
+- Cierre con commit `feat(dashboard): fase 11 - sistema de pistas (mecanica)`.
+- Actualizar este archivo (sección "Detalle por fase" + tabla + "Próxima fase").
+
+---
+
+_Plan original de F10 (cerrado pendiente de commit):_
+
+### Fase 10 — Pre-check local (~4h)
+
+**Objetivo**
+> Done cuando: `arkanum check N --dry-run` ejecuta validaciones estáticas (regex + AST simple) sobre el `starter/main.py` del quest N y reporta si pasaron sin invocar Gemini. `arkanum check N` corre los pre-checks primero y pide confirmación antes de gastar cuota si fallan.
+
+**Plan resumido**
+1. `common/cli/pre_checks/` nuevo paquete con `qNN.py` (1..8).
+2. `runner.py` con `PreCheckResult` y `run_pre_checks(quest)`.
+3. `commands/check.py` reescrito: `--dry-run` corre pre-checks, modo normal pide confirmación si fallan.
+4. Helpers AST + regex en `_ast_helpers.py`.
+5. Smoke test: cada `qNN.py` se ejecuta contra el starter actual y reporta resultados coherentes.
+
+---
+
+_Plan original de F8 (cerrado en `f84af06`):_
 
 ### Fase 8 — Wizard init_user + CLI básico (~4h)
 
