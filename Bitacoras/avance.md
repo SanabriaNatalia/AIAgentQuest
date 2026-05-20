@@ -50,7 +50,7 @@
 | 9 | Actualizar READMEs quests | ✅ | `cce7dd9` _(bitácora sin commit)_ | 2h | `arkanum start N` ahora acepta args extras (cambio mini-scope en start.py); 5 READMEs tenían typos de paths viejos (`quest_01_first_agent`, etc.) — corregidos |
 | 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora `109d8a6`)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
 | 11 | Pistas (mecánica) | ✅ | `4388260` _(bitácora sin commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
-| 12 | Pistas (contenido) | ✅ | _(pendiente de commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
+| 12 | Pistas (contenido) | ✅ | `25c2b9b` _(bitácora sin commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
 | 13 | Tracking tiempo/intentos | ⏳ | — | 4h | — |
 | 14 | Tracking costo | ⏳ | — | 2h | — |
 | 15 | Detección cierre acto | ⏳ | — | 2h | — |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 12 — Sistema de pistas, contenido _(pendiente de commit)_
+### Fase 12 — Sistema de pistas, contenido (`25c2b9b`, bitácora sin commitear)
 
 **Entregado**
 - **Q01 — La Primera Invocación**: I empuja a notar que `genai` está importado pero no construido. II nombra `genai.Client` + `client.models.generate_content`. III pega el patrón cliente + llamada con `gemini-2.5-flash`.
@@ -523,7 +523,7 @@
 
 ---
 
-_Plan original de F12 (cerrado pendiente de commit):_
+_Plan original de F12 (cerrado en `25c2b9b`):_
 
 ### Fase 12 — Sistema de pistas, contenido (~5h)
 
