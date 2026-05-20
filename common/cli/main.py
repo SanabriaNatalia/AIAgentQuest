@@ -18,6 +18,7 @@ from common.cli.commands.doctor import doctor
 from common.cli.commands.init import init
 from common.cli.commands.next_quest import next_quest
 from common.cli.commands.progress import progress
+from common.cli.commands.run import run
 from common.cli.commands.start import start
 
 app = typer.Typer(
@@ -36,6 +37,10 @@ app.command(
     name="start",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )(start)
+app.command(
+    name="run",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(run)
 app.command(name="check")(check)
 app.command(name="cost")(cost)
 

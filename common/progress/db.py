@@ -105,6 +105,22 @@ def init_db() -> None:
             )
         """)
 
+        # F16: traces del agent loop capturados por `arkanum run`. Cada step
+        # es una línea parseada del stdout del starter (function_call,
+        # function_result, tokens). `trace_id` agrupa todos los steps de un
+        # mismo `arkanum run`.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS agent_traces (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                trace_id TEXT NOT NULL,
+                quest_id TEXT,
+                step_type TEXT NOT NULL,
+                name TEXT,
+                payload TEXT,
+                created_at TEXT NOT NULL
+            )
+        """)
+
         _add_column_if_missing(conn, "apprentice", "created_at", "TEXT")
         _add_column_if_missing(conn, "apprentice", "avatar", "TEXT DEFAULT 'default'")
         _add_column_if_missing(conn, "quest_completion", "attempts", "INTEGER DEFAULT 1")

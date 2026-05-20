@@ -69,3 +69,31 @@ def act_closed(payload: ActClosedPayload) -> dict:
         "event_id": event_id,
         "redirect": "/milestones",
     }
+
+
+class TracePayload(BaseModel):
+    trace_id: str
+    step_type: str
+    name: str | None = None
+    payload: str | None = None
+    quest_db_id: str | None = None
+
+
+@router.post("/events/trace")
+def trace_event(payload: TracePayload) -> dict:
+    """Recibe un step del agent loop capturado por `arkanum run`.
+
+    No usa la tabla `events` (que es para notificaciones one-shot);
+    los traces viven en `agent_traces` para que `/live-agent` pueda
+    paginarlos y filtrar por `trace_id`.
+    """
+    from common.dashboard.services.trace import record_step
+
+    step_id = record_step(
+        trace_id=payload.trace_id,
+        step_type=payload.step_type,
+        name=payload.name,
+        payload=payload.payload,
+        quest_db_id=payload.quest_db_id,
+    )
+    return {"ok": True, "step_id": step_id}

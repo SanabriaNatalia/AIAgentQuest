@@ -111,6 +111,21 @@ def milestones_page(request: Request):
     )
 
 
+@router.get("/live-agent", response_class=HTMLResponse)
+def live_agent_page(request: Request):
+    from common.dashboard.services.trace import latest_trace_summary
+
+    summary = latest_trace_summary()
+    return templates.TemplateResponse(
+        request,
+        "live_agent.html",
+        {
+            "request": request,
+            "summary": summary,
+        },
+    )
+
+
 @router.get("/ranks", response_class=HTMLResponse)
 def ranks_page(request: Request):
     status_map = get_quest_status_map()

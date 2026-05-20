@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 15 — Detección de cierre de acto + /milestones |
-| **Próxima fase** | Fase 16 — Visualización del agent loop (`arkanum run`) |
-| **Tiempo invertido aprox.** | ~59h (acumulado Fases 0-15) |
-| **Tiempo restante estimado** | ~9h (Fases 16-17) |
+| **Última fase completada** | Fase 16 — Visualización del agent loop (`arkanum run`) |
+| **Próxima fase** | Fase 17 — Pulido (empty states, accesibilidad, fuentes embebidas) |
+| **Tiempo invertido aprox.** | ~65h (acumulado Fases 0-16) |
+| **Tiempo restante estimado** | ~4h (Fase 17) |
 
 ### Cómo retomar en otra sesión
 
@@ -54,10 +54,10 @@
 | 13 | Tracking tiempo/intentos | ✅ | `1428745` _(bitácora sin commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
 | 14 | Tracking costo | ✅ | `e0467ee` _(bitácora sin commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
 | 15 | Detección cierre acto | ✅ | `d382967` _(bitácora sin commit)_ | 2h | Hook en `record_quest_completion` detecta + cierra todos los actos elegibles (con backfill retroactivo); `/milestones` con cards arcanas; banner luminoso en `/map`; evento `act_closed` con redirect a `/milestones` |
-| 16 | Visualización agent loop | ⏳ | — | 6h | — |
+| 16 | Visualización agent loop | ✅ | _(pendiente de commit)_ | 6h | `arkanum run N "prompt"` con parser regex de stdout; `agent_traces` tabla nueva; `/live-agent` con polling vanilla 1s y animación de entrada; `run_module_capturing` extendido con callback `on_line` y `env_extra` |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-15 = ~59h reales / 58h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-16 = ~65h reales / 64h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,96 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 16 — Visualización del agent loop _(pendiente de commit)_
+
+**Entregado**
+- **Tabla nueva `agent_traces`** en `common/progress/db.py`:
+  ```sql
+  CREATE TABLE IF NOT EXISTS agent_traces (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      trace_id TEXT NOT NULL,
+      quest_id TEXT,
+      step_type TEXT NOT NULL,
+      name TEXT,
+      payload TEXT,
+      created_at TEXT NOT NULL
+  );
+  ```
+  `trace_id` agrupa todos los steps de un mismo `arkanum run` (token hex 12 caracteres). `quest_id` opcional. `payload` es texto crudo (el servidor intenta `json.loads` al servir; si falla, devuelve el string).
+- **Servicio `common/dashboard/services/trace.py`** (nuevo):
+  - `TraceStep` y `TraceSummary` dataclasses.
+  - `start_trace()` → `secrets.token_hex(6)`.
+  - `record_step(trace_id, step_type, name, payload, quest_db_id)` → INSERT y devuelve id.
+  - `recent_steps(limit=200, trace_id=None)` → últimos N en orden DESC; si filtra por trace.
+  - `latest_trace_summary()` → resumen del trace más reciente (id, quest, started_at, last_step_at, steps).
+  - `safe_parse_payload(payload)` → `json.loads` con fallback al string crudo.
+- **Endpoints**:
+  - `POST /events/trace` (en `routes/events.py`): `TracePayload(trace_id, step_type, name?, payload?, quest_db_id?)`. Persiste en `agent_traces` (no en `events`).
+  - `GET /api/trace/current` (en `routes/api.py`): devuelve `{trace_id, summary, steps}`. Si no se pasa `?trace_id`, usa el más reciente. `steps` viene en orden cronológico (reversed del DESC) para que el viewer renderice top-down.
+- **`run_module_capturing` extendido** (`common/cli/helpers.py`):
+  - Nuevo parámetro `on_line: Callable[[str], None]` opcional. Se invoca por cada línea capturada; errores dentro se loguean a stderr pero no matan el subprocess.
+  - Nuevo parámetro `env_extra: dict[str, str]` opcional para inyectar variables al subprocess (e.g., `ARKANUM_TRACE_ID`).
+  - Cambios retrocompatibles — call sites de F14 (`arkanum check`) siguen funcionando sin tocar nada.
+- **Comando nuevo `arkanum run`** (`common/cli/commands/run.py`):
+  - Acepta argumentos extras vía `typer.Context.args` (`context_settings={"allow_extra_args": True, "ignore_unknown_options": True}` en `main.py`).
+  - Genera `trace_id` con `start_trace()`, registra `register_first_attempt`, emite step `session_start` con metadata del quest.
+  - Inyecta `ARKANUM_TRACE_ID=<id>` + `ARKANUM_TRACE=1` al subprocess (disponibles para futura instrumentación nativa).
+  - Llama `run_module_capturing(starter_module(quest), on_line=_emit_via_parser, ...)`.
+  - Parser de líneas:
+    - `_CALL_RE = r"Calling function:\s*([A-Za-z_]\w*)\s*\((.*)\)\s*$"` → `function_call`.
+    - `_RESULT_RE = r"^\s*->\s*(.+?)\s*$"` → `function_result`.
+    - `_PROMPT_TOK_RE = r"Prompt tokens:\s*(\d+)"` → `tokens` con `name="prompt"`.
+    - `_RESPONSE_TOK_RE = r"Response tokens:\s*(\d+)"` → `tokens` con `name="response"`.
+  - Aviso amarillo si `quest.order < 6`: "este comando está pensado para Q07-Q08".
+  - Step final `session_end` con el returncode.
+  - Cada `_emit_step` persiste localmente con `record_step` (fuente de verdad) y además llama `emit_event("trace", ...)` por simetría (mejor esfuerzo).
+- **Página `/live-agent`** (`routes/pages.py` + `templates/live_agent.html`):
+  - Toolbar con dot pulsante (`live-pulse` keyframe) + estado + meta (quest + steps + último).
+  - Estado vacío con instrucciones y bloque de código `arkanum run 7 "..."`.
+  - Lista `<ol class="live-agent-steps">` poblada por JS.
+- **`initLiveAgent()` en `dashboard.js`**: polling vanilla cada 1s a `/api/trace/current`. Mantiene `seenIds` (no re-renderiza pasos ya vistos). Cuando `trace_id` cambia → vacía la lista y reinicia. Render por step:
+  - Icono por tipo (`⚡` `📦` `🧪` `🜂` `🜄`).
+  - Head con type + name + timestamp.
+  - Body opcional con `<pre>` y el payload (string o JSON serializado).
+  - `scrollIntoView` suave al final cuando se agregan pasos.
+- **CSS** (+170 líneas en `arcane.css`):
+  - `.live-agent-toolbar` con dot pulsante.
+  - `.trace-step` con animación de entrada (`trace-step-in` 0.32s).
+  - Variantes por tipo: borde izquierdo glow púrpura (call), verde (result), amber (tokens), dorado (session).
+  - `.trace-step-payload` con `<pre>` en font monoespaciada, scroll horizontal en líneas largas.
+
+**Smoke test ejecutado**
+- 17 checks con TestClient + temp DB:
+  - `start_trace` genera IDs únicos de 12 chars.
+  - `record_step` persiste y devuelve id > 0.
+  - `recent_steps` filtra por `trace_id`.
+  - `latest_trace_summary` agrega `steps`, `started_at`, `last_step_at`.
+  - **Parser** contra stdout sintético con 6 líneas (call, result, prompt_tokens, response_tokens, call, result): emite exactamente 6 steps con tipos/names/payloads correctos.
+  - `POST /events/trace` → 200 con `{ok: True, step_id}`.
+  - `GET /api/trace/current` sin filtro devuelve el trace más reciente.
+  - `GET /api/trace/current?trace_id=...` filtra correctamente.
+  - `/live-agent` rinde con `data-trace-poll-url` cableado e instrucciones para `arkanum run`.
+- Manual: `arkanum --help` lista el comando con su descripción correcta. Sanity contra dashboard real (puerto 8766): `/live-agent` 200, `/api/trace/current` 200 con `{trace_id: null, steps: []}` cuando no hay data.
+
+**Desviaciones del plan**
+- **`agent_traces` separada de `events`** (el plan mencionaba `events`). Decisión: `events` es para notificaciones one-shot (un toast en el perfil); los traces son histórico estructurado que necesita filtros por `trace_id` y `step_type`. Separar tablas evita queries con `JSON_EXTRACT` y mantiene cada uno limpio.
+- **Persistencia local desde el CLI** (sin depender de HTTP). El plan F16 sugería POST como vía principal. Hicimos lo opuesto: el CLI escribe en SQLite directo + emit_event como "señal" complementaria. Razón: si el dashboard no responde (timeout 0.3s), los steps se perderían. La persistencia directa es robusta y `emit_event` ya respeta `ARKANUM_NO_DASHBOARD=1`.
+- **Sin HTMX**: el polling de 1s es JS vanilla con `fetch` + `setInterval`, consistente con F4/F5/F11. ~80 líneas de JS adicionales en `dashboard.js`.
+- **`scrollIntoView` automático**: cuando llegan nuevos steps el viewer scrollea al final. Si el usuario está revisando uno viejo, el scroll lo interrumpe. Aceptable para v1; F17 podría agregar un toggle "auto-scroll".
+- **Variables de entorno `ARKANUM_TRACE` + `ARKANUM_TRACE_ID` inyectadas pero no usadas**: están disponibles para que futuras versiones del starter (o `call_function.py`) puedan emitir traces estructurados directamente sin depender del parser de stdout. Por ahora son no-ops.
+
+**Hallazgos / tech debt**
+- **El parser es frágil a cambios de formato**. Si el aprendiz cambia `Calling function: get_files_info(...)` por otra cosa, no se captura. Aceptable: F9 ya documenta el formato en READMEs y los pre-checks F10 validan que aparezca.
+- **No hay paginación en `/live-agent`**. Si una sesión genera >200 steps, sólo se muestran los últimos 200. Suficiente para Q07/Q08 con `MAX_ITERS=20`.
+- **`trace_id` no se persiste entre runs**. Cada `arkanum run` genera uno nuevo, lo que vacía la vista al refrescar entre runs. Es el comportamiento deseado (cada run es una sesión separada), pero perdemos el histórico visual. La tabla sí guarda todo y se puede consultar `?trace_id=...` manualmente.
+- **`recent_steps` devuelve DESC, pero `/api/trace/current` lo invierte** para que el frontend renderice cronológico. Detalle de impedancia entre "BD-friendly" (más reciente arriba) y "log-friendly" (más reciente abajo).
+- **Sin guardrails contra DoS local**: el endpoint POST `/events/trace` no valida tamaño del payload. Aceptable porque el server escucha en `127.0.0.1`. Si en algún momento se expone fuera, agregar `max_length` al pydantic model.
+
+**Tech debt cerrado**
+- ~~Sin visualización del agent loop~~ — `/live-agent` operativo con polling y animaciones; `arkanum run` documentado en help.
 
 ---
 
@@ -657,6 +747,9 @@
 | Detección "global" de cierre de acto | F15 | Permite backfill retroactivo sin código separado |
 | Sin toast para `act_closed` | F15 | Banner del mapa + link en nav ya cubren la visibilidad |
 | Import diferido de quest_catalog en db.py | F15 | Mantiene `progress/db.py` desacoplado del dashboard |
+| `agent_traces` separada de `events` | F16 | Histórico estructurado con filtros por trace_id requiere su propia tabla |
+| Persistencia local de traces en el CLI | F16 | Más robusto que depender de HTTP timeout 0.3s |
+| Polling vanilla 1s en /live-agent | F16 | Consistente con F4/F5/F11; HTMX sigue descartado |
 
 ## Tech debt acumulado
 
@@ -669,51 +762,74 @@
 
 ## Próxima fase
 
-### Fase 16 — Visualización del agent loop (`arkanum run`, ~6h)
+### Fase 17 — Pulido (empty states, accesibilidad, fuentes embebidas, E2E manual, ~4h)
 
 **Objetivo**
-> Done cuando: `arkanum run <N> "prompt"` envuelve el starter de Q07-Q08 como subprocess, parsea su stdout línea por línea, y emite eventos `trace` al dashboard. La página `/live-agent` muestra en tiempo real (HTMX polling cada 1s) las function calls y los resultados como un grafo simple.
+> Done cuando: el laboratorio se siente "terminado" — Cinzel/Inter embebidos en `/static/fonts`, todos los empty states tienen tono y CTA arcanos, accesibilidad básica (ARIA en componentes interactivos, contraste WCAG AA), un recorrido E2E manual confirma que las 16 fases anteriores siguen verdes. Tech debt residual del backlog se cierra o se documenta como v2.
 
 **Plan**
-1. **Endpoints**:
-   - `POST /events/trace` recibe `{trace_id, step_type, name, payload}`.
-   - `GET /api/trace/current` devuelve los pasos recientes del trace activo.
-2. **`common/cli/commands/run.py`**:
-   - `arkanum run <N> "prompt" [extra args]` resuelve quest, exporta `ARKANUM_TRACE=1` + `ARKANUM_TRACE_URL=...` para el subprocess.
-   - Usa `run_module_capturing` para hacer tee.
-   - Parsea cada línea con patrones conocidos:
-     - `Calling function: NAME(ARGS)` → step_type=function_call.
-     - `-> {...}` → step_type=function_result.
-     - `Prompt tokens:` / `Response tokens:` → trace de tokens.
-   - Por cada match, POST a `/events/trace`.
-3. **`/live-agent`** (`routes/pages.py`): página con título "Agente en directo", lista de steps con timestamps. HTMX polling cada 1s.
-4. **Servicio `services/trace.py`**: `record_step`, `current_steps`, `start_trace`.
-5. **Tabla nueva `agent_traces`** (id, trace_id, step_type, name, payload, created_at).
-6. **Mención en READMEs de Q07-Q08** (opcional): explicar `arkanum run` como wrapper opt-in.
+1. **Fuentes embebidas** en `common/dashboard/static/fonts/`:
+   - Cinzel (Regular + SemiBold) para títulos / Inter (Regular + Medium) para texto.
+   - Descargarlas (versión SIL OFL) y referenciar con `@font-face` en `arcane.css`.
+   - Actualizar `--font-serif`/`--font-sans` para priorizarlas, con fallback al sistema actual.
+   - Confirmar tamaño: cada `.woff2` ≤ 50KB.
+2. **Empty states arcanos**:
+   - Auditar `/quest/{locked}`, `/milestones` vacío, `/live-agent` vacío, perfil sin aprendiz.
+   - Cada uno debe tener: header arcano, blockquote con Zhyréon, CTA al siguiente paso.
+3. **Accesibilidad**:
+   - `aria-label` en cards de quest (estado actual + completed/locked).
+   - `role="status"` en `.live-agent-status` y `.event-toast` para anuncios live.
+   - `aria-controls`/`aria-expanded` en el modal de hints.
+   - Contraste: chequear `--arkanum-muted` (#8a82a8) sobre `--arkanum-bg-soft` (#1a1535) — debería ser 4.5:1.
+   - `prefers-reduced-motion`: ya cubierto en celebrate (F7); extender a `trace-step-in` y `live-pulse` (F16) + `pulse` del map (F3).
+4. **Recorrido E2E manual** (con BD limpia):
+   - `arkanum init` → wizard.
+   - `arkanum doctor`.
+   - `arkanum start 1` → modificar starter → `arkanum check 1`.
+   - `arkanum progress`, `arkanum current`, `arkanum next`.
+   - Dashboard: `/`, `/map`, `/ranks`, `/quest/...`, `/milestones`, `/live-agent`.
+   - Solicitar pista, recargar, verificar persistencia.
+   - `arkanum cost` después de Q02+.
+   - `arkanum run 7 "..."` con dashboard abierto.
+5. **Tech debt del backlog**:
+   - Auto-scroll de `/live-agent` con toggle (opcional).
+   - "Tiempo total del acto" en `/milestones` (opcional).
+   - Logro "Velocista" (descartado en F13, dejar documentado en v2).
 
 **Pre-condiciones**
-- `run_module_capturing` ya existe (✅ F14).
-- Q07-Q08 imprimen `Calling function:` y `->` (✅ por pre-checks).
+- Fases 0-16 completadas (✅).
 
 **Archivos a tocar / crear**
-- ➕ Tabla `agent_traces` en `db.py`.
-- ➕ `common/dashboard/services/trace.py`.
-- ➕ `common/cli/commands/run.py`.
-- ✏️ `common/cli/main.py`.
-- ✏️ `common/dashboard/routes/events.py` (POST /events/trace).
-- ✏️ `common/dashboard/routes/api.py` (GET /api/trace/current).
-- ➕ `common/dashboard/templates/live_agent.html`.
-- ✏️ `common/dashboard/static/arcane.css`.
+- ➕ `common/dashboard/static/fonts/cinzel-*.woff2`, `inter-*.woff2`.
+- ✏️ `common/dashboard/static/arcane.css` (font-faces + variables + reduced-motion).
+- ✏️ Templates que tengan empty states (`profile.html`, `milestones.html`, `live_agent.html`, `quest_view.html`).
+- ✏️ ARIA roles en componentes interactivos.
 
 **Riesgos detectados**
-- **Parser frágil**: si el aprendiz cambia el formato de print, los eventos no aparecen. Aceptable: `arkanum run` es opt-in y los starters del repo no cambian.
-- **HTTP overhead**: 1 POST por línea matcheable. Mitigación: timeout 0.3s, persistencia local como fallback (mismo patrón que `emit_event`).
-- **Tabla agent_traces puede crecer mucho** si el agent loop hace muchas iteraciones. Aceptable: única tabla con histórico crudo; `arkanum run` rara vez se ejecuta.
+- **Tamaño de fonts**: si los `.woff2` superan 100KB sumados, el FCP se degrada. Subset por glifos latinos básicos.
+- **Audit accesibilidad manual** vs herramientas: usar Lighthouse o axe-core. Si aparecen issues no críticos, documentar como v2.
+- **Smoke tests siguen funcionando**: la mayor parte del cambio es CSS y templates; corremos los smokes de F11/F13/F14/F15/F16 al cierre.
 
 **Criterio de cierre de la fase**
-- `arkanum run 7 "¿Qué archivos hay?"` ejecuta el starter, parsea function_calls.
-- `/live-agent` muestra los steps en tiempo real (refresh cada 1s).
-- Cierre con commit `feat(dashboard): fase 16 - visualizacion agent loop`.
+- Las fuentes Cinzel/Inter se cargan desde `/static/fonts/` (verificable en DevTools).
+- Todos los empty states identificados tienen tono arcano.
+- `prefers-reduced-motion: reduce` apaga todas las animaciones.
+- Recorrido E2E manual completado sin regresiones.
+- Cierre con commit `feat(dashboard): fase 17 - pulido final`.
+- Actualizar este archivo: marcar plan como completado, mover backlog residual a "Diferido a v2".
+
+---
+
+_Plan original de F16 (cerrado pendiente de commit):_
+
+### Fase 16 — Visualización del agent loop (~6h)
+
+**Plan resumido**
+1. Tabla `agent_traces`; servicio `trace.py` con record_step / recent_steps / latest_trace_summary.
+2. `POST /events/trace` y `GET /api/trace/current` (steps cronológicos).
+3. `run_module_capturing` extendido con callback `on_line` y `env_extra`.
+4. `arkanum run <N>` con parser regex (function_call, function_result, tokens prompt/response).
+5. `/live-agent` con polling vanilla 1s, animación `trace-step-in` + dot pulsante.
 
 ---
 

@@ -147,6 +147,51 @@ def request_quest_hint(slug: str, level: int) -> JSONResponse:
     })
 
 
+@router.get("/api/trace/current")
+def current_trace(
+    trace_id: str | None = Query(None),
+    limit: int = Query(200, ge=1, le=1000),
+) -> JSONResponse:
+    """Pasos del trace más reciente (o uno específico). Usado por /live-agent."""
+    from common.dashboard.services.trace import (
+        latest_trace_summary,
+        recent_steps,
+        safe_parse_payload,
+    )
+
+    summary = latest_trace_summary()
+    target = trace_id or (summary.trace_id if summary else None)
+    steps = recent_steps(limit=limit, trace_id=target) if target else []
+
+    return JSONResponse({
+        "trace_id": target,
+        "summary": (
+            {
+                "trace_id": summary.trace_id,
+                "quest_slug": summary.quest.slug if summary.quest else None,
+                "quest_title": summary.quest.title if summary.quest else None,
+                "started_at": summary.started_at,
+                "last_step_at": summary.last_step_at,
+                "steps": summary.steps,
+            }
+            if summary
+            else None
+        ),
+        "steps": [
+            {
+                "id": s.id,
+                "trace_id": s.trace_id,
+                "quest_slug": s.quest.slug if s.quest else None,
+                "step_type": s.step_type,
+                "name": s.name,
+                "payload": safe_parse_payload(s.payload),
+                "created_at": s.created_at,
+            }
+            for s in reversed(steps)  # cronológico para el viewer
+        ],
+    })
+
+
 @router.post("/api/quests/{slug}/mark-read")
 def mark_quest_read(slug: str) -> JSONResponse:
     quest = quest_by_slug(slug)

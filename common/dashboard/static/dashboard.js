@@ -296,12 +296,124 @@
     });
   }
 
+  // --- Live agent: polling de /api/trace/current + render ---------------
+  function initLiveAgent() {
+    var host = document.querySelector("[data-trace-poll-url]");
+    if (!host) return;
+
+    var url = host.dataset.tracePollUrl;
+    var stepsHost = host.querySelector("[data-trace-steps]");
+    var emptyHost = host.querySelector("[data-trace-empty]");
+    var statusHost = host.querySelector("[data-trace-status]");
+    var metaHost = host.querySelector("[data-trace-meta]");
+
+    var seenIds = new Set();
+    var lastTraceId = null;
+
+    function iconFor(stepType) {
+      switch (stepType) {
+        case "function_call": return "⚡";
+        case "function_result": return "📦";
+        case "tokens": return "🧪";
+        case "session_start": return "🜂";
+        case "session_end": return "🜄";
+        default: return "•";
+      }
+    }
+
+    function payloadText(step) {
+      var p = step.payload;
+      if (p === null || p === undefined) return "";
+      if (typeof p === "string") return p;
+      try { return JSON.stringify(p); } catch (_) { return String(p); }
+    }
+
+    function renderStep(step) {
+      var li = document.createElement("li");
+      li.className = "trace-step trace-step--" + step.step_type;
+      li.dataset.stepId = String(step.id);
+
+      var head = document.createElement("div");
+      head.className = "trace-step-head";
+      head.innerHTML =
+        '<span class="trace-step-icon" aria-hidden="true">' + iconFor(step.step_type) + '</span>' +
+        '<span class="trace-step-type">' + step.step_type + '</span>' +
+        (step.name ? '<span class="trace-step-name">' + step.name + '</span>' : '') +
+        '<span class="trace-step-time">' + step.created_at + '</span>';
+      li.appendChild(head);
+
+      var payload = payloadText(step);
+      if (payload) {
+        var body = document.createElement("pre");
+        body.className = "trace-step-payload";
+        body.textContent = payload;
+        li.appendChild(body);
+      }
+      return li;
+    }
+
+    function applyData(data) {
+      if (!data || !data.steps) return;
+
+      // Cambió de trace → vaciar la lista y reinicializar el set de IDs.
+      if (data.trace_id && data.trace_id !== lastTraceId) {
+        if (stepsHost) stepsHost.innerHTML = "";
+        seenIds = new Set();
+        lastTraceId = data.trace_id;
+      }
+
+      if (data.steps.length === 0) {
+        if (emptyHost) emptyHost.style.display = "";
+        if (statusHost) statusHost.textContent = "Esperando trace…";
+        if (metaHost) metaHost.textContent = "";
+        return;
+      }
+
+      if (emptyHost) emptyHost.style.display = "none";
+
+      var added = 0;
+      for (var i = 0; i < data.steps.length; i++) {
+        var step = data.steps[i];
+        if (seenIds.has(step.id)) continue;
+        seenIds.add(step.id);
+        if (stepsHost) stepsHost.appendChild(renderStep(step));
+        added += 1;
+      }
+
+      if (statusHost && data.summary) {
+        statusHost.textContent = "Trace " + data.summary.trace_id;
+      }
+      if (metaHost && data.summary) {
+        var meta = [];
+        if (data.summary.quest_title) meta.push(data.summary.quest_title);
+        meta.push(data.summary.steps + " pasos");
+        meta.push("último: " + data.summary.last_step_at);
+        metaHost.textContent = meta.join(" · ");
+      }
+
+      if (added > 0 && stepsHost && stepsHost.lastElementChild) {
+        stepsHost.lastElementChild.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    }
+
+    function poll() {
+      fetch(url, { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(applyData)
+        .catch(function () { /* best-effort */ });
+    }
+
+    poll();
+    setInterval(poll, 1000);
+  }
+
   function init() {
     initPolling();
     initCopyButtons();
     initMarkRead();
     initToast();
     initHints();
+    initLiveAgent();
   }
 
   if (document.readyState === "loading") {

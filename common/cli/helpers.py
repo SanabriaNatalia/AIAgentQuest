@@ -60,17 +60,26 @@ def run_module(module_path: str, extra_args: list[str] | None = None) -> int:
 def run_module_capturing(
     module_path: str,
     extra_args: list[str] | None = None,
+    on_line=None,  # type: ignore[no-untyped-def]
+    env_extra: dict[str, str] | None = None,
 ) -> tuple[int, str]:
     """Ejecuta `python -m module_path` haciendo `tee` de stdout.
 
     Reemite cada línea al stdout del padre (para que el aprendiz vea el
-    progreso en tiempo real) y la acumula en un buffer. Devuelve
-    `(returncode, captured_stdout)`. stderr se redirige a stdout para no
-    perderlo.
+    progreso en tiempo real), la acumula en un buffer, y opcionalmente
+    invoca `on_line(line)` por cada línea (útil para streaming de traces).
+    Errores dentro de `on_line` se loguean a stderr pero NO matan el
+    subprocess. Devuelve `(returncode, captured_stdout)`.
     """
+    import os
+
     cmd = [sys.executable, "-u", "-m", module_path]
     if extra_args:
         cmd.extend(extra_args)
+
+    env = os.environ.copy()
+    if env_extra:
+        env.update(env_extra)
 
     captured: list[str] = []
     try:
@@ -83,6 +92,7 @@ def run_module_capturing(
             text=True,
             encoding="utf-8",
             errors="replace",
+            env=env,
         )
     except OSError as exc:
         return 1, f"[arkanum] No se pudo arrancar el subprocess: {exc}"
@@ -93,6 +103,11 @@ def run_module_capturing(
             captured.append(line)
             sys.stdout.write(line)
             sys.stdout.flush()
+            if on_line is not None:
+                try:
+                    on_line(line)
+                except Exception as exc:  # noqa: BLE001 — best effort
+                    sys.stderr.write(f"[arkanum] on_line falló: {exc!r}\n")
         proc.wait()
     except KeyboardInterrupt:
         proc.terminate()
