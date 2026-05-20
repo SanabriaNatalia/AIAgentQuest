@@ -9,6 +9,16 @@ DB_PATH = Path(".quest_progress.db")
 def get_connection():
     return sqlite3.connect(DB_PATH)
 
+def _column_exists(conn, table: str, column: str) -> bool:
+    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+    return any(row[1] == column for row in rows)
+
+
+def _add_column_if_missing(conn, table: str, column: str, definition: str) -> None:
+    if not _column_exists(conn, table, column):
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
 def init_db() -> None:
     with get_connection() as conn:
         conn.execute("""
@@ -28,6 +38,55 @@ def init_db() -> None:
                 completed_at TEXT NOT NULL
             )
         """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kind TEXT NOT NULL,
+                payload TEXT NOT NULL,
+                seen INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS quest_attempts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quest_id TEXT NOT NULL,
+                attempted_at TEXT NOT NULL,
+                passed INTEGER NOT NULL,
+                failure_reason TEXT
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS hint_usage (
+                quest_id TEXT NOT NULL,
+                hint_level INTEGER NOT NULL,
+                requested_at TEXT NOT NULL,
+                PRIMARY KEY (quest_id, hint_level)
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS quest_reading (
+                quest_id TEXT PRIMARY KEY,
+                read_at TEXT NOT NULL
+            )
+        """)
+
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS act_milestones (
+                act_number INTEGER PRIMARY KEY,
+                closed_at TEXT NOT NULL
+            )
+        """)
+
+        _add_column_if_missing(conn, "apprentice", "created_at", "TEXT")
+        _add_column_if_missing(conn, "apprentice", "avatar", "TEXT DEFAULT 'default'")
+        _add_column_if_missing(conn, "quest_completion", "attempts", "INTEGER DEFAULT 1")
+        _add_column_if_missing(conn, "quest_completion", "first_attempt_at", "TEXT")
+        _add_column_if_missing(conn, "quest_completion", "total_time_seconds", "INTEGER")
 
 def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
 

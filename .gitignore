@@ -17,3 +17,11 @@ wheels/
 
 # User progress info
 .quest_progress.db
+
+# Dashboard runtime artifacts
+.quest_progress.pid
+.quest_dashboard.log
+.quest_dashboard.port
+.setup_cache.json
+.last_celebrate.timestamp
+.quest_calls.log
