@@ -73,6 +73,13 @@
         <span class="achievement-pill-count">{{ achievement_counts.no_red }}</span>
         <span class="achievement-pill-label">Sin red</span>
       </div>
+      {% if cost_summary %}
+      <div class="achievement-pill achievement-pill--cost" title="Tokens consumidos · estimación Gemini 2.5 Flash">
+        <span class="achievement-pill-icon">📜</span>
+        <span class="achievement-pill-count">${{ '%.4f' % cost_summary.estimated_usd if cost_summary.estimated_usd < 0.01 else '%.2f' % cost_summary.estimated_usd }}</span>
+        <span class="achievement-pill-label">{{ '{:,}'.format(cost_summary.total_tokens) }} tokens</span>
+      </div>
+      {% endif %}
     </div>
   </section>
   {% endif %}

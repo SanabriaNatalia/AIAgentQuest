@@ -14,13 +14,14 @@ from common.cli.helpers import (
     check_module,
     check_path,
     resolve_quest_by_number,
-    run_module,
+    run_module_capturing,
 )
 from common.cli.pre_checks.runner import (
     PreCheckResult,
     all_passed,
     run_pre_checks,
 )
+from common.dashboard.services.cost import parse_tokens, record_cost
 from common.progress.db import record_quest_attempt, register_first_attempt
 
 console = Console()
@@ -104,7 +105,16 @@ def check(
     )
     console.print("[yellow]Aviso:[/] este check consume cuota de Gemini.")
     console.print()
-    rc = run_module(module)
+    rc, captured = run_module_capturing(module)
+
+    prompt_tokens, response_tokens = parse_tokens(captured)
+    if prompt_tokens > 0 or response_tokens > 0:
+        record_cost(quest.db_id, prompt_tokens, response_tokens)
+        console.print(
+            f"\n[dim]Coste capturado:[/] "
+            f"{prompt_tokens} prompt + {response_tokens} response tokens."
+        )
+
     record_quest_attempt(
         quest.db_id,
         passed=rc == 0,

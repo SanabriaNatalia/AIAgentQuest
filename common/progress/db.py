@@ -93,6 +93,18 @@ def init_db() -> None:
             )
         """)
 
+        # F14: cada check.py que llama a Gemini imprime "Prompt tokens: X" y
+        # "Response tokens: Y". El CLI las captura por línea y persiste aquí.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS quest_costs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                quest_id TEXT NOT NULL,
+                attempted_at TEXT NOT NULL,
+                prompt_tokens INTEGER NOT NULL DEFAULT 0,
+                response_tokens INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
         _add_column_if_missing(conn, "apprentice", "created_at", "TEXT")
         _add_column_if_missing(conn, "apprentice", "avatar", "TEXT DEFAULT 'default'")
         _add_column_if_missing(conn, "quest_completion", "attempts", "INTEGER DEFAULT 1")

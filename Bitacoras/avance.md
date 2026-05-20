@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 13 — Tracking tiempo/intentos + logros calculados |
-| **Próxima fase** | Fase 14 — Tracking de costo (`arkanum cost`) |
-| **Tiempo invertido aprox.** | ~55h (acumulado Fases 0-13) |
-| **Tiempo restante estimado** | ~13h (Fases 14-17) |
+| **Última fase completada** | Fase 14 — Tracking de costo (`arkanum cost`) |
+| **Próxima fase** | Fase 15 — Detección de cierre de acto |
+| **Tiempo invertido aprox.** | ~57h (acumulado Fases 0-14) |
+| **Tiempo restante estimado** | ~11h (Fases 15-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -52,12 +52,12 @@
 | 11 | Pistas (mecánica) | ✅ | `4388260` _(bitácora sin commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
 | 12 | Pistas (contenido) | ✅ | `25c2b9b` _(bitácora sin commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
 | 13 | Tracking tiempo/intentos | ✅ | `1428745` _(bitácora sin commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
-| 14 | Tracking costo | ⏳ | — | 2h | — |
+| 14 | Tracking costo | ✅ | _(pendiente de commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
 | 15 | Detección cierre acto | ⏳ | — | 2h | — |
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-13 = ~55h reales / 54h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-14 = ~57h reales / 56h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,75 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 14 — Tracking de costo _(pendiente de commit)_
+
+**Entregado**
+- **Tabla nueva `quest_costs`** en `common/progress/db.py`:
+  ```sql
+  CREATE TABLE IF NOT EXISTS quest_costs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      quest_id TEXT NOT NULL,
+      attempted_at TEXT NOT NULL,
+      prompt_tokens INTEGER NOT NULL DEFAULT 0,
+      response_tokens INTEGER NOT NULL DEFAULT 0
+  );
+  ```
+  Una fila por invocación parseada (no agregado). Permite histórico crudo + agregaciones por SQL.
+- **Servicio `common/dashboard/services/cost.py`** (nuevo):
+  - Constantes `PRICE_INPUT_PER_1M = 0.075` y `PRICE_OUTPUT_PER_1M = 0.30` (Gemini 2.5 Flash). Centralizado para que el día que cambien los precios sea una edición de dos líneas.
+  - `parse_tokens(stdout) -> (prompt, response)`: regex `Prompt tokens:\s*(\d+)` / `Response tokens:\s*(\d+)`. Soporta múltiples ocurrencias (agent loop de Q08 invoca varias veces). Devuelve `(0, 0)` si no hay match (Q01).
+  - `record_cost(quest_db_id, prompt_tokens, response_tokens)`: persiste; no-op si ambos tokens son 0.
+  - `cost_per_quest()`: agregado por quest con `QuestCostRow` (incluye `total_tokens`, `estimated_usd`).
+  - `total_cost()`: dict global con prompt/response/total tokens, invocations y `estimated_usd`.
+  - `attempts_history(limit=50)`: histórico crudo (lista de `CostAttempt`) ordenado DESC.
+  - `has_any_cost()`: booleano para condicionar UI.
+- **`run_module_capturing(module_path, extra_args)`** en `common/cli/helpers.py`: hace `tee` con `Popen + iter(stdout)`. Cada línea se escribe a `sys.stdout` del padre (vista interactiva intacta) y se acumula en buffer. Usa `-u` para `python` (unbuffered) y `bufsize=1` + `text=True` para line buffering. `stderr` se redirige a `stdout` para no perder errores. Devuelve `(returncode, captured_stdout)`.
+- **`arkanum check` actualizado**: reemplaza `run_module` por `run_module_capturing`. Tras el subprocess, llama `parse_tokens(captured)` y, si hay tokens, `record_cost(...)` + log `"Coste capturado: X prompt + Y response tokens."`.
+- **Comando nuevo `arkanum cost`** (`common/cli/commands/cost.py`):
+  - Tabla Rich agregada con columnas Quest / Invoc. / Prompt / Response / Total / USD est., fila Total al pie, leyenda con tarifa usada.
+  - Flag `--per-attempt` → tabla con histórico crudo (Fecha / Quest / Prompt / Response / USD est.), `--limit N` (default 25).
+  - Estado vacío: mensaje "Aún no se ha registrado ningún costo" cuando `has_any_cost()` es False.
+- **Pill de costo en perfil** (`templates/profile.html`): tercera pill en el bloque de logros (📜 icono + USD + tokens totales). Sólo aparece si `cost_summary` está en contexto (i.e., hay quest_costs). Variante CSS `.achievement-pill--cost` con borde púrpura para diferenciarla de las pills de logros (doradas).
+- **`routes/pages.py`**: profile_page agrega `cost_summary=total_cost() if has_any_cost() else None` al contexto.
+
+**Smoke test ejecutado**
+- 12 checks DB con TestClient + temp DB aislada:
+  - `parse_tokens` happy path → `(42, 17)`.
+  - `parse_tokens` sin matches → `(0, 0)`.
+  - `parse_tokens` con múltiples ocurrencias suma correctamente.
+  - `parse_tokens` ignora menciones sin número.
+  - `record_cost(0, 0)` no inserta.
+  - `record_cost` persiste y `has_any_cost()` devuelve True.
+  - `cost_per_quest` devuelve fila con quest correcta y totales correctos.
+  - `total_cost` suma multiples invocaciones.
+  - `estimated_usd` matchea la fórmula `(prompt*0.075 + response*0.30)/1M`.
+  - `attempts_history` ordena DESC.
+- 5 checks UI:
+  - `/` status 200 con `cost_summary`.
+  - HTML contiene `achievement-pill--cost`, USD formateado y tokens con separadores de miles.
+  - Sin `quest_costs`: pill `--cost` ausente.
+- E2E `run_module_capturing` + `parse_tokens` con script artificial: el stdout sale en tiempo real al terminal, el buffer se llena, el parser extrae `(321, 88)`.
+- Manual: `arkanum cost` (vacío y con data sintética) + `arkanum cost --per-attempt` renderizan correctamente; `arkanum --help` lista el comando.
+
+**Desviaciones del plan**
+- **`subprocess.Popen` con `tee` manual** en vez de `subprocess.run` con `capture_output=True`. El plan F14 alertaba sobre el riesgo de matar la interactividad; la solución elegida preserva el `print` en tiempo real Y captura el buffer.
+- **`python -u`** explícito en `run_module_capturing`: sin `-u`, los `print()` se buffean en bloques de 8KB y el aprendiz ve el output al final, no en streaming. Línea-por-línea es importante para que se sienta como ejecutar el check normalmente.
+- **`stderr=subprocess.STDOUT`**: mezcla stderr en stdout. Decisión consciente: las trazas de error de `check.py` también pueden contener `Prompt tokens:` si el modelo respondió antes del fallo, y queremos capturarlas. El usuario sigue viendo todo combinado en su terminal (que es lo que esperaría).
+- **No se usa `httpx` ni se llama el dashboard** para el tracking. El flujo es CLI → SQLite directo. El dashboard sólo LEE de la tabla. Simplicidad sobre desacoplamiento; si más adelante hay un wrapper `arkanum run` (F16) puede emitir `cost-recorded` por HTTP.
+- **Estimación USD vive en código**, no en config. Si Google sube los precios, hay que editar `cost.py`. Aceptable para v1; F17 podría moverlo a `pyproject.toml` o `common/config.py`.
+
+**Hallazgos / tech debt**
+- **El parser captura tokens incluso si el check.py falla** después de la invocación. Es el comportamiento deseado: si gastaste cuota, queremos contarla aunque el quest no pase.
+- **Si el aprendiz cambia el formato del print** (p. ej. `print(f"prompt={...}")`), el parser no matchea y los tokens se pierden. Los pre-checks de F10 ya validan `Prompt tokens:` literal, así que es difícil que esto pase en starters reales.
+- **`stderr=subprocess.STDOUT` desordena el output** si el check escribe interleaved a ambos. En la práctica `check.py` sólo usa stdout. Si llega a ser problema, se puede mover a `Popen` con dos pipes y un `select` (más código).
+- **No se infiere prompt_tokens cuando el `check.py` no los expone** (Q01). Aceptable: Q01 es el quest más simple, su costo es minúsculo (~50 prompt tokens / 80 response tokens cada corrida), no representa significativamente la suma total. Si más adelante se quiere incluir, hay que parsear el log del cliente Gemini o cablear `arkanum run` (F16).
+- **Persistencia tras CTRL+C**: si el aprendiz interrumpe el check después de que Gemini respondió pero antes de que `run_module_capturing` retorne, `record_cost` no se llama. El gasto se perdió. Aceptable; documentado.
+
+**Tech debt cerrado**
+- ~~No hay tracking de costo~~ — `arkanum cost` operativo, pill en perfil, persistencia automática en cada check.
 
 ---
 
@@ -530,6 +599,9 @@
 | Tabla `quest_progress` separada | F13 | En vez de hacer `completed_at` nullable en `quest_completion` (requeriría recrear tabla en SQLite) |
 | `no_red` chequea estado actual | F13 | Pedir pista post-completion quita el logro (acepta el edge case improbable) |
 | Filter Jinja `format_duration` global | F13 | Centraliza el formato para usar en F15 (cierre de acto) y F17 |
+| `Popen + tee` manual en `run_module_capturing` | F14 | `subprocess.run(capture_output=True)` mataba el streaming en tiempo real |
+| `python -u` en captura | F14 | Sin `-u` los prints se buffean en bloques de 8KB y el aprendiz no ve progreso |
+| Tarifa Gemini en código (cost.py) | F14 | F17 puede moverlo a `pyproject.toml` si crece el catálogo |
 
 ## Tech debt acumulado
 
@@ -542,52 +614,71 @@
 
 ## Próxima fase
 
-### Fase 14 — Tracking de costo (`arkanum cost`, ~2h)
+### Fase 15 — Detección de cierre de acto + página `/milestones` (~2h)
 
 **Objetivo**
-> Done cuando: existe el comando `arkanum cost` que muestra una tabla Rich con los tokens consumidos por quest (input + output), un total global y una estimación monetaria opcional. La data se acumula desde Q02 en adelante (Q01 no lo expone). El dashboard muestra una pill "Costo" en el perfil con el total.
+> Done cuando: tras cada `record_quest_completion`, el sistema detecta si todas las quests del acto al que pertenece quedaron cerradas. Si sí y el acto aún no está en `act_milestones`, se inserta, se emite evento `act_closed`, y la página nueva `/milestones` muestra los actos cerrados con sus fechas + rangos obtenidos + quote de Zhyréon. El mapa marca con un banner luminoso la columna del acto cerrado.
 
 **Plan**
-1. **Captura de tokens**:
-   - Decisión: Q02+ ya leen `response.usage_metadata`. Lo más limpio es interceptar via wrapper (`arkanum run`, F16) o agregar un parser de stdout en `arkanum check` que reconozca "Prompt tokens: X" / "Response tokens: Y".
-   - Implementación MVP F14: parser de stdout en `arkanum check`. Captura `Prompt tokens:` / `Response tokens:` con regex y persiste en una tabla nueva `quest_costs(id, quest_id, attempted_at, prompt_tokens, response_tokens)`.
-2. **Servicio `common/dashboard/services/cost.py`**:
-   - `record_cost(quest_id, prompt_tokens, response_tokens)`.
-   - `cost_per_quest() -> dict[slug, {prompt, response, total}]`.
-   - `total_cost() -> {prompt, response, total, estimated_usd}`.
-3. **`common/cli/commands/cost.py`**:
-   - Tabla Rich con columnas Quest / Prompt tokens / Response tokens / Total / USD estimado.
-   - Flag `--per-attempt` para mostrar histórico.
-4. **UI**:
-   - Pill "Costo" en perfil junto a las de logros.
-   - Estimación USD opcional (precio Gemini Flash en config).
-5. **Tests**:
-   - Smoke: `record_cost` acumula correctamente.
-   - Parser de stdout: matchea "Prompt tokens: 42" y "Response tokens: 17".
+1. **Hook en `record_quest_completion`** (`db.py`):
+   - Tras el INSERT exitoso, llamar `_check_act_closure(quest_id, conn)` dentro de la misma transacción.
+   - Helper: identificar el acto del `quest_id` via catálogo (db_id → QuestMeta.act). Si todas las quests del acto están en `quest_completion`, INSERT OR IGNORE en `act_milestones(act_number, closed_at)`.
+   - Si el INSERT fue nuevo, agendar el evento `act_closed` para emitirlo en `_notify_dashboard`.
+2. **`POST /events/act-closed`** en `routes/events.py` (recibe `{act_number}`).
+3. **`/milestones`** en `routes/pages.py`:
+   - `services/milestones.py` con `closed_acts() -> list[{act, closed_at, ranks: list[str]}]`.
+   - Template `milestones.html`: cards de actos cerrados con header + lista de quests + ranks unlocked + quote del acto.
+   - Si no hay actos cerrados, mensaje arcano "Tu travesía aún no marca pergaminos cerrados".
+4. **Banner luminoso en `/map`**: si `act.number in closed_acts`, agregar clase CSS `act-band--closed` con un glow dorado en la franja.
+5. **Link en nav**: agregar "Hitos" a `base.html` después de "Rangos".
+6. **Tests**:
+   - Completar las 4 quests del Acto I → row en `act_milestones`.
+   - Re-completar (idempotente, no duplica row).
+   - `/milestones` rinde card del Acto I.
+   - `/map` muestra `act-band--closed` para el Acto I.
 
 **Pre-condiciones**
-- `arkanum check` ya captura el subprocess (✅ F8/F13).
-- Q02+ imprimen los tokens en stdout (✅ por pre-checks).
+- Tabla `act_milestones` existe (✅ F0).
+- `record_quest_completion` ya emite eventos (✅ F6/F13).
+- Catálogo de actos en `quest_catalog.ACTS` (✅ F2).
 
 **Archivos a tocar / crear**
-- ➕ Tabla `quest_costs` en `db.py`.
-- ➕ `common/dashboard/services/cost.py`.
-- ➕ `common/cli/commands/cost.py`.
-- ✏️ `common/cli/commands/check.py` (capturar stdout y parsear).
-- ✏️ `common/cli/main.py` (registrar comando `cost`).
-- ✏️ `templates/profile.html` (pill).
+- ✏️ `common/progress/db.py` (hook + helper de detección).
+- ➕ `common/dashboard/services/milestones.py`.
+- ✏️ `common/dashboard/routes/events.py` (endpoint).
+- ✏️ `common/dashboard/routes/pages.py` (`/milestones`).
+- ➕ `common/dashboard/templates/milestones.html`.
+- ✏️ `common/dashboard/templates/base.html` (link "Hitos" en nav).
+- ✏️ `common/dashboard/templates/map.html` (clase --closed).
+- ✏️ `common/dashboard/static/arcane.css` (estilos milestones + glow del map).
 
 **Riesgos detectados**
-- **Captura de stdout**: cambiar `subprocess.run` para que capture stdout rompe el output interactivo (el aprendiz ya no ve los prints en tiempo real). Solución: `Popen` con `tee` manual, o capturar y luego volcar.
-- **Q01 no imprime tokens**: aceptable, simplemente sin entry para ese quest.
-- **Quests con starter custom**: si el aprendiz cambia el formato de print, el parser fallará silenciosamente. Documentar el contrato.
+- **Actos vacíos (III/IV)**: como `quest_slugs=()`, podrían marcarse como "cerrados" porque la condición "todas las quests del acto completadas" es trivialmente cierta. Manejar `if not act.quest_slugs: skip`.
+- **Race condition** con concurrencia: dentro de la misma transacción de `record_quest_completion`, leer y escribir.
+- **Cierre retroactivo**: aprendices que ya cerraron el Acto I antes de F15 no tienen row en `act_milestones`. Decisión: agregar una migración one-time que detecta y backfilla al iniciar el server (idempotente vía INSERT OR IGNORE).
 
 **Criterio de cierre de la fase**
-- `arkanum check 2` después de pasar persiste una row en `quest_costs`.
-- `arkanum cost` muestra la tabla con totales acumulados.
-- `/` (perfil) muestra pill "Costo" si hay data.
-- Cierre con commit `feat(dashboard): fase 14 - tracking de costo`.
+- Completar las 4 quests del Acto I en orden hace que `act_milestones` tenga `(1, closed_at)` y se emita evento `act_closed`.
+- `/milestones` muestra el Acto I con sus 4 ranks unlocked y la quote de cierre.
+- `/map` resalta visualmente la franja del Acto I.
+- Cierre con commit `feat(dashboard): fase 15 - cierre de acto + milestones`.
 - Actualizar este archivo.
+
+---
+
+_Plan original de F14 (cerrado pendiente de commit):_
+
+### Fase 14 — Tracking de costo (~2h)
+
+**Objetivo**
+> Done cuando: existe `arkanum cost` con tabla Rich; cada check persiste tokens parseados de stdout; perfil muestra pill de costo cuando hay data.
+
+**Plan resumido**
+1. Tabla `quest_costs` (id, quest_id, attempted_at, prompt_tokens, response_tokens).
+2. `services/cost.py`: parse_tokens (regex), record_cost, cost_per_quest, total_cost, attempts_history, has_any_cost. Constantes de tarifa Gemini Flash centralizadas.
+3. `run_module_capturing` con `Popen + tee` para preservar interactividad.
+4. `arkanum cost` con tabla Rich + `--per-attempt`.
+5. Pill `.achievement-pill--cost` en profile.html.
 
 ---
 

@@ -7,6 +7,7 @@ from common.dashboard.services.achievements import (
     quest_stats,
     total_achievements,
 )
+from common.dashboard.services.cost import has_any_cost, total_cost
 from common.dashboard.services.hints import (
     get_hint,
     list_hints_for,
@@ -55,6 +56,7 @@ def profile_page(request: Request):
             completed_count=get_completed_count(),
             act_info=act_info,
             achievement_counts=total_achievements(),
+            cost_summary=total_cost() if has_any_cost() else None,
         )
 
     return templates.TemplateResponse(request, "profile.html", context)

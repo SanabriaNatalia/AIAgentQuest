@@ -55,3 +55,48 @@ def run_module(module_path: str, extra_args: list[str] | None = None) -> int:
         return result.returncode
     except KeyboardInterrupt:
         return 130
+
+
+def run_module_capturing(
+    module_path: str,
+    extra_args: list[str] | None = None,
+) -> tuple[int, str]:
+    """Ejecuta `python -m module_path` haciendo `tee` de stdout.
+
+    Reemite cada línea al stdout del padre (para que el aprendiz vea el
+    progreso en tiempo real) y la acumula en un buffer. Devuelve
+    `(returncode, captured_stdout)`. stderr se redirige a stdout para no
+    perderlo.
+    """
+    cmd = [sys.executable, "-u", "-m", module_path]
+    if extra_args:
+        cmd.extend(extra_args)
+
+    captured: list[str] = []
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except OSError as exc:
+        return 1, f"[arkanum] No se pudo arrancar el subprocess: {exc}"
+
+    assert proc.stdout is not None
+    try:
+        for line in proc.stdout:
+            captured.append(line)
+            sys.stdout.write(line)
+            sys.stdout.flush()
+        proc.wait()
+    except KeyboardInterrupt:
+        proc.terminate()
+        proc.wait()
+        return 130, "".join(captured)
+
+    return proc.returncode or 0, "".join(captured)

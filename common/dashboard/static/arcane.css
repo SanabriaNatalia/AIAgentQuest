@@ -1968,6 +1968,15 @@ code {
   letter-spacing: 0.03em;
 }
 
+.achievement-pill--cost {
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(192, 132, 252, 0.55);
+}
+
+.achievement-pill--cost .achievement-pill-count {
+  color: var(--arkanum-glow);
+}
+
 .trophies-section {
   margin-top: 3rem;
   padding-top: 2rem;

@@ -11,6 +11,7 @@ if sys.platform == "win32":
 import typer
 
 from common.cli.commands.check import check
+from common.cli.commands.cost import cost
 from common.cli.commands.current import current
 from common.cli.commands.dashboard import dashboard_app
 from common.cli.commands.doctor import doctor
@@ -36,6 +37,7 @@ app.command(
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )(start)
 app.command(name="check")(check)
+app.command(name="cost")(cost)
 
 
 @app.callback()
