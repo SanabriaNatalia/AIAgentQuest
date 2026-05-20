@@ -51,7 +51,7 @@
 | 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora `109d8a6`)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
 | 11 | Pistas (mecánica) | ✅ | `4388260` _(bitácora sin commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
 | 12 | Pistas (contenido) | ✅ | `25c2b9b` _(bitácora sin commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
-| 13 | Tracking tiempo/intentos | ✅ | _(pendiente de commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
+| 13 | Tracking tiempo/intentos | ✅ | `1428745` _(bitácora sin commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
 | 14 | Tracking costo | ⏳ | — | 2h | — |
 | 15 | Detección cierre acto | ⏳ | — | 2h | — |
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 13 — Tracking tiempo/intentos + logros calculados _(pendiente de commit)_
+### Fase 13 — Tracking tiempo/intentos + logros calculados (`1428745`, bitácora sin commitear)
 
 **Entregado**
 - **Tabla nueva `quest_progress`** en `common/progress/db.py`:
@@ -591,7 +591,7 @@
 
 ---
 
-_Plan original de F13 (cerrado pendiente de commit):_
+_Plan original de F13 (cerrado en `1428745`):_
 
 ### Fase 13 — Tracking tiempo/intentos + logros calculados (~4h)
 
