@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 5 — Viewer de READMEs y Códex |
-| **Próxima fase** | Fase 6 — Integración CLI + notificaciones |
-| **Tiempo invertido aprox.** | ~25h (acumulado Fases 0-5) |
-| **Tiempo restante estimado** | ~43h (Fases 6-17) |
+| **Última fase completada** | Fase 6 — Integración CLI + notificaciones |
+| **Próxima fase** | Fase 7 — Página de celebración |
+| **Tiempo invertido aprox.** | ~28h (acumulado Fases 0-6) |
+| **Tiempo restante estimado** | ~40h (Fases 7-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -44,7 +44,7 @@
 | 3 | Mapa + rangos | ✅ | `09e0c41` | 4h | Sin desviaciones |
 | 4 | Setup global + doctor | ✅ | `170b57a` | 5h | Vanilla JS polling en vez de HTMX (HTMX se vendoriza en F5) |
 | 5 | Viewer READMEs + Códex | ✅ | `3ffc6da` | 5h | HTMX **no vendorizado** — vanilla JS basta; theme Pygments monokai servido via `/api/pygments.css` |
-| 6 | Integración CLI + notif | ⏳ | — | 3h | — |
+| 6 | Integración CLI + notif | ✅ | _pendiente commit_ | 3h | `celebrate.html` placeholder creado aquí (la animación completa es F7); `kind` interno en BD usa snake_case, URL kebab-case |
 | 7 | Celebración | ⏳ | — | 3h | — |
 | 8 | Wizard init + CLI básico | ⏳ | — | 4h | Aquí se resuelve el bug UTF-8 de `show_progress`/`init_user` legacy |
 | 9 | Actualizar READMEs quests | ⏳ | — | 2h | — |
@@ -57,7 +57,7 @@
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-5 = ~25h reales / 24h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-6 = ~28h reales / 27h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,33 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 6 — Integración CLI + notificaciones (_pendiente commit_)
+
+**Entregado**
+- `common/progress/notify.py`:
+  - `emit_event(kind, payload)` → `httpx.post('http://127.0.0.1:{port}/events/{kind}', json=payload, timeout=0.3)`. Si el server no responde o falla, persiste el evento directamente en la tabla `events` con `seen=0` (fallback sin HTTP).
+  - `open_celebration(quest_id)` → `webbrowser.open(.../celebrate?quest=...)` con throttle de 5s vía `.last_celebrate.timestamp`.
+  - Ambos respetan `ARKANUM_NO_DASHBOARD=1`. `open_celebration` además respeta `ARKANUM_NO_CELEBRATION=1`.
+- `common/dashboard/routes/events.py` (router nuevo): `POST /events/quest-completed` con pydantic `QuestCompletedPayload`; persiste en `events` con `kind="quest_completed"` y devuelve `{ok, event_id, redirect: "/celebrate?quest=..."}`.
+- `common/dashboard/routes/api.py`: `GET /api/events/recent?limit=N` — devuelve eventos con `seen=0` y los marca como `seen=1` en la misma transacción (evita repetir notificaciones).
+- `common/dashboard/routes/pages.py`: `GET /celebrate?quest=...` (resolución por slug o por `db_id`).
+- `common/dashboard/templates/celebrate.html`: placeholder con quote de Zhyréon (la animación completa llega en F7).
+- `common/dashboard/server.py`: registra `events.router`.
+- `common/progress/db.py`: en `record_quest_completion`, después del INSERT exitoso, llama `_notify_dashboard()` que invoca `ensure_started()` + `emit_event("quest-completed", ...)` + `open_celebration(...)`. Cada side-effect va en su propio try/except — un fallo NO revierte el commit ni rompe `check.py`.
+
+**Desviaciones del plan**
+- **`celebrate.html` creado aquí en lugar de F7**. Era necesario para que el endpoint POST devuelva una `redirect` que el usuario pueda seguir manualmente y para que el GET `/celebrate` no devuelva 404. La animación completa con confetti/level-up sigue planificada para F7 — este es un placeholder estético mínimo.
+- **`kind` en BD usa snake_case (`quest_completed`)** mientras que la URL usa kebab-case (`/events/quest-completed`). Es la convención REST + Python convencional. El endpoint hace la traducción. Documentado por si confunde después.
+
+**Hallazgos / tech debt**
+- El test end-to-end con `ARKANUM_NO_DASHBOARD=1` confirma que `record_quest_completion` funciona sin side-effects: INSERT en `quest_completion` pasa, no se arranca server, no se intenta abrir browser, no se persiste evento.
+- Sin opt-out + sin server: `emit_event` persiste el evento como fallback. El polling de `/api/events/recent` lo recogerá la próxima vez que el dashboard abra.
+- Con server activo (TestClient): POST `/events/quest-completed` inserta evento, GET `/api/events/recent` lo trae una vez y la segunda llamada está vacía (seen=1 idempotente).
+- **Import circular potencial** entre `common.progress.db` y `common.dashboard.lifecycle`: resuelto con import diferido dentro de `_notify_dashboard()` (no en el top-level del módulo).
+- `.last_celebrate.timestamp` ya estaba en `.gitignore` desde F0.
 
 ---
 
@@ -208,45 +235,45 @@
 
 ## Próxima fase
 
-### Fase 6 — Integración CLI + notificaciones (~3h)
-
+### Fase 7 — Página de celebración (~3h)
 
 **Objetivo**
-> Done cuando: completar un quest dispara automáticamente la celebración en el dashboard (best-effort) y `ensure_started()` se llama desde los puntos de integración.
+> Done cuando: al terminar un quest, el aprendiz ve una pantalla con animación de level-up, banner del rango obtenido y un eco de Zhyréon. El template placeholder de F6 se reemplaza por la versión completa.
 
 **Plan**
-1. **`common/progress/notify.py`** — nuevo módulo con:
-   - `emit_event(kind, payload)` — `httpx.post(...)` con timeout 0.3s, try/except absoluto. Si falla, persiste directamente en la tabla `events` (sin HTTP).
-   - `open_celebration(quest_id)` — `webbrowser.open()` con throttle de 5s vía `.last_celebrate.timestamp`.
-2. **Endpoint** `POST /events/quest-completed` en `common/dashboard/routes/events.py` (router nuevo):
-   - Recibe `{quest_id, difficulty, rank, xp_total}`.
-   - Persiste en `events` con `kind="quest_completed"`.
-   - Devuelve `{ok: true, redirect: "/celebrate"}`.
-3. **`common/progress/db.py`**: `record_quest_completion` invoca `ensure_started()` + `emit_event("quest_completed", payload)` + `open_celebration(quest_id)` tras commit exitoso.
-4. **Opt-out**: respetar `ARKANUM_NO_DASHBOARD=1` y `ARKANUM_NO_CELEBRATION=1` (para CI/tests).
-5. **Endpoint** `GET /api/events/recent` para polling: devuelve los últimos N eventos con `seen=0`, marca `seen=1` al servirlos.
+1. **Detección de level-up**: comparar `level_before` (capturado antes del UPDATE en `record_quest_completion`) con `apprentice.level` actual. Si subió, mostrar variante "Asciendes a nivel N".
+2. **Reemplazar `celebrate.html`** placeholder por la versión completa:
+   - Hero con banner del quest completado (`/assets/images/quest-N-banner.png`).
+   - Quote del rango obtenido (de `QuestMeta.quote_zhyreon`).
+   - Stats: XP ganado, XP total, level antes → después.
+   - Animación CSS: fade-in del banner, glow pulsante en el rank badge.
+3. **`static/celebrate.js`**: confetti DOM-based sin librerías (~40 líneas). Spawn via `requestAnimationFrame`, density configurable.
+4. **`static/arcane.css`**: bloque "Celebrate" con `@keyframes` (`celebrate-fade-in`, `celebrate-glow`, `confetti-fall`); respetar `prefers-reduced-motion`.
+5. **Notificación en el perfil**: partial `partials/notifications.html` que en `/` muestra un toast "¡Quest completado!" si `/api/events/recent` devuelve un `quest_completed` sin ver, con link a `/celebrate?quest=...`.
 
 **Pre-condiciones**
-- Lifecycle ya soporta `ensure_started()` (✅ F1).
-- Tabla `events` existe (✅ F0).
-- Server ya escucha en puerto persistente con fallback (✅ F1).
+- `/celebrate` ya responde (✅ F6, placeholder).
+- Evento `quest_completed` ya se persiste y se recoge (✅ F6).
+- Banners en `/assets/images/` (✅ F2).
 
 **Archivos a tocar / crear**
-- ➕ `common/progress/notify.py`
-- ➕ `common/dashboard/routes/events.py`
-- ✏️ `common/progress/db.py` (hook en `record_quest_completion`)
-- ✏️ `common/dashboard/server.py` (incluir router events)
-- ✏️ `common/dashboard/routes/api.py` (+ `/api/events/recent`)
-- ✏️ `.gitignore` — `.last_celebrate.timestamp` ya está, verificar.
+- ✏️ `common/dashboard/templates/celebrate.html` (versión completa).
+- ➕ `common/dashboard/static/celebrate.js` (confetti).
+- ✏️ `common/dashboard/static/arcane.css` (keyframes + estilos hero celebrate).
+- ✏️ `common/dashboard/routes/pages.py` (cálculo de level-up usando payload del evento).
+- ✏️ `common/dashboard/routes/events.py` (extender `QuestCompletedPayload` con `xp_before` / `level_before`).
+- ✏️ `common/progress/db.py` (capturar `xp_before` / `level_before` antes del UPDATE y pasarlos en el payload).
+- ➕ `common/dashboard/templates/partials/notifications.html`.
+- ✏️ `common/dashboard/templates/profile.html` (incluir el partial).
 
 **Riesgos detectados**
-- Carrera entre `notify` y server arrancando: ya mitigado por la persistencia directa en `events` cuando el POST falla.
-- `webbrowser.open()` puede abrir múltiples pestañas si pasas quests seguidos: throttle 5s sobre `.last_celebrate.timestamp`.
-- Auto-start agresivo en CI/tests: respetar `ARKANUM_NO_DASHBOARD=1` en `ensure_started()` (ya implementado en F1) y agregar `ARKANUM_NO_CELEBRATION=1` para que el browser no se abra en CI aunque el server sí arranque.
+- Si el aprendiz completa un quest sin tener el dashboard abierto, al abrirlo después el evento sigue `seen=0` y se disparará la celebración tardía. Comportamiento esperado: el aprendiz nunca pierde la celebración.
+- Confetti puede pesar en máquinas modestas: density baja (~30 partículas) y desactivado con `prefers-reduced-motion: reduce`.
+- `xp_before` / `level_before` no se conocían antes del INSERT en F6 — hay que capturarlos justo antes del UPDATE de `apprentice`. Cambio menor pero requiere tocar `record_quest_completion`.
 
 **Criterio de cierre de la fase**
-- Ejecutar manualmente uno de los `check.py` de un quest no completado debería: (a) marcar el quest, (b) arrancar el dashboard si está apagado, (c) abrir el browser en `/celebrate` (placeholder hasta F7), (d) insertar evento en la tabla `events`.
-- `GET /api/events/recent` devuelve el evento y lo marca como seen.
-- Si `ARKANUM_NO_DASHBOARD=1`, ningún side-effect ocurre.
-- Cierre con commit `feat(dashboard): fase 6 - integracion CLI + notificaciones`.
+- Visitar `/celebrate?quest=quest_01_first_invocation` muestra hero arcano, banner, quote, XP ganado y rank obtenido. Si fue level-up, "Asciendes a nivel N".
+- Confetti corre 2-3 segundos. Con `prefers-reduced-motion: reduce` no aparece.
+- Visitar `/` con un evento sin ver muestra toast "¡Quest completado!" con link a `/celebrate`.
+- Cierre con commit `feat(dashboard): fase 7 - pagina de celebracion`.
 - Actualizar este archivo (sección "Detalle por fase" + tabla + "Próxima fase").

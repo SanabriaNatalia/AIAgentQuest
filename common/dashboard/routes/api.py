@@ -1,7 +1,8 @@
 """Endpoints JSON / fragmentos HTML consumidos por el cliente (polling)."""
+import json
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from common.dashboard.services.markdown import pygments_css
@@ -28,6 +29,40 @@ def setup_status_fragment(request: Request):
 def pygments_stylesheet() -> Response:
     """CSS generado dinámicamente por Pygments según el theme configurado."""
     return Response(content=pygments_css(), media_type="text/css")
+
+
+@router.get("/api/events/recent")
+def recent_events(limit: int = Query(20, ge=1, le=200)) -> JSONResponse:
+    """Devuelve eventos no vistos y los marca como `seen=1`.
+
+    El cliente lo consume vía polling. La transición a seen=1 se hace en
+    el mismo commit que la SELECT para evitar repetir notificaciones.
+    """
+    init_db()
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, kind, payload, created_at FROM events "
+            "WHERE seen = 0 ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+        if rows:
+            ids = [r[0] for r in rows]
+            placeholders = ",".join(["?"] * len(ids))
+            conn.execute(
+                f"UPDATE events SET seen = 1 WHERE id IN ({placeholders})",
+                ids,
+            )
+
+    items = []
+    for ev_id, kind, payload, created_at in rows:
+        try:
+            parsed = json.loads(payload)
+        except (TypeError, ValueError):
+            parsed = {"raw": payload}
+        items.append(
+            {"id": ev_id, "kind": kind, "payload": parsed, "created_at": created_at}
+        )
+    return JSONResponse({"events": items})
 
 
 @router.post("/api/quests/{slug}/mark-read")

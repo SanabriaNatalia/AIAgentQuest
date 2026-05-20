@@ -92,6 +92,9 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
 
     init_db()
 
+    completion_was_new = False
+    new_xp = 0
+
     with get_connection() as conn:
         apprentice = conn.execute(
             "SELECT id, xp FROM apprentice WHERE id = 1"
@@ -102,7 +105,7 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
                 "No se ha registrado el aprendiz. "
                 "Corre primero: uv run python -m common.progress.init_user"
             )
-        
+
         _, current_xp = apprentice
 
         existing_completion = conn.execute(
@@ -138,8 +141,45 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
             WHERE id = 1
             """,
             (
-                rank, 
-                new_xp, 
+                rank,
+                new_xp,
                 new_level
             ),
         )
+
+        completion_was_new = True
+
+    if completion_was_new:
+        _notify_dashboard(quest_id, difficulty, rank, new_xp)
+
+
+def _notify_dashboard(quest_id: str, difficulty: int, rank: str, xp_total: int) -> None:
+    """Side-effects best-effort. Cualquier fallo aquí NO debe revertir el commit."""
+    try:
+        from common.dashboard.lifecycle import ensure_started
+        from common.progress.notify import emit_event, open_celebration
+    except Exception:
+        return
+
+    try:
+        ensure_started()
+    except Exception:
+        pass
+
+    try:
+        emit_event(
+            "quest-completed",
+            {
+                "quest_id": quest_id,
+                "difficulty": difficulty,
+                "rank": rank,
+                "xp_total": xp_total,
+            },
+        )
+    except Exception:
+        pass
+
+    try:
+        open_celebration(quest_id)
+    except Exception:
+        pass

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Celebración · Arkanum{% endblock %}
+
+{% block content %}
+{# Placeholder de F6. La animación completa llega en F7. #}
+<section class="celebrate-placeholder">
+  <h1>⚜ Quest completado</h1>
+  {% if quest %}
+    <p class="celebrate-quest-title">{{ quest.title }}</p>
+    <p class="celebrate-rank">Rango: <strong>{{ quest.rank_unlocked }}</strong></p>
+  {% else %}
+    <p class="celebrate-quest-title">Un nuevo conjuro ha sido sellado.</p>
+  {% endif %}
+  <blockquote class="zhyreon-quote">
+    “Toda invocación deja un eco. El laboratorio recordará este momento.”
+    <cite>— Zhyréon</cite>
+  </blockquote>
+  <a href="/" class="viewer-cta">Volver al perfil</a>
+</section>
+{% endblock %}
