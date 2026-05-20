@@ -52,7 +52,7 @@
 | 11 | Pistas (mecánica) | ✅ | `4388260` _(bitácora sin commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
 | 12 | Pistas (contenido) | ✅ | `25c2b9b` _(bitácora sin commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
 | 13 | Tracking tiempo/intentos | ✅ | `1428745` _(bitácora sin commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
-| 14 | Tracking costo | ✅ | _(pendiente de commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
+| 14 | Tracking costo | ✅ | `e0467ee` _(bitácora sin commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
 | 15 | Detección cierre acto | ⏳ | — | 2h | — |
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 14 — Tracking de costo _(pendiente de commit)_
+### Fase 14 — Tracking de costo (`e0467ee`, bitácora sin commitear)
 
 **Entregado**
 - **Tabla nueva `quest_costs`** en `common/progress/db.py`:
@@ -666,7 +666,7 @@
 
 ---
 
-_Plan original de F14 (cerrado pendiente de commit):_
+_Plan original de F14 (cerrado en `e0467ee`):_
 
 ### Fase 14 — Tracking de costo (~2h)
 
