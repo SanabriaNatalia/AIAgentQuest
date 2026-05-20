@@ -102,9 +102,20 @@ Un agente IA es...
 
 ## Ejecutar el Quest
 
+> 💡 Para saber en qué quest estás: `arkanum current`
+
 ```bash
-uv run python -m quests.quest_02_token_metadata.starter.main
+arkanum start 2
 ```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_02_arcane_gauge.starter.main
+```
+
+</details>
 
 ---
 
@@ -115,6 +126,23 @@ Completaste el Quest si:
 - puedes ver los tokens consumidos
 - el programa valida usage_metadata
 - la respuesta sigue funcionando correctamente
+
+Valida con:
+
+```bash
+arkanum check 2
+```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_02_arcane_gauge.check
+```
+
+</details>
+
+Al pasar el check, el [dashboard arcano](http://127.0.0.1:8765) abrirá tu celebración automáticamente.
 
 ---
 

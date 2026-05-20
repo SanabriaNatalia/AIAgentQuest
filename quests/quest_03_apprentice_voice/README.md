@@ -57,9 +57,10 @@ Este módulo permite construir aplicaciones de terminal capaces de recibir argum
 Por ejemplo:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main \
-"¿Qué es un agente IA?"
+arkanum start 3 "¿Qué es un agente IA?"
 ```
+
+(o el equivalente legacy: `uv run python -m quests.quest_03_apprentice_voice.starter.main "¿Qué es un agente IA?"`)
 
 Aquí el texto:
 
@@ -148,7 +149,7 @@ es que Python valida automáticamente los argumentos.
 Por ejemplo, si ejecutas el programa sin enviar un prompt:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main
+arkanum start 3
 ```
 
 `argparse` mostrará un error explicando qué argumento falta.
@@ -292,11 +293,22 @@ La memoria permite que un agente mantenga contexto...
 
 ## Ejecutar el Quest
 
+> 💡 Para saber en qué quest estás: `arkanum current`
+
 Desde la raíz del proyecto:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "¿Qué es un agente IA?"
+arkanum start 3 "¿Qué es un agente IA?"
 ```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_03_apprentice_voice.starter.main "¿Qué es un agente IA?"
+```
+
+</details>
 
 ---
 
@@ -308,3 +320,20 @@ Completaste el Quest si:
 - el modelo responde correctamente
 - los tokens siguen mostrándose
 - `contents` recibe una lista de mensajes
+
+Valida con:
+
+```bash
+arkanum check 3
+```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_03_apprentice_voice.check
+```
+
+</details>
+
+Al pasar el check, el [dashboard arcano](http://127.0.0.1:8765) abrirá tu celebración automáticamente.

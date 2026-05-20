@@ -15,9 +15,14 @@ console = Console()
 
 
 def start(
+    ctx: typer.Context,
     number: int = typer.Argument(..., help="Número del quest (1..8)"),
 ) -> None:
-    """Ejecutar el starter del quest indicado."""
+    """Ejecutar el starter del quest indicado.
+
+    Cualquier argumento extra después del número se reenvía al starter.
+    Ejemplo: `arkanum start 3 "¿Qué es un agente IA?"`.
+    """
     quest = resolve_quest_by_number(number)
     module = starter_module(quest)
 
@@ -28,10 +33,12 @@ def start(
         )
         raise typer.Exit(1)
 
+    extra = list(ctx.args)
     console.print(
-        f"[dim]Ejecutando[/] [cyan]{module}[/] [dim]· Quest {quest.order} — {quest.title}[/]"
+        f"[dim]Ejecutando[/] [cyan]{module}[/] "
+        f"[dim]· Quest {quest.order} — {quest.title}[/]"
     )
     console.print()
-    rc = run_module(module)
+    rc = run_module(module, extra_args=extra)
     if rc != 0:
         raise typer.Exit(rc)

@@ -320,6 +320,25 @@ Léela así:
 
 ---
 
+## Ejecutar el Quest
+
+> 💡 Para saber en qué quest estás: `arkanum current`
+
+```bash
+arkanum start 5
+```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_05_forbidden_directory.starter.main
+```
+
+</details>
+
+---
+
 ## Criterio de éxito
 
 Completaste el Quest si:
@@ -328,6 +347,23 @@ Completaste el Quest si:
 - las tools bloquean rutas externas
 - los errores se devuelven como texto
 - el agente no puede escapar del directorio permitido
+
+Valida con:
+
+```bash
+arkanum check 5
+```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_05_forbidden_directory.check
+```
+
+</details>
+
+Al pasar el check, el [dashboard arcano](http://127.0.0.1:8765) abrirá tu celebración automáticamente.
 
 ### Validación de rutas
 

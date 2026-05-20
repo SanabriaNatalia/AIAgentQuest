@@ -31,7 +31,10 @@ app.command(name="init")(init)
 app.command(name="current")(current)
 app.command(name="next")(next_quest)
 app.command(name="progress")(progress)
-app.command(name="start")(start)
+app.command(
+    name="start",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(start)
 app.command(name="check")(check)
 
 

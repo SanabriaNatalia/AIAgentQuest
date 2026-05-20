@@ -197,10 +197,10 @@ para inspeccionar:
 Ejemplo:
 
 ```bash
-uv run python -m quests.quest_07_agent_embodiment.starter.main \
-"lee notes.txt" \
---verbose
+arkanum start 7 "lee notes.txt" --verbose
 ```
+
+(o el equivalente legacy: `uv run python -m quests.quest_07_agent_incarnation.starter.main "lee notes.txt" --verbose`)
 
 ---
 
@@ -335,3 +335,50 @@ Por ahora solo queremos:
 - ejecutar tools reales
 - observar resultados
 - conectar intención con acción
+
+---
+
+## Ejecutar el Quest
+
+> 💡 Para saber en qué quest estás: `arkanum current`
+
+```bash
+arkanum start 7 "¿Qué archivos hay en la raíz?" --verbose
+```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_07_agent_incarnation.starter.main "¿Qué archivos hay en la raíz?" --verbose
+```
+
+</details>
+
+---
+
+## Criterio de éxito
+
+Completaste el Quest si:
+
+- `function_map` registra las 4 tools (`get_files_info`, `get_file_content`, `write_file`, `run_python_file`)
+- `call_function` ejecuta funciones reales con `working_directory` inyectado
+- las respuestas vuelven envueltas en `types.Content(role="tool", ...)`
+- `--verbose` muestra prompt/tokens/tool calls/resultados
+
+Valida con:
+
+```bash
+arkanum check 7
+```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_07_agent_incarnation.check
+```
+
+</details>
+
+Al pasar el check, el [dashboard arcano](http://127.0.0.1:8765) abrirá tu celebración automáticamente.

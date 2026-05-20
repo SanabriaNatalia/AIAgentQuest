@@ -104,7 +104,7 @@ a GitHub (a ningún repositorio en general).
 Abre:
 
 ```text
-quests/quest_01_first_agent/starter/main.py
+quests/quest_01_first_invocation/starter/main.py
 ```
 
 En este Quest aprenderás a:
@@ -139,22 +139,44 @@ Los agentes IA son sistemas capaces de...
 
 ## Ejecutar el Quest
 
+> 💡 Para saber en qué quest estás: `arkanum current`
+
 Desde la raíz del proyecto:
 
 ```bash
-uv run python -m quests.quest_01_first_agent.starter.main
+arkanum start 1
 ```
+
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_01_first_invocation.starter.main
+```
+
+</details>
 
 ---
 
 ## Criterio de éxito
 
-Cuando termines, ejecuta el siguiente comando para validar:
+Cuando termines, valida el quest con:
 
 ```bash
-uv run python -m quests.quest_01_first_agent.check
+arkanum check 1
 ```
 
-Mini nota: este check consume una llamada real a Gemini porque ejecuta el starter. Tenlo presente y no lo corras hasta terminar todos los TODOs para evitar pasarte de los límites.
+<details>
+<summary>Alternativa con <code>uv run</code></summary>
+
+```bash
+uv run python -m quests.quest_01_first_invocation.check
+```
+
+</details>
+
+Al completar el check con éxito, el [dashboard arcano](http://127.0.0.1:8765) se abrirá automáticamente con tu celebración.
+
+> Mini nota: este check consume una llamada real a Gemini porque ejecuta el starter. Tenlo presente y no lo corras hasta terminar todos los TODOs para evitar pasarte de los límites.
 
 ---
