@@ -165,11 +165,143 @@
     setInterval(function () { pollToast(host); }, interval);
   }
 
+  // --- Pistas: modal de confirmación + POST async ---------------------
+  function initHints() {
+    var modal = document.getElementById("hint-modal");
+    if (!modal) return;
+
+    var section = document.querySelector("[data-hints-slug]");
+    if (!section) return;
+
+    var targetLabel = modal.querySelector("[data-hint-modal-target]");
+    var confirmBtn = modal.querySelector("[data-hint-modal-confirm]");
+    var dismissNodes = modal.querySelectorAll("[data-hint-modal-dismiss]");
+    var pendingCard = null;
+
+    function openModal(card) {
+      pendingCard = card;
+      var title = card.querySelector(".hint-card-title");
+      if (targetLabel) {
+        targetLabel.textContent = title ? "Pista a revelar: " + title.textContent : "";
+      }
+      modal.classList.remove("hint-modal--hidden");
+      modal.removeAttribute("hidden");
+    }
+
+    function closeModal() {
+      pendingCard = null;
+      modal.classList.add("hint-modal--hidden");
+      modal.setAttribute("hidden", "");
+    }
+
+    function reveal(card, html, requestedAt) {
+      var btn = card.querySelector(".hint-card-button");
+      card.classList.remove("hint-card--available");
+      card.classList.add("hint-card--revealed");
+      if (btn) btn.remove();
+
+      var body = document.createElement("div");
+      body.className = "hint-card-body";
+      body.setAttribute("data-hint-content", "");
+      body.innerHTML = html || "<p><em>Contenido vacío.</em></p>";
+      card.appendChild(body);
+
+      if (requestedAt) {
+        var footer = document.createElement("p");
+        footer.className = "hint-card-footer arkanum-muted";
+        footer.textContent = "Revelada el " + requestedAt;
+        card.appendChild(footer);
+      }
+
+      unlockNext(card);
+    }
+
+    function unlockNext(card) {
+      var level = parseInt(card.dataset.hintLevel || "0", 10);
+      if (!level) return;
+      var nextCard = section.querySelector('.hint-card[data-hint-level="' + (level + 1) + '"]');
+      if (!nextCard || !nextCard.classList.contains("hint-card--locked")) return;
+      nextCard.classList.remove("hint-card--locked");
+      nextCard.classList.add("hint-card--available");
+
+      var locked = nextCard.querySelector(".hint-card-footer");
+      if (locked && locked.textContent.indexOf("Requiere") !== -1) {
+        locked.remove();
+      }
+
+      var slug = section.dataset.hintsSlug;
+      if (!slug) return;
+      if (nextCard.querySelector(".hint-card-button")) return;
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "hint-card-button";
+      btn.textContent = "Solicitar pista";
+      btn.dataset.hintRequestUrl = "/api/quests/" + slug + "/hints/" + (level + 1);
+      btn.addEventListener("click", function () { openModal(nextCard); });
+      nextCard.appendChild(btn);
+    }
+
+    section.querySelectorAll(".hint-card-button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var card = btn.closest(".hint-card");
+        if (card) openModal(card);
+      });
+    });
+
+    dismissNodes.forEach(function (node) {
+      node.addEventListener("click", closeModal);
+    });
+
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", function () {
+        if (!pendingCard) { closeModal(); return; }
+        var card = pendingCard;
+        var btn = card.querySelector(".hint-card-button");
+        var url = btn ? btn.dataset.hintRequestUrl : null;
+        if (!url) { closeModal(); return; }
+
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Revelando…";
+
+        fetch(url, {
+          method: "POST",
+          headers: { Accept: "application/json", "Content-Type": "application/json" },
+        })
+          .then(function (r) {
+            if (!r.ok) {
+              return r.json().catch(function () { return { detail: "Error" }; })
+                .then(function (body) { throw new Error(body.detail || "Error"); });
+            }
+            return r.json();
+          })
+          .then(function (data) {
+            reveal(card, data.html, data.requested_at);
+            closeModal();
+          })
+          .catch(function (err) {
+            alert("No se pudo revelar la pista: " + (err && err.message ? err.message : ""));
+            closeModal();
+          })
+          .finally(function () {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "Sí, revelar";
+          });
+      });
+    }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && !modal.classList.contains("hint-modal--hidden")) {
+        closeModal();
+      }
+    });
+  }
+
   function init() {
     initPolling();
     initCopyButtons();
     initMarkRead();
     initToast();
+    initHints();
   }
 
   if (document.readyState === "loading") {

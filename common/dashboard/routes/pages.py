@@ -2,6 +2,10 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from common.dashboard.services.hints import (
+    get_hint,
+    list_hints_for,
+)
 from common.dashboard.services.markdown import (
     render_markdown_file,
     resolve_codex_path,
@@ -125,6 +129,14 @@ def quest_page(request: Request, slug: str):
         )
 
     rendered = render_markdown_file(readme_path)
+    hints = list_hints_for(quest)
+    hint_contents: dict[int, str] = {}
+    for meta in hints:
+        if meta.requested:
+            rendered_hint = get_hint(quest, meta.level)
+            if rendered_hint is not None:
+                hint_contents[meta.level] = rendered_hint.html
+
     return templates.TemplateResponse(
         request,
         "quest_view.html",
@@ -136,6 +148,8 @@ def quest_page(request: Request, slug: str):
             "act": ACTS[quest.act],
             "roman": ROMAN,
             "already_read": is_quest_readme_read(quest.db_id),
+            "hints": hints,
+            "hint_contents": hint_contents,
         },
     )
 

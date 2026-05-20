@@ -5,6 +5,12 @@ from datetime import datetime
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
 
+from common.dashboard.services.hints import (
+    HintRequestError,
+    get_hint,
+    list_hints_for,
+    request_hint,
+)
 from common.dashboard.services.markdown import pygments_css
 from common.dashboard.services.quest_catalog import quest_by_slug
 from common.dashboard.services.setup_check import build_setup_context
@@ -87,6 +93,58 @@ def dismiss_event(event_id: int) -> JSONResponse:
         if cur.rowcount == 0:
             raise HTTPException(status_code=404, detail="Evento no encontrado.")
     return JSONResponse({"ok": True, "event_id": event_id})
+
+
+def _serialize_hint(meta) -> dict:
+    return {
+        "level": meta.level,
+        "title": meta.title,
+        "description": meta.description,
+        "file_exists": meta.file_exists,
+        "eligible": meta.eligible,
+        "requested": meta.requested,
+        "requested_at": meta.requested_at,
+    }
+
+
+@router.get("/api/quests/{slug}/hints")
+def list_quest_hints(slug: str) -> JSONResponse:
+    """Estado actual de las 3 pistas del quest. Sólo metadatos; el contenido
+    se obtiene cuando la pista ha sido solicitada."""
+    quest = quest_by_slug(slug)
+    if quest is None:
+        raise HTTPException(status_code=404, detail="Quest desconocida.")
+
+    hints = list_hints_for(quest)
+    return JSONResponse({
+        "slug": slug,
+        "hints": [_serialize_hint(h) for h in hints],
+    })
+
+
+@router.post("/api/quests/{slug}/hints/{level}")
+def request_quest_hint(slug: str, level: int) -> JSONResponse:
+    """Marca una pista como solicitada y devuelve su contenido renderizado.
+
+    Valida orden estricto del lado servidor: la II requiere la I, la III
+    requiere la II. Idempotente: pedir la misma pista dos veces no duplica.
+    """
+    quest = quest_by_slug(slug)
+    if quest is None:
+        raise HTTPException(status_code=404, detail="Quest desconocida.")
+
+    try:
+        requested_at = request_hint(quest, level)
+    except HintRequestError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    rendered = get_hint(quest, level)
+    return JSONResponse({
+        "slug": slug,
+        "level": level,
+        "requested_at": requested_at,
+        "html": rendered.html if rendered else "",
+    })
 
 
 @router.post("/api/quests/{slug}/mark-read")

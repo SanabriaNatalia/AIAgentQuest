@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 10 — Pre-check local |
-| **Próxima fase** | Fase 11 — Sistema de pistas (mecánica) |
-| **Tiempo invertido aprox.** | ~41h (acumulado Fases 0-10) |
-| **Tiempo restante estimado** | ~27h (Fases 11-17) |
+| **Última fase completada** | Fase 11 — Sistema de pistas (mecánica) |
+| **Próxima fase** | Fase 12 — Sistema de pistas (contenido) |
+| **Tiempo invertido aprox.** | ~46h (acumulado Fases 0-11) |
+| **Tiempo restante estimado** | ~22h (Fases 12-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -48,8 +48,8 @@
 | 7 | Celebración | ✅ | `a76a32d` | 3h | Toast del perfil usa endpoint `peek` (no consume) + `dismiss` explícito en vez de marcar `seen=1` al renderizar; service `celebration.py` reconstruye contexto desde el último evento `quest_completed` |
 | 8 | Wizard init + CLI básico | ✅ | `f84af06` _(bitácora sin commit)_ | 4h | Legacy `init_user.py` / `show_progress.py` se conservan intactos (no se borran); módulo `next.py` renombrado a `next_quest.py` porque `next` es builtin de Python |
 | 9 | Actualizar READMEs quests | ✅ | `cce7dd9` _(bitácora sin commit)_ | 2h | `arkanum start N` ahora acepta args extras (cambio mini-scope en start.py); 5 READMEs tenían typos de paths viejos (`quest_01_first_agent`, etc.) — corregidos |
-| 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora sin commit)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
-| 11 | Pistas (mecánica) | ⏳ | — | 5h | — |
+| 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora `109d8a6`)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
+| 11 | Pistas (mecánica) | ✅ | _(pendiente de commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
 | 12 | Pistas (contenido) | ⏳ | — | 5h | Trabajo pedagógico, no de código |
 | 13 | Tracking tiempo/intentos | ⏳ | — | 4h | — |
 | 14 | Tracking costo | ⏳ | — | 2h | — |
@@ -57,7 +57,7 @@
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-10 = ~41h reales / 40h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-11 = ~46h reales / 45h planificadas (cercano al estimado).
 
 ---
 
@@ -132,7 +132,64 @@
 
 ---
 
-### Fase 10 — Pre-check local (`a17d8e3`, bitácora sin commitear)
+### Fase 11 — Sistema de pistas, mecánica _(pendiente de commit)_
+
+**Entregado**
+- **24 placeholders `.md`** en `quests/quest_NN_*/hints/{1_susurro,2_revelacion,3_manifestacion}.md`. Cada uno renderiza ya con markdown-it y trae un H1 + blockquote "Contenido pendiente — F12" + una línea describiendo la naturaleza de la pista. Pensados para no quedar mudos durante F11; el contenido pedagógico real llega en F12.
+- **`common/dashboard/services/hints.py`** (nuevo):
+  - `HintMeta` dataclass con `level`, `title`, `name`, `description`, `file_exists`, `eligible`, `requested`, `requested_at`.
+  - Constante `HINT_LEVELS = ((1, "Susurro", "1_susurro.md"), (2, "Revelación", ...), (3, "Manifestación", ...))` — fuente única para nombres de archivo / títulos.
+  - `list_hints_for(quest)` — calcula eligibility en cascada (la I siempre arranca elegible; la N+1 requiere que la N esté `requested`).
+  - `get_hint(quest, level)` — sólo renderiza si la pista YA fue solicitada (defense in depth contra escrapeo del filesystem por URL).
+  - `request_hint(quest, level)` — valida nivel ∈ {1,2,3}, archivo existe, orden estricto; `INSERT OR IGNORE` para idempotencia. Lanza `HintRequestError` con mensaje descriptivo.
+  - `used_hints(quest)` y `is_no_red_eligible(quest)` para el logro "Sin red".
+- **Endpoints** en `common/dashboard/routes/api.py`:
+  - `GET /api/quests/{slug}/hints` — JSON con metadatos de las 3 pistas (sin contenido).
+  - `POST /api/quests/{slug}/hints/{level}` — marca como solicitada y devuelve `{ slug, level, requested_at, html }` con el markdown renderizado. 400 si fuera de orden o nivel inválido, 404 si el slug no existe.
+- **`common/dashboard/routes/pages.py`**: `quest_page` ahora pasa `hints` (lista) y `hint_contents` (dict `{level: html}`) al template; reaprovecha `render_markdown_file` del servicio existente.
+- **Template `quest_view.html`** (modificado): añade `<section class="hints-section">` al final con 3 `<article class="hint-card hint-card--{state}">` y un modal de confirmación al final del documento (estado `hidden` por defecto, controlado vía JS).
+- **CSS** (`arcane.css` +200 líneas): bloque `Sistema de pistas` con:
+  - `.hint-card` base + variantes `--locked` (opacidad 0.55 + grayscale 0.4), `--available` (borde púrpura + glow sutil), `--revealed` (borde dorado + paleta más cálida).
+  - `.hint-card-numeral` circular con romano (I/II/III).
+  - `.hint-modal` fixed + backdrop blur + `.hint-modal-card` con CTAs reusando `.viewer-cta` y la variante `--ghost` de F7.
+  - Responsive: el grid usa `repeat(auto-fit, minmax(260px, 1fr))` para colapsar a 1 columna en mobile; el modal apila actions verticalmente en pantallas <540px.
+- **JS** (`dashboard.js` `initHints()`): handler de click en `.hint-card-button` → abre modal con título de la pista; confirmar dispara `fetch POST`, inserta dinámicamente `<div class="hint-card-body">` con el HTML devuelto, remueve el botón, cambia clase a `--revealed` y **desbloquea automáticamente la siguiente carta** (la cambia de `--locked` a `--available` e inyecta su botón). Soporta cierre con Escape, backdrop click, botón Cancelar. Vanilla — sin HTMX (consistente con F4/F5).
+
+**Smoke test ejecutado** (TestClient + temp DB aislada):
+- GET inicial → 3 pistas, sólo I eligible.
+- Quest desconocida → 404.
+- POST II sin I → 400 con mensaje "orden estricto".
+- POST nivel 99 → 400 nivel inválido.
+- POST I → 200 con `html` que contiene `<h1` + "Susurro".
+- POST I de nuevo → 200 idempotente (no duplica).
+- POST III sin II → 400.
+- POST II tras I → 200; POST III tras II → 200.
+- GET final → las 3 pistas marcadas `requested=True`.
+- `/quest/quest_01_first_invocation` HTML contiene "ofrendas del aprendiz" y "hint-card--revealed".
+- `/quest/quest_03_apprentice_voice` (locked) muestra sealed view y NO incluye el bloque de pistas.
+- `/quest/quest_02_arcane_gauge` (current) muestra al menos una `hint-card--available`.
+
+**Sanity contra dashboard real** (puerto 8765):
+- `GET /api/quests/quest_01_first_invocation/hints` responde 200 con JSON consistente.
+- `GET /quest/quest_01_first_invocation` incluye bloque "ofrendas del aprendiz" + botón clase `hint-card-button`.
+- BD real (`.quest_progress.db`) sin entries en `hint_usage` tras el smoke (no contamina).
+
+**Desviaciones del plan**
+- **Modal renderizado en el mismo template** en vez de `partials/notifications.html`. El plan F11 mencionaba un partial separado; va embebido al final de `quest_view.html` porque sólo aparece en esa página. Si en F15 el cierre de acto necesita su propio modal, ahí se refactoriza a partial. Misma decisión que F7 (toast).
+- **Auto-unlock de la siguiente carta en JS** (sin recarga de página): el plan sólo pedía revelar el contenido; agregar el desbloqueo de la N+1 en cliente da una UX mucho mejor (pides la I → la II se ilumina inmediatamente sin F5). Sigue siendo defense-in-depth: el server siempre valida orden.
+- **`hint_contents` se calcula en el route handler** en vez de en el template via filter Jinja. Razón: render markdown desde el template requeriría exponer una función al ambiente Jinja; pasar el dict pre-calculado es más explícito y testeable.
+- **Sin endpoint partial HTML** — `POST` devuelve JSON y el cliente arma el DOM. Considerado: server-renderear el card y enviarlo via HTMX-style. Descartado por consistencia con el resto (toast, mark-read, copy también son JSON + JS).
+
+**Hallazgos / tech debt**
+- **Placeholders renderizan markdown ya en F11**: la imagen visual desde el primer commit es razonable, no se ve un texto crudo o "Lorem ipsum" si alguien revela una pista en este estado. F12 sólo cambia el contenido pedagógico, no la mecánica ni el styling.
+- **Inyección de HTML dinámico**: el `hint-card-body` se construye con `innerHTML = data.html`, donde `data.html` viene del backend (Pygments + markdown-it). Es seguro porque el contenido viene del repo del usuario (no de input externo), pero queda registrado para futuras pistas que pudieran venir de fuentes no confiables.
+- **`alert()` en el catch del POST**: para errores 400 (orden incorrecto) muestra un `alert` nativo. Aceptable porque el flujo del modal NUNCA debería disparar un 400 (el server-side ya está sincronizado con el estado del UI); si pasa, es bug que merece atención inmediata. Si se quiere refinar más adelante, agregar un slot `[data-hint-error]` en el modal.
+- **`is_no_red_eligible(quest)` no se expone en UI todavía**: F13 (tracking tiempo/intentos + logros calculados) consumirá esta función. La dejo lista pero sin componente visual.
+- **Página /quest sigue siendo el único lugar con pistas**. No hay una página `/hints` global ni mención en el perfil. Si más adelante se requiere "ver todas las pistas que pediste", el dato está en `hint_usage` y `list_hints_for` ya soporta listarlas; sólo faltaría una vista agregada.
+
+---
+
+### Fase 10 — Pre-check local (`a17d8e3`, bitácora `109d8a6`)
 
 **Entregado**
 - `common/cli/pre_checks/_ast_helpers.py` (nuevo): helpers ligeros mezclando AST y regex:
@@ -351,6 +408,9 @@
 | Legacy `init_user`/`show_progress` intacto | F8 | `arkanum init`/`progress` lo reemplazan; legacy queda hasta F9 actualice los READMEs |
 | Pre-checks mix AST + regex | F10 | AST para imports/llamadas/atributos; regex para literales tipo "Prompt tokens:" — consciente de que regex matchea comentarios |
 | Flag `--yes` en `arkanum check` | F10 | Para scripts/CI que no pueden responder al `typer.confirm` |
+| Modal de pistas inline en quest_view | F11 | En vez de partial — sólo se usa en esa página, igual que el toast de F7 |
+| Auto-unlock de pista N+1 en cliente | F11 | UX inmediata; server sigue validando orden estricto |
+| Placeholders ya renderizables en F11 | F11 | Texto "Contenido pendiente — F12" se ve decente desde el primer commit |
 
 ## Tech debt acumulado
 
@@ -363,64 +423,62 @@
 
 ## Próxima fase
 
+### Fase 12 — Sistema de pistas, contenido (~5h) ⚠️ pedagógico
+
+**Objetivo**
+> Done cuando: los 24 archivos `quests/quest_NN_*/hints/{1,2,3}_*.md` tienen contenido pedagógico real adaptado a los TODOs de cada starter — pregunta orientadora (I), nombre de concepto/función (II), snippet 2-4 líneas (III). Reemplaza los placeholders "Contenido pendiente — F12" creados en F11.
+
+**Plan**
+1. **Por cada quest (Q01..Q08)**:
+   - Identificar el TODO más representativo donde un aprendiz se atasca (cargar `.env` para Q01, copiar Q02 para Q03, registrar schemas para Q06, etc.).
+   - Redactar las 3 pistas siguiendo el contrato:
+     - **I — Susurro**: una sola pregunta abierta que invite a observar (no más de 2 oraciones). No revelar nombres ni funciones.
+     - **II — Revelación**: el nombre del concepto / función / estructura clave. Puede mencionar el módulo (`os.environ`, `types.Content`, `available_functions`, etc.) pero sin pegar la línea de código.
+     - **III — Manifestación**: 2-4 líneas de código que rompen el bloqueo (no la solución completa).
+   - Mantener tono arcano consistente con el resto del laboratorio (Zhyréon como narrador opcional).
+2. **No tocar mecánica** — F11 ya entrega service/endpoints/UI funcionando. Sólo es reemplazar el `.md` de cada archivo.
+3. **Validación**:
+   - Smoke test: solicitar las 3 pistas de Q01 vía `POST /api/quests/.../hints/{level}` y verificar que el HTML rendido contiene los conceptos esperados (no el placeholder).
+   - Revisión manual de pares (I → II → III) para que la escalada sea coherente: la I no anticipa la II, la II no anticipa la III.
+
+**Pre-condiciones**
+- Mecánica de pistas operativa (✅ F11).
+- Starters de los 8 quests con TODOs identificables (✅).
+
+**Archivos a tocar**
+- ✏️ `quests/quest_NN_*/hints/1_susurro.md` × 8
+- ✏️ `quests/quest_NN_*/hints/2_revelacion.md` × 8
+- ✏️ `quests/quest_NN_*/hints/3_manifestacion.md` × 8
+
+**Riesgos detectados**
+- **Trabajo pedagógico no técnico**: el reto es redactar 24 piezas cortas con escalada coherente, no programar. Si una pista revela demasiado, neutraliza la siguiente.
+- **Salud del logro "Sin red"**: pistas excesivamente útiles invitan a pedirlas siempre; pistas inútiles las hacen irrelevantes. Tono "ofrenda, no atajo".
+- **Vocabulario**: las pistas deben usar los mismos identificadores que ya aparecen en los TODOs del starter (no introducir nombres alternos que confundan).
+- **Acto III/IV en desarrollo**: por ahora sólo hay 8 quests; cuando los actos III/IV se materialicen, F12 escalará proporcionalmente.
+
+**Criterio de cierre de la fase**
+- Los 24 archivos `.md` ya no contienen la frase "Contenido pendiente — F12".
+- Smoke: `POST /api/quests/quest_01_first_invocation/hints/3` devuelve un snippet de código real (no placeholder).
+- Revisión manual: ningún I revela la II ni la II revela la III.
+- Cierre con commit `feat(dashboard): fase 12 - contenido de pistas`.
+- Actualizar este archivo (sección "Detalle por fase" + tabla + "Próxima fase").
+
+---
+
+_Plan original de F11 (cerrado pendiente de commit):_
+
 ### Fase 11 — Sistema de pistas, mecánica (~5h)
 
 **Objetivo**
-> Done cuando: cada quest expone hasta 3 pistas (Susurro / Revelación / Manifestación) en el dashboard, solicitables en orden estricto, con confirmación explícita y persistencia en `hint_usage`. La pista I no se puede saltar; la II requiere la I; la III requiere la II. Una vez pedidas, las pistas siguen visibles. Esta fase entrega la **mecánica** (servicio + endpoints + UI); el contenido pedagógico va en F12.
+> Done cuando: cada quest expone hasta 3 pistas en orden estricto, con confirmación explícita y persistencia en `hint_usage`.
 
-**Plan**
-1. **Estructura de carpetas por quest** (vacías de contenido):
-   - `quests/quest_NN_*/hints/1_susurro.md`
-   - `quests/quest_NN_*/hints/2_revelacion.md`
-   - `quests/quest_NN_*/hints/3_manifestacion.md`
-   - Inicialmente con placeholder "Contenido pendiente — F12".
-2. **`common/dashboard/services/hints.py`** (nuevo):
-   - `HintMeta` dataclass (nivel, título, slug del archivo, eligible, requested).
-   - `list_hints_for(quest)` → 3 entradas con estado dinámico calculado contra `hint_usage`.
-   - `get_hint(quest, level)` → renderiza el `.md` correspondiente con `services/markdown.py` (sólo si `requested=True`).
-   - `request_hint(quest, level)` → valida orden estricto (II requiere I), inserta en `hint_usage` (idempotente). Devuelve `(ok, error_message)`.
-   - `used_hints(quest)` → `set[int]` para el viewer.
-   - `is_no_red_eligible(quest)` → `not used_hints(quest)`.
-3. **Endpoints** (`common/dashboard/routes/api.py`):
-   - `GET /api/quests/{slug}/hints` → estado actual de las 3 pistas (JSON o partial HTML).
-   - `POST /api/quests/{slug}/hints/{level}` → marca como solicitada con confirmación previa (cuerpo: `{ "confirm": true }`). Devuelve el HTML renderizado de la pista.
-4. **UI** en `templates/quest_view.html`:
-   - Bloque al final del README "Las ofrendas del aprendiz" con 3 cartas (Susurro / Revelación / Manifestación).
-   - Cartas locked muestran candado y label "Requiere pista anterior".
-   - Cartas eligible muestran botón "Solicitar pista" → modal de confirmación.
-   - Cartas ya pedidas muestran su contenido renderizado.
-5. **CSS** (`arcane.css`):
-   - Bloque `.hint-card` con variantes `--locked`, `--available`, `--revealed` (paleta púrpura / dorado).
-   - Modal de confirmación reutilizable.
-6. **Tests**:
-   - Smoke test con TestClient: estado inicial, solicitar pista II sin I → 400, solicitar I → 200, II después → 200, contenido del .md aparece renderizado.
-
-**Pre-condiciones**
-- Tabla `hint_usage` ya existe (✅ F0).
-- Service `markdown.py` con renderizado de `.md` (✅ F5).
-- Catálogo de quests con slug y db_id (✅ F2).
-
-**Archivos a tocar / crear**
-- ➕ `quests/quest_NN_*/hints/{1,2,3}_*.md` (24 archivos placeholder)
-- ➕ `common/dashboard/services/hints.py`
-- ✏️ `common/dashboard/routes/api.py` (3 endpoints)
-- ✏️ `common/dashboard/templates/quest_view.html` (bloque al final)
-- ✏️ `common/dashboard/static/arcane.css` (estilos de hints)
-- ✏️ `common/dashboard/static/dashboard.js` (init modal + POST)
-
-**Riesgos detectados**
-- **Orden estricto** debe validarse del lado del servidor; el front nunca decide. Sin esto, un usuario podría pedir la III sin haber visto I/II.
-- **Sin penalización XP** (sólo afecta logro "Sin red"): documentar esto en el modal de confirmación para que el aprendiz no sienta que está "perdiendo" puntos.
-- **Persistencia idempotente**: `INSERT OR IGNORE INTO hint_usage(quest_id, hint_level, requested_at)` para que recargar no duplique filas.
-- **Markdown de las pistas** debe renderizar dentro del layout del quest sin romper el TOC. Probar que `markdown-it-py` + reescritura de links no rompe con docs internos.
-
-**Criterio de cierre de la fase**
-- `GET /api/quests/quest_01_first_invocation/hints` devuelve 3 pistas con estado correcto.
-- Solicitar pista II sin haber pedido la I devuelve 400 con mensaje claro.
-- Después de pedir las 3 pistas en orden, recargar `/quest/quest_01_first_invocation` muestra el bloque "Las ofrendas del aprendiz" con las 3 reveladas.
-- `is_no_red_eligible(quest)` retorna `False` después de pedir cualquier pista.
-- Cierre con commit `feat(dashboard): fase 11 - sistema de pistas (mecanica)`.
-- Actualizar este archivo (sección "Detalle por fase" + tabla + "Próxima fase").
+**Plan resumido**
+1. 24 placeholders `.md` en `quests/quest_NN_*/hints/`.
+2. `common/dashboard/services/hints.py` con `HintMeta`, `list_hints_for`, `get_hint`, `request_hint`, `used_hints`, `is_no_red_eligible`.
+3. Endpoints `GET /api/quests/{slug}/hints` y `POST /api/quests/{slug}/hints/{level}`.
+4. UI en `quest_view.html`: bloque "Las ofrendas del aprendiz" + modal de confirmación.
+5. CSS + JS vanilla (initHints): handler de click, modal, POST, inyección del HTML revelado, auto-unlock de N+1.
+6. Smoke con TestClient: orden estricto, idempotencia, render del .md.
 
 ---
 

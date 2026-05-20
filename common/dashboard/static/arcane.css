@@ -1680,3 +1680,242 @@ code {
     opacity: 1;
   }
 }
+
+/* === Sistema de pistas (F11) ============================================ */
+
+.hints-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(201, 169, 97, 0.25);
+}
+
+.hints-header h2 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  color: var(--arkanum-gold);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.04em;
+}
+
+.hints-header p {
+  max-width: 60ch;
+  margin-bottom: 1.5rem;
+}
+
+.hints-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.hint-card {
+  position: relative;
+  background: linear-gradient(165deg, var(--arkanum-bg-soft) 0%, var(--arkanum-bg-soft-2) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 14px;
+  padding: 1.25rem 1.25rem 1.5rem;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.hint-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.hint-card-numeral {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.18);
+  color: var(--arkanum-glow);
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(192, 132, 252, 0.45);
+}
+
+.hint-card-title {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  font-size: 1.15rem;
+  letter-spacing: 0.03em;
+}
+
+.hint-card-description {
+  color: var(--arkanum-muted);
+  font-size: 0.92rem;
+  margin-bottom: 1rem;
+  min-height: 2.7em;
+}
+
+.hint-card-footer {
+  margin-top: 0.85rem;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+}
+
+.hint-card-body {
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed rgba(201, 169, 97, 0.3);
+  color: var(--arkanum-text);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.hint-card-body h1,
+.hint-card-body h2,
+.hint-card-body h3 {
+  color: var(--arkanum-gold);
+  font-family: var(--font-serif);
+  margin: 0.5rem 0 0.4rem;
+}
+
+.hint-card-body p {
+  margin: 0.4rem 0;
+}
+
+.hint-card-body code {
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+}
+
+.hint-card-body pre,
+.hint-card-body .codeblock {
+  margin: 0.5rem 0;
+}
+
+.hint-card-button {
+  display: inline-block;
+  background: rgba(139, 92, 246, 0.18);
+  border: 1px solid rgba(192, 132, 252, 0.55);
+  color: var(--arkanum-glow);
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  letter-spacing: 0.05em;
+  padding: 0.55rem 1.2rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.12s ease;
+}
+
+.hint-card-button:hover {
+  background: rgba(139, 92, 246, 0.32);
+  transform: translateY(-1px);
+}
+
+.hint-card-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hint-card--locked {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+  border-color: rgba(61, 56, 86, 0.6);
+}
+
+.hint-card--locked .hint-card-numeral {
+  background: rgba(61, 56, 86, 0.4);
+  color: var(--arkanum-locked);
+  border-color: rgba(61, 56, 86, 0.6);
+}
+
+.hint-card--locked .hint-card-title {
+  color: var(--arkanum-muted);
+}
+
+.hint-card--available {
+  border-color: rgba(192, 132, 252, 0.55);
+  box-shadow: 0 0 0 1px rgba(192, 132, 252, 0.12), 0 8px 22px -16px rgba(192, 132, 252, 0.6);
+}
+
+.hint-card--revealed {
+  border-color: rgba(201, 169, 97, 0.6);
+  background: linear-gradient(165deg, var(--arkanum-bg-soft-2) 0%, var(--arkanum-bg-soft) 100%);
+}
+
+.hint-card--revealed .hint-card-numeral {
+  background: rgba(201, 169, 97, 0.18);
+  color: var(--arkanum-gold);
+  border-color: rgba(201, 169, 97, 0.55);
+}
+
+/* Modal de confirmación */
+
+.hint-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.hint-modal--hidden {
+  display: none;
+}
+
+.hint-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13, 10, 31, 0.78);
+  backdrop-filter: blur(4px);
+}
+
+.hint-modal-card {
+  position: relative;
+  z-index: 1;
+  max-width: 480px;
+  width: 100%;
+  background: linear-gradient(165deg, var(--arkanum-bg-soft) 0%, var(--arkanum-bg-soft-2) 100%);
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 16px;
+  padding: 1.75rem 1.75rem 1.5rem;
+  box-shadow: 0 24px 60px -24px rgba(139, 92, 246, 0.55);
+}
+
+.hint-modal-card h3 {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  font-size: 1.5rem;
+  margin-bottom: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.hint-modal-card p {
+  color: var(--arkanum-text);
+  margin-bottom: 0.8rem;
+  line-height: 1.55;
+}
+
+.hint-modal-target {
+  font-style: italic;
+  font-size: 0.92rem;
+}
+
+.hint-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 540px) {
+  .hint-modal-actions {
+    flex-direction: column-reverse;
+  }
+  .hint-modal-actions > * {
+    width: 100%;
+  }
+}
