@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Galería de Rangos · Arkanum{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Galería de Rangos</h1>
+  <p class="page-header-subtitle">
+    Cada rango es un fragmento del conocimiento del Arkanum.
+    Solo se revela cuando el quest correspondiente queda atrás.
+  </p>
+</header>
+
+<div class="rank-grid">
+  {% for quest in quests %}
+    {% set status = status_map[quest.slug] %}
+    {% set unlocked = status == "completed" %}
+    <article class="rank-card rank-card--{% if unlocked %}unlocked{% else %}locked{% endif %}">
+      <div class="rank-badge">
+        <span class="rank-roman">{{ roman[quest.order] }}</span>
+        {% if not unlocked %}
+          <span class="rank-lock">🔒</span>
+        {% endif %}
+      </div>
+
+      <h3 class="rank-title">{{ quest.rank_unlocked }}</h3>
+
+      <blockquote class="rank-quote">
+        {{ quest.quote_zhyreon }}
+      </blockquote>
+
+      <div class="rank-meta">
+        {% if unlocked %}
+          <span class="rank-meta-label">Otorgado por</span>
+        {% else %}
+          <span class="rank-meta-label">Tras completar</span>
+        {% endif %}
+        <span class="rank-meta-quest">Quest {{ quest.order }} · Acto {{ quest.act }}</span>
+      </div>
+    </article>
+  {% endfor %}
+</div>
+
+{% endblock %}

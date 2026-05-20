@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Mapa del Laboratorio · Arkanum{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Mapa del Laboratorio</h1>
+  <p class="page-header-flow">
+    Prompt <span class="arrow">→</span>
+    Memoria <span class="arrow">→</span>
+    Herramientas <span class="arrow">→</span>
+    Conocimiento <span class="arrow">→</span>
+    Protocolos <span class="arrow">→</span>
+    Sistemas
+  </p>
+</header>
+
+{% for entry in acts_data %}
+  {% set act = entry.act %}
+  <section class="act-band act-band--{{ act.status }}">
+    <header class="act-header">
+      <div class="act-number-badge">Acto {{ entry.roman }}</div>
+      <div class="act-title-block">
+        <h2>{{ act.name }}</h2>
+        {% if act.status == "in_development" %}
+          <span class="act-status-tag">En desarrollo</span>
+        {% endif %}
+      </div>
+    </header>
+
+    <blockquote class="zhyreon-quote">
+      {{ act.quote_zhyreon }}
+      <cite>— Zhyréon</cite>
+    </blockquote>
+
+    {% if act.status == "available" %}
+      <div class="quest-grid">
+        {% for quest in entry.quests %}
+          {% set status = status_map[quest.slug] %}
+          <article class="quest-card quest-card--{{ status }}">
+            <div class="quest-card-banner">
+              <img src="/assets/images/{{ quest.banner }}" alt="{{ quest.title }}" loading="lazy">
+              <span class="quest-card-badge quest-card-badge--{{ status }}">
+                {% if status == "completed" %}✓
+                {% elif status == "current" %}★
+                {% else %}🔒
+                {% endif %}
+              </span>
+            </div>
+            <div class="quest-card-body">
+              <div class="quest-card-number">Quest {{ quest.order }}</div>
+              <h3 class="quest-card-title">{{ quest.title }}</h3>
+              <div class="quest-card-rank">
+                {% if status == "locked" %}
+                  <span class="locked-text">Rango sellado</span>
+                {% else %}
+                  {{ quest.rank_unlocked }}
+                {% endif %}
+              </div>
+              <div class="quest-card-meta">
+                <span class="difficulty difficulty-{{ quest.difficulty }}">
+                  {% for _ in range(quest.difficulty) %}★{% endfor %}
+                </span>
+                <span class="xp-pill">+{{ quest.xp }} XP</span>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="act-pending">
+        <p>Los pergaminos de este acto aún se redactan en las profundidades.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endfor %}
+
+{% endblock %}
