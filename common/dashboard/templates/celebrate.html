@@ -72,7 +72,34 @@
         </span>
       </div>
     {% endif %}
+    {% if c.attempts %}
+      <div class="celebrate-stat">
+        <span class="celebrate-stat-value">{{ c.attempts }}</span>
+        <span class="celebrate-stat-label">Intentos</span>
+      </div>
+    {% endif %}
+    {% if c.total_time_seconds is not none %}
+      <div class="celebrate-stat">
+        <span class="celebrate-stat-value">{{ c.total_time_seconds | format_duration }}</span>
+        <span class="celebrate-stat-label">Tiempo</span>
+      </div>
+    {% endif %}
   </div>
+
+  {% if c.achievements %}
+    <section class="celebrate-achievements" aria-label="Logros desbloqueados">
+      <h2 class="celebrate-achievements-title">Trofeos</h2>
+      <div class="trophies-grid">
+        {% for ach in c.achievements %}
+          <article class="trophy-card trophy-card--celebrate">
+            <span class="trophy-icon" aria-hidden="true">{{ ach.icon }}</span>
+            <h3 class="trophy-title">{{ ach.title }}</h3>
+            <p class="trophy-desc">{{ ach.description }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
 
   <div class="celebrate-actions">
     <a href="/" class="viewer-cta">Volver al perfil</a>

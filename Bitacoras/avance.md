@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 12 — Sistema de pistas (contenido) |
-| **Próxima fase** | Fase 13 — Tracking tiempo/intentos + logros calculados |
-| **Tiempo invertido aprox.** | ~51h (acumulado Fases 0-12) |
-| **Tiempo restante estimado** | ~17h (Fases 13-17) |
+| **Última fase completada** | Fase 13 — Tracking tiempo/intentos + logros calculados |
+| **Próxima fase** | Fase 14 — Tracking de costo (`arkanum cost`) |
+| **Tiempo invertido aprox.** | ~55h (acumulado Fases 0-13) |
+| **Tiempo restante estimado** | ~13h (Fases 14-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -51,13 +51,13 @@
 | 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora `109d8a6`)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
 | 11 | Pistas (mecánica) | ✅ | `4388260` _(bitácora sin commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
 | 12 | Pistas (contenido) | ✅ | `25c2b9b` _(bitácora sin commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
-| 13 | Tracking tiempo/intentos | ⏳ | — | 4h | — |
+| 13 | Tracking tiempo/intentos | ✅ | _(pendiente de commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
 | 14 | Tracking costo | ⏳ | — | 2h | — |
 | 15 | Detección cierre acto | ⏳ | — | 2h | — |
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-12 = ~51h reales / 50h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-13 = ~55h reales / 54h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,78 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 13 — Tracking tiempo/intentos + logros calculados _(pendiente de commit)_
+
+**Entregado**
+- **Tabla nueva `quest_progress`** en `common/progress/db.py`:
+  ```sql
+  CREATE TABLE IF NOT EXISTS quest_progress (
+      quest_id TEXT PRIMARY KEY,
+      first_attempt_at TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0
+  );
+  ```
+  Funciona como buffer pre-completion. `quest_completion` conserva su semántica (sólo rows para quests cerrados). Las columnas existentes `first_attempt_at`/`attempts`/`total_time_seconds` en `quest_completion` se llenan al cerrar.
+- **Helpers DB nuevos**:
+  - `register_first_attempt(quest_id)` — `INSERT OR IGNORE` en `quest_progress`. Idempotente. No-op si el quest ya está en `quest_completion`.
+  - `record_quest_attempt(quest_id, passed, failure_reason=None)` — `INSERT` en `quest_attempts` siempre (histórico completo) + `UPDATE quest_progress.attempts += 1` sólo si el quest no está cerrado. Si `arkanum check` se invoca sin `arkanum start` previo, hace fallback `INSERT OR IGNORE` para que el contador arranque.
+  - `get_quest_progress(quest_id)` — devuelve `(first_attempt_at, attempts)` o `(None, 0)`.
+- **`record_quest_completion` actualizado**: ahora lee `quest_progress` antes del INSERT y persiste:
+  - `attempts = quest_progress.attempts + 1` (el +1 cubre el intento que pasa, que aún no fue contado).
+  - `first_attempt_at` heredado de `quest_progress` o `now()` como fallback.
+  - `total_time_seconds = (now - first_attempt_at).total_seconds()` clamped a >=0.
+  - Si no hay row de `quest_progress` (legacy / direct check.py): `attempts=1`, `first_attempt_at=now`, `total_time_seconds=0`.
+- **Payload `quest_completed` extendido** (`routes/events.py`): añade `attempts: int | None` y `total_time_seconds: int | None` al `QuestCompletedPayload`. Retrocompatible — eventos viejos siguen funcionando.
+- **Hooks CLI**:
+  - `commands/start.py`: llama `register_first_attempt(quest.db_id)` antes de ejecutar el subprocess. El "start" no es un intento de validación, sólo marca el momento del primer touch.
+  - `commands/check.py`: llama `register_first_attempt` antes del subprocess y `record_quest_attempt(passed=(rc==0), failure_reason=...)` después. Cubre tanto el camino pre-check fallido (no llama Gemini) como el real.
+- **Servicio nuevo `common/dashboard/services/achievements.py`**:
+  - `Achievement` dataclass + catálogo `(ONE_SHOT, NO_RED)`.
+  - `one_shot_eligible(quest)` → `quest_completion.attempts == 1`.
+  - `no_red_eligible(quest)` → quest completed **y** `is_no_red_eligible` de F11. Decisión consciente: la métrica mira el estado actual de `hint_usage`; pedir una pista DESPUÉS de completar quita el logro (caso edge improbable pero documentado en el smoke).
+  - `achievements_for(quest)`, `total_achievements()` (counts globales), `achievements_by_quest()` (map slug → logros), `quest_stats(quest)` (resumen numérico para templates).
+- **Filter Jinja `format_duration`** en `templating.py`: renderiza segundos como `42s` / `7m 30s` / `2h 15m` / `—` para None. Centralizado para que perfil, quest view y celebrate compartan formato.
+- **UI**:
+  - **`profile.html`**: nueva sección "Logros" con `achievement-pills` (icono + count + label). Sólo aparece si `achievement_counts` está en contexto (i.e., hay aprendiz registrado).
+  - **`quest_view.html`** (sólo cuando `status=="completed"`): sección "Trofeos de este quest" con `trophies-stats` (intentos + tiempo total formateado) y `trophies-grid` con `trophy-card` por logro. Estado vacío explica cómo obtenerlos.
+  - **`celebrate.html`**: añade dos `celebrate-stat` adicionales (Intentos / Tiempo) cuando vienen en el evento; nueva sección `celebrate-achievements` con grid de `trophy-card--celebrate` (borde púrpura para diferenciarla del quest view).
+- **CSS** (+130 líneas): `.achievement-pill`, `.trophies-section`, `.trophy-card` + `.trophy-card--celebrate`, `.celebrate-achievements`. Responsive con `auto-fit minmax(220px, 1fr)`.
+
+**Smoke test ejecutado**
+- 15 checks DB con TestClient + temp DB aislada:
+  - `register_first_attempt` idempotente (no duplica row, no incrementa attempts).
+  - `record_quest_attempt` incrementa attempts; histórico en `quest_attempts` persiste todos los intentos.
+  - `record_quest_completion` lee correctamente attempts y total_time_seconds.
+  - Logros one_shot (Q1 con 3 attempts → False; Q2 con 1 → True).
+  - Logros no_red (sin hint_usage → True; tras INSERT en hint_usage → False).
+  - `total_achievements()` cuenta correctamente.
+  - `record_quest_completion` idempotente.
+  - `record_quest_attempt` post-completion **no** infla `attempts` en `quest_completion`.
+- 9 checks UI con TestClient:
+  - Perfil con achievement-pills "One shot" y "Sin red".
+  - Quest view completed muestra "Trofeos de este quest" con stats y trophy cards.
+  - Celebrate con evento sintético muestra attempts, tiempo (`42s`) y sección Trofeos.
+- Sanity contra dashboard real (`arkanum dashboard start`): perfil responde 200 y omite las pills cuando no hay quests completados (comportamiento correcto).
+
+**Desviaciones del plan**
+- **Tabla `quest_progress` nueva** (no estaba explícita en el plan F13). El plan original sugería usar `quest_completion` con `completed_at` nullable, pero la columna actual es NOT NULL y cambiar eso en SQLite requiere recrear la tabla. Crear `quest_progress` separada es más limpio y no toca el schema existente. Decisión documentada en `db.py` con comentario inline.
+- **`record_quest_attempt` se llama después del subprocess en `arkanum check`** (no se hace tracking *durante* el check). Razón: el `check.py` legacy ya emite `record_quest_completion` desde dentro del subprocess; ese flujo sigue funcionando. El attempt registrado por el CLI es complementario.
+- **Logro "Velocista"** mencionado opcional en el plan (`total_time_seconds < 600`) NO se implementó. Razón: el tiempo total depende de cuándo el aprendiz vuelve, no del trabajo real; podría incentivar trampear el reloj. Si se quiere agregar, requiere replantear qué mide.
+- **`no_red` se chequea contra `is_no_red_eligible` actual**, no contra "hint_usage al momento de completar". Si el aprendiz pide una pista después de completar el quest, pierde el logro retroactivamente. Es un edge case improbable y la alternativa requeriría snapshot de `hint_usage` en `quest_completion`. Documentado.
+
+**Hallazgos / tech debt**
+- **Filter `format_duration`** queda disponible globalmente para futuras vistas (cierre de acto F15, etc.).
+- **`quest_stats(quest)` devuelve None** para quests no completados — los templates ya lo manejan con `{% if stats %}`. Sin riesgo de KeyError.
+- **Histórico de `quest_attempts`** está completo pero todavía no se consume en UI. Útil para una posible vista "actividad reciente" o gráfico de intentos/quest en F17.
+- **`record_quest_completion` re-entrante**: una segunda llamada con el mismo `quest_id` no hace nada (early return tras SELECT). El smoke lo verifica.
+- **Si el aprendiz invoca el `check.py` legacy directamente** (sin pasar por `arkanum check`), sólo se cuenta el intento que pasa (`attempts=1`). Aceptable: el plan original tampoco prometía cubrir ese camino.
+
+**Tech debt cerrado**
+- ~~`attempts` / `total_time_seconds` columnas vacías~~ — ahora se llenan en cada completación.
+- ~~Logros prometidos no calculados~~ — `one_shot` y `no_red` operativos y expuestos en UI.
 
 ---
 
@@ -455,6 +527,9 @@
 | Pistas: títulos `## El susurro` etc. | F12 | En vez del nombre del quest (redundante con la carta) |
 | L3 puede pasar de 4 líneas si la estructura lo exige | F12 | Q07/Q08 lo necesitan para mostrar la separación crítica |
 | Sin botón "Copiar" en pistas | F12 | Selector limitado a `.viewer-prose .codeblock`; forzar lectura |
+| Tabla `quest_progress` separada | F13 | En vez de hacer `completed_at` nullable en `quest_completion` (requeriría recrear tabla en SQLite) |
+| `no_red` chequea estado actual | F13 | Pedir pista post-completion quita el logro (acepta el edge case improbable) |
+| Filter Jinja `format_duration` global | F13 | Centraliza el formato para usar en F15 (cierre de acto) y F17 |
 
 ## Tech debt acumulado
 
@@ -467,59 +542,69 @@
 
 ## Próxima fase
 
+### Fase 14 — Tracking de costo (`arkanum cost`, ~2h)
+
+**Objetivo**
+> Done cuando: existe el comando `arkanum cost` que muestra una tabla Rich con los tokens consumidos por quest (input + output), un total global y una estimación monetaria opcional. La data se acumula desde Q02 en adelante (Q01 no lo expone). El dashboard muestra una pill "Costo" en el perfil con el total.
+
+**Plan**
+1. **Captura de tokens**:
+   - Decisión: Q02+ ya leen `response.usage_metadata`. Lo más limpio es interceptar via wrapper (`arkanum run`, F16) o agregar un parser de stdout en `arkanum check` que reconozca "Prompt tokens: X" / "Response tokens: Y".
+   - Implementación MVP F14: parser de stdout en `arkanum check`. Captura `Prompt tokens:` / `Response tokens:` con regex y persiste en una tabla nueva `quest_costs(id, quest_id, attempted_at, prompt_tokens, response_tokens)`.
+2. **Servicio `common/dashboard/services/cost.py`**:
+   - `record_cost(quest_id, prompt_tokens, response_tokens)`.
+   - `cost_per_quest() -> dict[slug, {prompt, response, total}]`.
+   - `total_cost() -> {prompt, response, total, estimated_usd}`.
+3. **`common/cli/commands/cost.py`**:
+   - Tabla Rich con columnas Quest / Prompt tokens / Response tokens / Total / USD estimado.
+   - Flag `--per-attempt` para mostrar histórico.
+4. **UI**:
+   - Pill "Costo" en perfil junto a las de logros.
+   - Estimación USD opcional (precio Gemini Flash en config).
+5. **Tests**:
+   - Smoke: `record_cost` acumula correctamente.
+   - Parser de stdout: matchea "Prompt tokens: 42" y "Response tokens: 17".
+
+**Pre-condiciones**
+- `arkanum check` ya captura el subprocess (✅ F8/F13).
+- Q02+ imprimen los tokens en stdout (✅ por pre-checks).
+
+**Archivos a tocar / crear**
+- ➕ Tabla `quest_costs` en `db.py`.
+- ➕ `common/dashboard/services/cost.py`.
+- ➕ `common/cli/commands/cost.py`.
+- ✏️ `common/cli/commands/check.py` (capturar stdout y parsear).
+- ✏️ `common/cli/main.py` (registrar comando `cost`).
+- ✏️ `templates/profile.html` (pill).
+
+**Riesgos detectados**
+- **Captura de stdout**: cambiar `subprocess.run` para que capture stdout rompe el output interactivo (el aprendiz ya no ve los prints en tiempo real). Solución: `Popen` con `tee` manual, o capturar y luego volcar.
+- **Q01 no imprime tokens**: aceptable, simplemente sin entry para ese quest.
+- **Quests con starter custom**: si el aprendiz cambia el formato de print, el parser fallará silenciosamente. Documentar el contrato.
+
+**Criterio de cierre de la fase**
+- `arkanum check 2` después de pasar persiste una row en `quest_costs`.
+- `arkanum cost` muestra la tabla con totales acumulados.
+- `/` (perfil) muestra pill "Costo" si hay data.
+- Cierre con commit `feat(dashboard): fase 14 - tracking de costo`.
+- Actualizar este archivo.
+
+---
+
+_Plan original de F13 (cerrado pendiente de commit):_
+
 ### Fase 13 — Tracking tiempo/intentos + logros calculados (~4h)
 
 **Objetivo**
-> Done cuando: cada quest registra su `first_attempt_at` la primera vez que el aprendiz corre `arkanum start` o `arkanum check`, cuenta intentos en `quest_attempts` por cada `check.py` ejecutado (pase o falle), y al completar guarda `total_time_seconds = completed_at - first_attempt_at`. Logros "One shot" (`attempts == 1`) y "Sin red" (`hint_usage` vacía) se calculan on-the-fly y aparecen en el perfil + en la celebración + en el viewer del quest.
+> Done cuando: cada quest registra `first_attempt_at`, cuenta intentos, calcula `total_time_seconds` al completar. Logros "One shot" y "Sin red" calculados on-the-fly y expuestos en perfil/celebrate/quest view.
 
-**Plan**
-1. **Captura de `first_attempt_at`**:
-   - `common/cli/commands/start.py` y `commands/check.py` llaman a una función nueva `register_attempt(quest, kind)` antes de ejecutar el subprocess.
-   - `common/progress/db.py` expone:
-     - `register_first_attempt(quest_id)` — `INSERT OR IGNORE` en `quest_completion` con `first_attempt_at = now`, `attempts = 0`, sin tocar `completed_at`.
-     - `record_quest_attempt(quest_id, passed, failure_reason)` — `INSERT` en `quest_attempts` siempre, y `UPDATE quest_completion SET attempts = attempts + 1` cuando `completed_at IS NULL`.
-2. **Cierre de tiempos en `record_quest_completion`**:
-   - Calcular `total_time_seconds = now - first_attempt_at` si `first_attempt_at` no es null.
-   - Persistir en `quest_completion`.
-3. **Logros on-the-fly** (sin tabla nueva):
-   - `common/dashboard/services/achievements.py` (nuevo):
-     - `achievements_for(quest_db_id) -> list[Achievement]` calcula los logros aplicables.
-     - `one_shot_eligible(quest)`, `no_red_eligible(quest)` reutilizando `is_no_red_eligible` de F11.
-   - Otros candidatos cuando se cierra todo el quest: "Velocista" si `total_time_seconds < 600`, etc. — opcional, depende del scope.
-4. **UI**:
-   - **Perfil**: badges junto al rango actual con conteo de logros.
-   - **Quest view** (`quest_view.html`): si el quest está completed, sección "Trofeos de este quest" listando los logros obtenidos.
-   - **Celebración** (`celebrate.html`): si en el evento `quest_completed` se incluyen logros, mostrarlos junto a la pila de XP.
-5. **Tests**:
-   - Smoke: `register_first_attempt` idempotente.
-   - `record_quest_attempt` incrementa `attempts` y deja huella en `quest_attempts`.
-   - `one_shot_eligible(quest)` → True si `attempts == 1`, False con `attempts >= 2`.
-   - `no_red_eligible(quest)` → False tras un POST a `/api/quests/.../hints/1`.
-
-**Pre-condiciones**
-- Tablas `quest_attempts` y `hint_usage` existen (✅ F0).
-- Columnas `attempts`, `first_attempt_at`, `total_time_seconds` en `quest_completion` (✅ F0).
-- Pre-checks de F10 invocan al `check.py` real con retorno conocido (✅).
-
-**Archivos a tocar / crear**
-- ✏️ `common/progress/db.py` (helpers + actualización de `record_quest_completion`)
-- ➕ `common/dashboard/services/achievements.py`
-- ✏️ `common/cli/commands/start.py` y `commands/check.py` (registrar intento)
-- ✏️ `common/dashboard/templates/profile.html`, `quest_view.html`, `celebrate.html`
-- ✏️ `common/dashboard/static/arcane.css` (estilos de trofeos)
-
-**Riesgos detectados**
-- **Bug retroactivo**: aprendices que ya completaron quests antes de F13 no tienen `first_attempt_at`. Asumir `total_time_seconds = NULL` y mostrar "—" cuando esto pase.
-- **Conteo de `attempts` debe incrementarse incluso si el check falla**, pero NO después de completed_at. La query `UPDATE ... WHERE completed_at IS NULL` lo cubre.
-- **Acoplamiento CLI ↔ DB**: ahora `arkanum start/check` toca BD. Si `ARKANUM_NO_DASHBOARD=1`, debe seguir funcionando (test/CI).
-
-**Criterio de cierre de la fase**
-- `arkanum start 1` por primera vez crea row en `quest_completion` con `first_attempt_at` y `attempts=0`.
-- `arkanum check 1` (que falla pre-checks o el check real) deja una row en `quest_attempts` y suma a `attempts`.
-- Pasar el check real persiste `total_time_seconds`.
-- `achievements_for("La Primera Invocación")` después de completar al primer intento sin pistas devuelve `["one_shot", "no_red"]`.
-- Cierre con commit `feat(dashboard): fase 13 - tracking tiempo e intentos`.
-- Actualizar este archivo (sección "Detalle por fase" + tabla + "Próxima fase").
+**Plan resumido**
+1. Tabla `quest_progress` (buffer pre-completion) + helpers `register_first_attempt`, `record_quest_attempt`, `get_quest_progress`.
+2. `record_quest_completion` lee `quest_progress`, calcula `total_time_seconds`, persiste `attempts`.
+3. Hooks en `arkanum start` (register) y `arkanum check` (register + record con resultado).
+4. Servicio `achievements.py` con `one_shot`/`no_red` + helpers para templates.
+5. Filter Jinja `format_duration`. UI en perfil (pills), quest view (trofeos + stats), celebrate (stats + trofeos).
+6. Smoke 15 checks DB + 9 checks UI.
 
 ---
 

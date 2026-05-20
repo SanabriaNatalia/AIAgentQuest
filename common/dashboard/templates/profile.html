@@ -58,5 +58,23 @@
       <span class="stat-label">Travesía</span>
     </div>
   </section>
+
+  {% if achievement_counts %}
+  <section class="profile-achievements" aria-label="Logros desbloqueados">
+    <h2 class="profile-section-title">Logros</h2>
+    <div class="achievement-pills">
+      <div class="achievement-pill">
+        <span class="achievement-pill-icon">🎯</span>
+        <span class="achievement-pill-count">{{ achievement_counts.one_shot }}</span>
+        <span class="achievement-pill-label">One shot</span>
+      </div>
+      <div class="achievement-pill">
+        <span class="achievement-pill-icon">🕯️</span>
+        <span class="achievement-pill-count">{{ achievement_counts.no_red }}</span>
+        <span class="achievement-pill-label">Sin red</span>
+      </div>
+    </div>
+  </section>
+  {% endif %}
 {% endif %}
 {% endblock %}

@@ -21,6 +21,7 @@ from common.cli.pre_checks.runner import (
     all_passed,
     run_pre_checks,
 )
+from common.progress.db import record_quest_attempt, register_first_attempt
 
 console = Console()
 
@@ -67,6 +68,8 @@ def check(
         )
         raise typer.Exit(1)
 
+    register_first_attempt(quest.db_id)
+
     results = run_pre_checks(quest)
     _render_table(f"Quest {quest.order} — {quest.title}", results)
     passed = all_passed(results)
@@ -102,5 +105,10 @@ def check(
     console.print("[yellow]Aviso:[/] este check consume cuota de Gemini.")
     console.print()
     rc = run_module(module)
+    record_quest_attempt(
+        quest.db_id,
+        passed=rc == 0,
+        failure_reason=None if rc == 0 else f"check exit code {rc}",
+    )
     if rc != 0:
         raise typer.Exit(rc)

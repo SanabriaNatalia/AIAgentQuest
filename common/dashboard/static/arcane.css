@@ -1919,3 +1919,128 @@ code {
     width: 100%;
   }
 }
+
+/* === Logros / Trofeos (F13) ============================================ */
+
+.profile-achievements {
+  margin-top: 2rem;
+}
+
+.profile-section-title {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  font-size: 1.25rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+
+.achievement-pills {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.achievement-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: rgba(201, 169, 97, 0.12);
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  color: var(--arkanum-text);
+  font-size: 0.92rem;
+}
+
+.achievement-pill-icon {
+  font-size: 1.1rem;
+}
+
+.achievement-pill-count {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.achievement-pill-label {
+  color: var(--arkanum-muted);
+  letter-spacing: 0.03em;
+}
+
+.trophies-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid rgba(201, 169, 97, 0.25);
+}
+
+.trophies-header h2 {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  color: var(--arkanum-gold);
+  margin-bottom: 0.4rem;
+  letter-spacing: 0.04em;
+}
+
+.trophies-stats {
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+
+.trophies-stats strong {
+  color: var(--arkanum-text);
+  font-family: var(--font-serif);
+}
+
+.trophies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.1rem;
+}
+
+.trophy-card {
+  background: linear-gradient(165deg, var(--arkanum-bg-soft) 0%, var(--arkanum-bg-soft-2) 100%);
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 14px;
+  padding: 1.2rem 1.1rem 1.3rem;
+  text-align: center;
+  box-shadow: 0 12px 24px -20px rgba(201, 169, 97, 0.5);
+}
+
+.trophy-icon {
+  font-size: 2rem;
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.trophy-title {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.35rem;
+}
+
+.trophy-desc {
+  color: var(--arkanum-muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.celebrate-achievements {
+  margin-top: 2.25rem;
+}
+
+.celebrate-achievements-title {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.trophy-card--celebrate {
+  border-color: rgba(192, 132, 252, 0.55);
+  box-shadow: 0 12px 28px -20px rgba(192, 132, 252, 0.7);
+}

@@ -60,6 +60,37 @@
     </article>
   </div>
 
+  {% if status == "completed" %}
+  <section class="trophies-section" aria-label="Trofeos de este quest">
+    <header class="trophies-header">
+      <h2>Trofeos de este quest</h2>
+      {% if stats %}
+        <p class="arkanum-muted trophies-stats">
+          {% if stats.attempts %}Intentos: <strong>{{ stats.attempts }}</strong>{% endif %}
+          {% if stats.total_time_seconds is not none %}
+            · Tiempo total: <strong>{{ stats.total_time_seconds | format_duration }}</strong>
+          {% endif %}
+        </p>
+      {% endif %}
+    </header>
+    {% if achievements %}
+      <div class="trophies-grid">
+        {% for ach in achievements %}
+          <article class="trophy-card">
+            <span class="trophy-icon" aria-hidden="true">{{ ach.icon }}</span>
+            <h3 class="trophy-title">{{ ach.title }}</h3>
+            <p class="trophy-desc">{{ ach.description }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="arkanum-muted">
+        Aún sin trofeos. Completar el quest a la primera o sin pistas otorga reconocimiento.
+      </p>
+    {% endif %}
+  </section>
+  {% endif %}
+
   {% if hints %}
   <section class="hints-section" aria-label="Ofrendas del aprendiz" data-hints-slug="{{ quest.slug }}">
     <header class="hints-header">

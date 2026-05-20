@@ -8,9 +8,10 @@ versión "diferida" usando lo poco que sabemos por slug + estado actual.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
+from common.dashboard.services.achievements import Achievement, achievements_for
 from common.dashboard.services.progress import get_apprentice
 from common.dashboard.services.quest_catalog import ACTS, QuestMeta
 from common.progress.db import get_connection, init_db
@@ -26,6 +27,9 @@ class CelebrationData:
     level_after: int | None
     leveled_up: bool
     apprentice_name: str | None
+    attempts: int | None = None
+    total_time_seconds: int | None = None
+    achievements: list[Achievement] = field(default_factory=list)
 
 
 def _find_event(quest_meta: QuestMeta | None) -> dict[str, Any] | None:
@@ -69,12 +73,16 @@ def build_celebration_context(quest_meta: QuestMeta | None) -> dict[str, Any]:
     xp_total: int | None = None
     level_before: int | None = None
     level_after: int | None = None
+    attempts: int | None = None
+    total_time_seconds: int | None = None
 
     if event is not None:
         xp_reward = event.get("xp_reward")
         xp_total = event.get("xp_after")
         level_before = event.get("level_before")
         level_after = event.get("level_after")
+        attempts = event.get("attempts")
+        total_time_seconds = event.get("total_time_seconds")
 
     if xp_total is None and apprentice is not None:
         xp_total = apprentice.xp
@@ -88,6 +96,7 @@ def build_celebration_context(quest_meta: QuestMeta | None) -> dict[str, Any]:
     )
 
     act_name = ACTS[quest_meta.act].name if quest_meta else None
+    achievements = achievements_for(quest_meta) if quest_meta else []
     data = CelebrationData(
         quest=quest_meta,
         act_name=act_name,
@@ -97,5 +106,8 @@ def build_celebration_context(quest_meta: QuestMeta | None) -> dict[str, Any]:
         level_after=level_after,
         leveled_up=leveled_up,
         apprentice_name=apprentice.username if apprentice else None,
+        attempts=attempts,
+        total_time_seconds=total_time_seconds,
+        achievements=achievements,
     )
     return {"celebration": data}

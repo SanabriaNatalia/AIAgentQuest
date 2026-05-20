@@ -2,6 +2,11 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from common.dashboard.services.achievements import (
+    achievements_for,
+    quest_stats,
+    total_achievements,
+)
 from common.dashboard.services.hints import (
     get_hint,
     list_hints_for,
@@ -49,6 +54,7 @@ def profile_page(request: Request):
             xp_pct=xp_pct,
             completed_count=get_completed_count(),
             act_info=act_info,
+            achievement_counts=total_achievements(),
         )
 
     return templates.TemplateResponse(request, "profile.html", context)
@@ -137,6 +143,9 @@ def quest_page(request: Request, slug: str):
             if rendered_hint is not None:
                 hint_contents[meta.level] = rendered_hint.html
 
+    achievements = achievements_for(quest) if status == "completed" else []
+    stats = quest_stats(quest) if status == "completed" else None
+
     return templates.TemplateResponse(
         request,
         "quest_view.html",
@@ -150,6 +159,8 @@ def quest_page(request: Request, slug: str):
             "already_read": is_quest_readme_read(quest.db_id),
             "hints": hints,
             "hint_contents": hint_contents,
+            "achievements": achievements,
+            "stats": stats,
         },
     )
 

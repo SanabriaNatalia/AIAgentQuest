@@ -30,6 +30,9 @@ class QuestCompletedPayload(BaseModel):
     xp_reward: int | None = None
     level_before: int | None = None
     level_after: int | None = None
+    # F13: tracking de intentos + tiempo total (segundos)
+    attempts: int | None = None
+    total_time_seconds: int | None = None
 
 
 def _store_event(kind: str, payload: dict[str, Any]) -> int:

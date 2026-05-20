@@ -82,11 +82,94 @@ def init_db() -> None:
             )
         """)
 
+        # F13: buffer pre-completion. quest_completion sigue siendo "quest
+        # cerrado"; aquí trackeamos first_attempt_at + attempts running counter
+        # mientras el quest está en progreso.
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS quest_progress (
+                quest_id TEXT PRIMARY KEY,
+                first_attempt_at TEXT NOT NULL,
+                attempts INTEGER NOT NULL DEFAULT 0
+            )
+        """)
+
         _add_column_if_missing(conn, "apprentice", "created_at", "TEXT")
         _add_column_if_missing(conn, "apprentice", "avatar", "TEXT DEFAULT 'default'")
         _add_column_if_missing(conn, "quest_completion", "attempts", "INTEGER DEFAULT 1")
         _add_column_if_missing(conn, "quest_completion", "first_attempt_at", "TEXT")
         _add_column_if_missing(conn, "quest_completion", "total_time_seconds", "INTEGER")
+
+
+def register_first_attempt(quest_id: str) -> None:
+    """Marca el primer touch del aprendiz en un quest. Idempotente.
+
+    Se llama desde `arkanum start` y `arkanum check`. Si el quest ya está
+    completado, no hace nada. Si quest_progress ya tiene la entrada, tampoco.
+    """
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with get_connection() as conn:
+        done = conn.execute(
+            "SELECT 1 FROM quest_completion WHERE quest_id = ?", (quest_id,)
+        ).fetchone()
+        if done is not None:
+            return
+        conn.execute(
+            "INSERT OR IGNORE INTO quest_progress (quest_id, first_attempt_at, attempts) "
+            "VALUES (?, ?, 0)",
+            (quest_id, now),
+        )
+
+
+def record_quest_attempt(
+    quest_id: str,
+    passed: bool,
+    failure_reason: str | None = None,
+) -> None:
+    """Registra un intento de validación de check.py.
+
+    Siempre inserta en quest_attempts (histórico completo). El contador
+    `attempts` de quest_progress sólo se incrementa si el quest todavía
+    no está completado — los intentos posteriores a la completación se
+    guardan en el histórico pero no inflan el contador.
+    """
+    init_db()
+    now = datetime.now().isoformat(timespec="seconds")
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT INTO quest_attempts (quest_id, attempted_at, passed, failure_reason) "
+            "VALUES (?, ?, ?, ?)",
+            (quest_id, now, 1 if passed else 0, failure_reason),
+        )
+        done = conn.execute(
+            "SELECT 1 FROM quest_completion WHERE quest_id = ?", (quest_id,)
+        ).fetchone()
+        if done is not None:
+            return
+        # Asegura row de quest_progress por si arkanum check se invoca sin
+        # un arkanum start previo.
+        conn.execute(
+            "INSERT OR IGNORE INTO quest_progress (quest_id, first_attempt_at, attempts) "
+            "VALUES (?, ?, 0)",
+            (quest_id, now),
+        )
+        conn.execute(
+            "UPDATE quest_progress SET attempts = attempts + 1 WHERE quest_id = ?",
+            (quest_id,),
+        )
+
+
+def get_quest_progress(quest_id: str) -> tuple[str | None, int]:
+    """Devuelve (first_attempt_at, attempts) o (None, 0) si no hay row."""
+    init_db()
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT first_attempt_at, attempts FROM quest_progress WHERE quest_id = ?",
+            (quest_id,),
+        ).fetchone()
+    if row is None:
+        return None, 0
+    return row[0], int(row[1])
 
 def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
 
@@ -98,6 +181,11 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
     new_xp = 0
     new_level = 1
     xp_reward = 0
+    final_attempts = 1
+    first_attempt_at: str | None = None
+    total_time_seconds: int | None = None
+
+    now_iso = datetime.now().isoformat(timespec="seconds")
 
     with get_connection() as conn:
         apprentice = conn.execute(
@@ -124,16 +212,50 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
         if existing_completion is not None:
             return
 
+        # Lee quest_progress: si el aprendiz vino vía arkanum start/check, ya
+        # existe. Si invocó check.py directamente, no hay row y caemos a
+        # attempts=1 + first_attempt_at=now.
+        progress_row = conn.execute(
+            "SELECT first_attempt_at, attempts FROM quest_progress WHERE quest_id = ?",
+            (quest_id,),
+        ).fetchone()
+
+        if progress_row is not None:
+            first_attempt_at = progress_row[0]
+            # +1 porque éste es el intento que pasa; record_quest_attempt no
+            # lo cuenta para evitar que llegue aquí ya incrementado.
+            final_attempts = int(progress_row[1]) + 1
+        else:
+            first_attempt_at = now_iso
+            final_attempts = 1
+
+        try:
+            start_dt = datetime.fromisoformat(first_attempt_at)
+            end_dt = datetime.fromisoformat(now_iso)
+            total_time_seconds = max(0, int((end_dt - start_dt).total_seconds()))
+        except ValueError:
+            total_time_seconds = None
+
         xp_reward = get_xp_reward(difficulty)
         new_xp = xp_before + xp_reward
         new_level = calculate_level(new_xp)
 
         conn.execute(
             """
-            INSERT INTO quest_completion (quest_id, difficulty, completed_at)
-            VALUES (?, ?, ?)
+            INSERT INTO quest_completion (
+                quest_id, difficulty, completed_at,
+                attempts, first_attempt_at, total_time_seconds
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
             """,
-            (quest_id, difficulty, datetime.now().isoformat(timespec="seconds")),
+            (
+                quest_id,
+                difficulty,
+                now_iso,
+                final_attempts,
+                first_attempt_at,
+                total_time_seconds,
+            ),
         )
 
         conn.execute(
@@ -163,6 +285,8 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
             xp_reward=xp_reward,
             level_before=level_before,
             level_after=new_level,
+            attempts=final_attempts,
+            total_time_seconds=total_time_seconds,
         )
 
 
@@ -176,6 +300,8 @@ def _notify_dashboard(
     xp_reward: int,
     level_before: int,
     level_after: int,
+    attempts: int = 1,
+    total_time_seconds: int | None = None,
 ) -> None:
     """Side-effects best-effort. Cualquier fallo aquí NO debe revertir el commit."""
     try:
@@ -201,6 +327,8 @@ def _notify_dashboard(
                 "xp_reward": xp_reward,
                 "level_before": level_before,
                 "level_after": level_after,
+                "attempts": attempts,
+                "total_time_seconds": total_time_seconds,
             },
         )
     except Exception:
