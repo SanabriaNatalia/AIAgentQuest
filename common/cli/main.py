@@ -1,11 +1,24 @@
 """Punto de entrada del CLI `arkanum`. Los comandos se agregan en fases posteriores."""
+import sys
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, OSError):
+        pass
+
 import typer
+
+from common.cli.commands.dashboard import dashboard_app
 
 app = typer.Typer(
     name="arkanum",
     help="Arkanum — CLI del laboratorio de agentes",
     no_args_is_help=True,
 )
+
+app.add_typer(dashboard_app, name="dashboard")
 
 
 @app.callback()
