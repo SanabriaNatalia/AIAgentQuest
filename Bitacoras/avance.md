@@ -45,7 +45,7 @@
 | 4 | Setup global + doctor | ✅ | `170b57a` | 5h | Vanilla JS polling en vez de HTMX (HTMX se vendoriza en F5) |
 | 5 | Viewer READMEs + Códex | ✅ | `3ffc6da` | 5h | HTMX **no vendorizado** — vanilla JS basta; theme Pygments monokai servido via `/api/pygments.css` |
 | 6 | Integración CLI + notif | ✅ | `dc71ecc` | 3h | `celebrate.html` placeholder creado aquí (la animación completa es F7); `kind` interno en BD usa snake_case, URL kebab-case |
-| 7 | Celebración | ✅ | _pendiente commit_ | 3h | Toast del perfil usa endpoint `peek` (no consume) + `dismiss` explícito en vez de marcar `seen=1` al renderizar; service `celebration.py` reconstruye contexto desde el último evento `quest_completed` |
+| 7 | Celebración | ✅ | `a76a32d` | 3h | Toast del perfil usa endpoint `peek` (no consume) + `dismiss` explícito en vez de marcar `seen=1` al renderizar; service `celebration.py` reconstruye contexto desde el último evento `quest_completed` |
 | 8 | Wizard init + CLI básico | ⏳ | — | 4h | Aquí se resuelve el bug UTF-8 de `show_progress`/`init_user` legacy |
 | 9 | Actualizar READMEs quests | ⏳ | — | 2h | — |
 | 10 | Pre-check local | ⏳ | — | 4h | — |
@@ -132,7 +132,7 @@
 
 ---
 
-### Fase 7 — Página de celebración (_pendiente commit_)
+### Fase 7 — Página de celebración (`a76a32d`)
 
 **Entregado**
 - `common/progress/db.py`: `record_quest_completion` ahora captura `xp_before` y `level_before` antes del UPDATE y los pasa en el payload de `emit_event`. La firma interna de `_notify_dashboard` se hizo kwargs-only para evitar errores de orden.
