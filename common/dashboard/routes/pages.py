@@ -1,15 +1,21 @@
-"""Rutas HTML del dashboard. En Fase 2: perfil + placeholders de mapa/rangos."""
-from fastapi import APIRouter, Request
+"""Rutas HTML del dashboard."""
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from common.dashboard.services.markdown import (
+    render_markdown_file,
+    resolve_codex_path,
+    resolve_quest_readme,
+)
 from common.dashboard.services.progress import (
     get_apprentice,
     get_completed_count,
     get_current_quest,
     get_quest_status_map,
     get_xp_breakdown,
+    is_quest_readme_read,
 )
-from common.dashboard.services.quest_catalog import ACTS, QUESTS
+from common.dashboard.services.quest_catalog import ACTS, QUESTS, quest_by_slug
 from common.dashboard.services.setup_check import build_setup_context
 from common.dashboard.templating import templates
 
@@ -86,3 +92,89 @@ def ranks_page(request: Request):
             "roman": ROMAN,
         },
     )
+
+
+@router.get("/quest/{slug}", response_class=HTMLResponse)
+def quest_page(request: Request, slug: str):
+    quest = quest_by_slug(slug)
+    if quest is None:
+        raise HTTPException(status_code=404, detail="Quest no encontrada en el grimorio.")
+
+    status_map = get_quest_status_map()
+    status = status_map.get(slug, "locked")
+
+    if status == "locked":
+        return templates.TemplateResponse(
+            request,
+            "quest_view.html",
+            {
+                "request": request,
+                "quest": quest,
+                "status": status,
+                "rendered": None,
+                "act": ACTS[quest.act],
+                "roman": ROMAN,
+            },
+        )
+
+    readme_path = resolve_quest_readme(slug)
+    if readme_path is None:
+        raise HTTPException(
+            status_code=404,
+            detail="README del quest no existe en el repositorio.",
+        )
+
+    rendered = render_markdown_file(readme_path)
+    return templates.TemplateResponse(
+        request,
+        "quest_view.html",
+        {
+            "request": request,
+            "quest": quest,
+            "status": status,
+            "rendered": rendered,
+            "act": ACTS[quest.act],
+            "roman": ROMAN,
+            "already_read": is_quest_readme_read(quest.db_id),
+        },
+    )
+
+
+@router.get("/codex", response_class=HTMLResponse)
+@router.get("/codex/{path:path}", response_class=HTMLResponse)
+def codex_page(request: Request, path: str = ""):
+    resolved = resolve_codex_path(path)
+    if resolved is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Pergamino no encontrado en el Códex.",
+        )
+
+    rendered = render_markdown_file(resolved)
+    crumbs = _build_codex_crumbs(path)
+    return templates.TemplateResponse(
+        request,
+        "codex_view.html",
+        {
+            "request": request,
+            "rendered": rendered,
+            "crumbs": crumbs,
+            "path": path,
+        },
+    )
+
+
+def _build_codex_crumbs(path: str) -> list[dict[str, str]]:
+    crumbs: list[dict[str, str]] = [{"label": "Códex", "href": "/codex"}]
+    if not path:
+        return crumbs
+    accumulated: list[str] = []
+    for part in path.strip("/").split("/"):
+        accumulated.append(part)
+        crumbs.append(
+            {
+                "label": part.replace("_", " "),
+                "href": "/codex/" + "/".join(accumulated),
+            }
+        )
+    return crumbs

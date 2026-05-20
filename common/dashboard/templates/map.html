@@ -36,7 +36,12 @@
       <div class="quest-grid">
         {% for quest in entry.quests %}
           {% set status = status_map[quest.slug] %}
-          <article class="quest-card quest-card--{{ status }}">
+          {% set is_link = status in ["completed", "current"] %}
+          {% set tag = "a" if is_link else "article" %}
+          <{{ tag }}
+            class="quest-card quest-card--{{ status }}{% if is_link %} quest-card--link{% endif %}"
+            {% if is_link %}href="/quest/{{ quest.slug }}"{% endif %}
+          >
             <div class="quest-card-banner">
               <img src="/assets/images/{{ quest.banner }}" alt="{{ quest.title }}" loading="lazy">
               <span class="quest-card-badge quest-card-badge--{{ status }}">
@@ -63,7 +68,7 @@
                 <span class="xp-pill">+{{ quest.xp }} XP</span>
               </div>
             </div>
-          </article>
+          </{{ tag }}>
         {% endfor %}
       </div>
     {% else %}

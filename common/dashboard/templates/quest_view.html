@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ quest.title }} · Arkanum{% endblock %}
+
+{% block content %}
+<header class="viewer-header">
+  <a href="/map" class="viewer-back">← Mapa del Laboratorio</a>
+  <div class="viewer-meta">
+    <span class="viewer-meta-tag">Quest {{ quest.order }}</span>
+    <span class="viewer-meta-tag viewer-meta-tag--act">Acto {{ roman[quest.act] }} · {{ act.name }}</span>
+    {% if status == "completed" %}
+      <span class="viewer-meta-tag viewer-meta-tag--completed">Completado</span>
+    {% elif status == "current" %}
+      <span class="viewer-meta-tag viewer-meta-tag--current">En curso</span>
+    {% else %}
+      <span class="viewer-meta-tag viewer-meta-tag--locked">Sellado</span>
+    {% endif %}
+  </div>
+</header>
+
+{% if status == "locked" %}
+  <section class="viewer-sealed">
+    <h1>Pergamino sellado</h1>
+    <p class="viewer-sealed-quote">
+      “No se desvelan secretos antes de tiempo. Completa los quests previos para
+      ganar el derecho a leer este pergamino.”
+    </p>
+    <p class="arkanum-muted">— Zhyréon</p>
+    <a href="/map" class="viewer-cta">Volver al mapa</a>
+  </section>
+{% else %}
+  <div class="viewer-layout">
+    <aside class="viewer-toc" aria-label="Tabla de contenidos">
+      <h4>En este pergamino</h4>
+      {% if rendered.toc %}
+        <ol class="viewer-toc-list">
+          {% for entry in rendered.toc %}
+            <li class="viewer-toc-level-{{ entry.level }}">
+              <a href="#{{ entry.anchor }}">{{ entry.text }}</a>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="arkanum-muted">Sin secciones detectadas.</p>
+      {% endif %}
+
+      <div class="viewer-toc-actions">
+        <button
+          type="button"
+          class="viewer-mark-read{% if already_read %} viewer-mark-read--done{% endif %}"
+          data-mark-read-url="/api/quests/{{ quest.slug }}/mark-read"
+          {% if already_read %}disabled{% endif %}
+        >
+          {% if already_read %}✓ Pergamino estudiado{% else %}Marcar como leído{% endif %}
+        </button>
+      </div>
+    </aside>
+
+    <article class="viewer-prose">
+      {{ rendered.html | safe }}
+    </article>
+  </div>
+{% endif %}
+{% endblock %}

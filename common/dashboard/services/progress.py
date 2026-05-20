@@ -74,3 +74,13 @@ def get_current_quest() -> QuestMeta | None:
         if status == "current":
             return quest_by_slug(slug)
     return None
+
+
+def is_quest_readme_read(quest_db_id: str) -> bool:
+    init_db()
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM quest_reading WHERE quest_id = ?",
+            (quest_db_id,),
+        ).fetchone()
+    return row is not None
