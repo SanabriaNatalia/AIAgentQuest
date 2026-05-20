@@ -55,3 +55,17 @@ def quest_completed(payload: QuestCompletedPayload) -> dict:
         "event_id": event_id,
         "redirect": f"/celebrate?quest={payload.quest_id}",
     }
+
+
+class ActClosedPayload(BaseModel):
+    act_number: int
+
+
+@router.post("/events/act-closed")
+def act_closed(payload: ActClosedPayload) -> dict:
+    event_id = _store_event("act_closed", payload.model_dump())
+    return {
+        "ok": True,
+        "event_id": event_id,
+        "redirect": "/milestones",
+    }

@@ -16,7 +16,12 @@
 
 {% for entry in acts_data %}
   {% set act = entry.act %}
-  <section class="act-band act-band--{{ act.status }}">
+  <section class="act-band act-band--{{ act.status }}{% if entry.is_closed %} act-band--closed{% endif %}">
+    {% if entry.is_closed %}
+      <a href="/milestones" class="act-closed-banner" title="Ver hito en /milestones">
+        ⚜ Acto sellado · ver hito
+      </a>
+    {% endif %}
     <header class="act-header">
       <div class="act-number-badge">Acto {{ entry.roman }}</div>
       <div class="act-title-block">

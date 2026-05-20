@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 14 — Tracking de costo (`arkanum cost`) |
-| **Próxima fase** | Fase 15 — Detección de cierre de acto |
-| **Tiempo invertido aprox.** | ~57h (acumulado Fases 0-14) |
-| **Tiempo restante estimado** | ~11h (Fases 15-17) |
+| **Última fase completada** | Fase 15 — Detección de cierre de acto + /milestones |
+| **Próxima fase** | Fase 16 — Visualización del agent loop (`arkanum run`) |
+| **Tiempo invertido aprox.** | ~59h (acumulado Fases 0-15) |
+| **Tiempo restante estimado** | ~9h (Fases 16-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -53,11 +53,11 @@
 | 12 | Pistas (contenido) | ✅ | `25c2b9b` _(bitácora sin commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
 | 13 | Tracking tiempo/intentos | ✅ | `1428745` _(bitácora sin commit)_ | 4h | Tabla `quest_progress` como buffer pre-completion; logros on-the-fly (one_shot/no_red); filter Jinja `format_duration`; payload del evento `quest_completed` extendido con `attempts`/`total_time_seconds` |
 | 14 | Tracking costo | ✅ | `e0467ee` _(bitácora sin commit)_ | 2h | Tabla `quest_costs`; parser de stdout en `arkanum check`; `arkanum cost` con tabla Rich + `--per-attempt`; pill de costo en perfil con USD estimado a tarifa Gemini 2.5 Flash |
-| 15 | Detección cierre acto | ⏳ | — | 2h | — |
+| 15 | Detección cierre acto | ✅ | _(pendiente de commit)_ | 2h | Hook en `record_quest_completion` detecta + cierra todos los actos elegibles (con backfill retroactivo); `/milestones` con cards arcanas; banner luminoso en `/map`; evento `act_closed` con redirect a `/milestones` |
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-14 = ~57h reales / 56h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-15 = ~59h reales / 58h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,58 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 15 — Detección de cierre de acto + /milestones _(pendiente de commit)_
+
+**Entregado**
+- **Helper `_check_and_close_acts(conn)` en `db.py`**: recorre todos los actos `available` con `quest_slugs` no vacío y, si todas sus quests están en `quest_completion`, hace `INSERT OR IGNORE` en `act_milestones`. Devuelve la lista de actos recién cerrados (que `rowcount > 0`). Idempotente y soporta cierre **retroactivo**: si el aprendiz cerró el Acto I antes de F15 (sin row en `act_milestones`), la primera completación post-F15 lo backfillea automáticamente.
+- **Hook en `record_quest_completion`**: tras el INSERT exitoso y el UPDATE del aprendiz (todo dentro del mismo `with get_connection()`), llama `_check_and_close_acts(conn)`. Guarda los actos cerrados en `newly_closed_acts` y, después del commit, los emite con `_notify_act_closed(act_num)`.
+- **`_notify_act_closed(act_num)`**: best-effort similar a `_notify_dashboard` — ensure_started + emit_event "act-closed". Cada side-effect en su propio try/except.
+- **`POST /events/act-closed`** en `routes/events.py`: nuevo `ActClosedPayload(act_number: int)`; persiste el evento como `act_closed`; devuelve `{ok, event_id, redirect: "/milestones"}`.
+- **Servicio `common/dashboard/services/milestones.py`** (nuevo):
+  - `ClosedAct` dataclass agrupa el `ActMeta`, `closed_at`, tuple de `quests` del acto, tuple de `ranks` desbloqueados.
+  - `closed_acts()` → lista ordenada por acto, lista completa para el template.
+  - `closed_act_numbers()` → `set[int]` ligero para el mapa.
+- **Página `/milestones`** (`routes/pages.py`): `milestones_page` carga `closed_acts()` y `ROMAN`. Template nuevo `milestones.html` con header arcano + cards de actos cerrados (numeral romano + nombre + fecha de cierre + quote del acto + lista de quests selladas con link al viewer + lista de rangos como pills). Estado vacío con quote de Zhyréon y CTA a `/map`.
+- **`/map` modificado**: `map_page` ahora pasa `is_closed` por entrada del acto. El template agrega clase `act-band--closed` + bloque `<a class="act-closed-banner" href="/milestones">⚜ Acto sellado · ver hito</a>` cuando `entry.is_closed`. El banner es un link a `/milestones`.
+- **Link "Hitos" en nav** (`base.html`): añadido entre "Rangos" y "Setup", visible en todas las páginas.
+- **CSS** (+170 líneas en `arcane.css`):
+  - `.act-band--closed`: borde dorado intenso + box-shadow + `::before` con gradient lateral sutil para el efecto "luz".
+  - `.act-closed-banner`: pill dorado con borde + hover translate.
+  - `.milestone-card`: card grande con grid de 2 columnas (Quests / Rangos), colapsa a 1 col en <720px.
+  - `.milestone-rank-pill`: pills doradas para los rangos.
+
+**Smoke test ejecutado**
+- 14 checks con TestClient + temp DB aislada:
+  - Estado inicial: ningún acto cerrado.
+  - `/milestones` vacío rinde mensaje arcano.
+  - Completar las 4 quests del Acto I → `closed_act_numbers() == {1}`.
+  - Re-llamar `record_quest_completion` no duplica el milestone.
+  - `/milestones` muestra el Acto I con sus 4 ranks (Invocador Principiante → Ejecutor de Leyes) y "Fundamentos del Agente".
+  - `/map` contiene `act-band--closed` y `act-closed-banner` para el Acto I.
+  - Nav incluye link `/milestones`.
+  - Actos III/IV (in_development con `quest_slugs=()`) NO se marcan como cerrados aunque la query "todas las quests del acto están completadas" sea trivialmente cierta.
+  - Backfill retroactivo: tras borrar `act_milestones` y completar quests del Acto II, una sola llamada a `record_quest_completion` re-cierra Acto I y II.
+- Verificación separada (sin `ARKANUM_NO_DASHBOARD`): completar 4 quests del Acto I deja 1 entry `kind='act_closed'` en `events`, demostrando que la emisión funciona.
+- Sanity contra dashboard real: `/milestones` y `/map` responden 200 y rinden los elementos esperados.
+
+**Desviaciones del plan**
+- **Detección "global" en cada `record_quest_completion`** en vez de sólo el acto del quest que se cierra. Razón: permite el **backfill retroactivo** sin código separado. Overhead despreciable (4 actos × 1-4 IDs a consultar). Documentado en el docstring de `_check_and_close_acts`.
+- **Import diferido de `quest_catalog` dentro del helper**: `db.py` no debería forzar carga de `dashboard.services` cuando se usa desde scripts aislados. El helper captura cualquier `ImportError` y devuelve `[]` (no cierra actos). Manteniene `db.py` desacoplado del dashboard.
+- **Sin "migración one-time" en `init_db()`**: el plan F15 mencionaba un backfill al iniciar el server. Decisión: el backfill vive en `_check_and_close_acts` mismo, así que cualquier completación post-F15 lo dispara. Si el aprendiz no completa nada más, no se materializa — aceptable porque sin actividad nueva tampoco necesita ver el hito.
+- **`act_closed` event tiene payload mínimo** `{act_number}`. El plan sugería incluir lista de ranks, pero el template `/milestones` ya las recompone desde el catálogo. Mantener el evento small + recomputar en el viewer es más limpio que duplicar data.
+
+**Hallazgos / tech debt**
+- **Banner luminoso usa `::before` con `pointer-events: none`** para no interferir con clicks en el grid de quest-cards.
+- **Toast del perfil no muestra `act_closed`**: el `initToast()` filtra por `kind === "quest_completed"`. F15 emite eventos `act_closed` que se persisten en la tabla pero no abren toast. Aceptable: el banner del map + el link Hitos ya dan visibilidad. Si se quiere toast dedicado, agregar caso en `pollToast`.
+- **`open_browser` automático para act_closed no implementado**: a diferencia de `quest_completed` que abre `/celebrate`, `act_closed` no fuerza al navegador a `/milestones`. Es decisión deliberada: el cierre de acto ya vino acompañado del `/celebrate` del último quest; abrir dos pestañas seguidas es ruido. El link en el toast + banner del map cubren la necesidad.
+- **`closed_acts()` no incluye `total_time_seconds` agregado**: dato disponible vía `quest_completion.total_time_seconds` por quest, pero no expuesto en `/milestones`. Si se quiere "Tiempo total del acto" en F17, sumar en el servicio.
+- **Acto III/IV cuando se materialicen**: cuando F-futuro escriba quests del Acto III, sólo hay que cambiar `status="in_development"` → `"available"` y añadir `quest_slugs=(...)` en `quest_catalog.ACTS`. El cierre se detecta automáticamente.
+
+**Tech debt cerrado**
+- ~~`act_milestones` tabla sin uso~~ — ahora se llena automáticamente y se expone en `/milestones`.
 
 ---
 
@@ -602,6 +654,9 @@
 | `Popen + tee` manual en `run_module_capturing` | F14 | `subprocess.run(capture_output=True)` mataba el streaming en tiempo real |
 | `python -u` en captura | F14 | Sin `-u` los prints se buffean en bloques de 8KB y el aprendiz no ve progreso |
 | Tarifa Gemini en código (cost.py) | F14 | F17 puede moverlo a `pyproject.toml` si crece el catálogo |
+| Detección "global" de cierre de acto | F15 | Permite backfill retroactivo sin código separado |
+| Sin toast para `act_closed` | F15 | Banner del mapa + link en nav ya cubren la visibilidad |
+| Import diferido de quest_catalog en db.py | F15 | Mantiene `progress/db.py` desacoplado del dashboard |
 
 ## Tech debt acumulado
 
@@ -614,55 +669,65 @@
 
 ## Próxima fase
 
-### Fase 15 — Detección de cierre de acto + página `/milestones` (~2h)
+### Fase 16 — Visualización del agent loop (`arkanum run`, ~6h)
 
 **Objetivo**
-> Done cuando: tras cada `record_quest_completion`, el sistema detecta si todas las quests del acto al que pertenece quedaron cerradas. Si sí y el acto aún no está en `act_milestones`, se inserta, se emite evento `act_closed`, y la página nueva `/milestones` muestra los actos cerrados con sus fechas + rangos obtenidos + quote de Zhyréon. El mapa marca con un banner luminoso la columna del acto cerrado.
+> Done cuando: `arkanum run <N> "prompt"` envuelve el starter de Q07-Q08 como subprocess, parsea su stdout línea por línea, y emite eventos `trace` al dashboard. La página `/live-agent` muestra en tiempo real (HTMX polling cada 1s) las function calls y los resultados como un grafo simple.
 
 **Plan**
-1. **Hook en `record_quest_completion`** (`db.py`):
-   - Tras el INSERT exitoso, llamar `_check_act_closure(quest_id, conn)` dentro de la misma transacción.
-   - Helper: identificar el acto del `quest_id` via catálogo (db_id → QuestMeta.act). Si todas las quests del acto están en `quest_completion`, INSERT OR IGNORE en `act_milestones(act_number, closed_at)`.
-   - Si el INSERT fue nuevo, agendar el evento `act_closed` para emitirlo en `_notify_dashboard`.
-2. **`POST /events/act-closed`** en `routes/events.py` (recibe `{act_number}`).
-3. **`/milestones`** en `routes/pages.py`:
-   - `services/milestones.py` con `closed_acts() -> list[{act, closed_at, ranks: list[str]}]`.
-   - Template `milestones.html`: cards de actos cerrados con header + lista de quests + ranks unlocked + quote del acto.
-   - Si no hay actos cerrados, mensaje arcano "Tu travesía aún no marca pergaminos cerrados".
-4. **Banner luminoso en `/map`**: si `act.number in closed_acts`, agregar clase CSS `act-band--closed` con un glow dorado en la franja.
-5. **Link en nav**: agregar "Hitos" a `base.html` después de "Rangos".
-6. **Tests**:
-   - Completar las 4 quests del Acto I → row en `act_milestones`.
-   - Re-completar (idempotente, no duplica row).
-   - `/milestones` rinde card del Acto I.
-   - `/map` muestra `act-band--closed` para el Acto I.
+1. **Endpoints**:
+   - `POST /events/trace` recibe `{trace_id, step_type, name, payload}`.
+   - `GET /api/trace/current` devuelve los pasos recientes del trace activo.
+2. **`common/cli/commands/run.py`**:
+   - `arkanum run <N> "prompt" [extra args]` resuelve quest, exporta `ARKANUM_TRACE=1` + `ARKANUM_TRACE_URL=...` para el subprocess.
+   - Usa `run_module_capturing` para hacer tee.
+   - Parsea cada línea con patrones conocidos:
+     - `Calling function: NAME(ARGS)` → step_type=function_call.
+     - `-> {...}` → step_type=function_result.
+     - `Prompt tokens:` / `Response tokens:` → trace de tokens.
+   - Por cada match, POST a `/events/trace`.
+3. **`/live-agent`** (`routes/pages.py`): página con título "Agente en directo", lista de steps con timestamps. HTMX polling cada 1s.
+4. **Servicio `services/trace.py`**: `record_step`, `current_steps`, `start_trace`.
+5. **Tabla nueva `agent_traces`** (id, trace_id, step_type, name, payload, created_at).
+6. **Mención en READMEs de Q07-Q08** (opcional): explicar `arkanum run` como wrapper opt-in.
 
 **Pre-condiciones**
-- Tabla `act_milestones` existe (✅ F0).
-- `record_quest_completion` ya emite eventos (✅ F6/F13).
-- Catálogo de actos en `quest_catalog.ACTS` (✅ F2).
+- `run_module_capturing` ya existe (✅ F14).
+- Q07-Q08 imprimen `Calling function:` y `->` (✅ por pre-checks).
 
 **Archivos a tocar / crear**
-- ✏️ `common/progress/db.py` (hook + helper de detección).
-- ➕ `common/dashboard/services/milestones.py`.
-- ✏️ `common/dashboard/routes/events.py` (endpoint).
-- ✏️ `common/dashboard/routes/pages.py` (`/milestones`).
-- ➕ `common/dashboard/templates/milestones.html`.
-- ✏️ `common/dashboard/templates/base.html` (link "Hitos" en nav).
-- ✏️ `common/dashboard/templates/map.html` (clase --closed).
-- ✏️ `common/dashboard/static/arcane.css` (estilos milestones + glow del map).
+- ➕ Tabla `agent_traces` en `db.py`.
+- ➕ `common/dashboard/services/trace.py`.
+- ➕ `common/cli/commands/run.py`.
+- ✏️ `common/cli/main.py`.
+- ✏️ `common/dashboard/routes/events.py` (POST /events/trace).
+- ✏️ `common/dashboard/routes/api.py` (GET /api/trace/current).
+- ➕ `common/dashboard/templates/live_agent.html`.
+- ✏️ `common/dashboard/static/arcane.css`.
 
 **Riesgos detectados**
-- **Actos vacíos (III/IV)**: como `quest_slugs=()`, podrían marcarse como "cerrados" porque la condición "todas las quests del acto completadas" es trivialmente cierta. Manejar `if not act.quest_slugs: skip`.
-- **Race condition** con concurrencia: dentro de la misma transacción de `record_quest_completion`, leer y escribir.
-- **Cierre retroactivo**: aprendices que ya cerraron el Acto I antes de F15 no tienen row en `act_milestones`. Decisión: agregar una migración one-time que detecta y backfilla al iniciar el server (idempotente vía INSERT OR IGNORE).
+- **Parser frágil**: si el aprendiz cambia el formato de print, los eventos no aparecen. Aceptable: `arkanum run` es opt-in y los starters del repo no cambian.
+- **HTTP overhead**: 1 POST por línea matcheable. Mitigación: timeout 0.3s, persistencia local como fallback (mismo patrón que `emit_event`).
+- **Tabla agent_traces puede crecer mucho** si el agent loop hace muchas iteraciones. Aceptable: única tabla con histórico crudo; `arkanum run` rara vez se ejecuta.
 
 **Criterio de cierre de la fase**
-- Completar las 4 quests del Acto I en orden hace que `act_milestones` tenga `(1, closed_at)` y se emita evento `act_closed`.
-- `/milestones` muestra el Acto I con sus 4 ranks unlocked y la quote de cierre.
-- `/map` resalta visualmente la franja del Acto I.
-- Cierre con commit `feat(dashboard): fase 15 - cierre de acto + milestones`.
-- Actualizar este archivo.
+- `arkanum run 7 "¿Qué archivos hay?"` ejecuta el starter, parsea function_calls.
+- `/live-agent` muestra los steps en tiempo real (refresh cada 1s).
+- Cierre con commit `feat(dashboard): fase 16 - visualizacion agent loop`.
+
+---
+
+_Plan original de F15 (cerrado pendiente de commit):_
+
+### Fase 15 — Detección de cierre de acto + /milestones (~2h)
+
+**Plan resumido**
+1. Hook `_check_and_close_acts` en `record_quest_completion`: recorre actos available, marca cerrados los que tengan todas sus quests completadas (idempotente + backfill retroactivo).
+2. `_notify_act_closed` best-effort emite evento `act-closed`.
+3. Servicio `milestones.py` con `closed_acts` (datos ricos) y `closed_act_numbers` (set para mapa).
+4. `/milestones` con cards arcanas + estado vacío.
+5. Banner luminoso en `/map` cuando el acto está cerrado.
+6. Link "Hitos" en nav.
 
 ---
 

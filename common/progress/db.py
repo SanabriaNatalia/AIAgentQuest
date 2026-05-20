@@ -183,6 +183,57 @@ def get_quest_progress(quest_id: str) -> tuple[str | None, int]:
         return None, 0
     return row[0], int(row[1])
 
+def _check_and_close_acts(conn) -> list[int]:
+    """Marca como cerrados todos los actos cuyas quests están completadas.
+
+    Idempotente vía `INSERT OR IGNORE` en `act_milestones`. Recorre el
+    catálogo de actos (sólo los `available`, con `quest_slugs` no vacío)
+    para soportar también el cierre retroactivo de actos cerrados antes
+    de F15 — la primera completación post-F15 dispara el backfill.
+
+    Devuelve la lista de `act_number` recién cerrados (los que no
+    estaban ya en la tabla). Si no hay ninguno nuevo, lista vacía.
+    """
+    # Import diferido: quest_catalog no debería forzar carga de dashboard
+    # cuando se usa db.py desde un script aislado.
+    try:
+        from common.dashboard.services.quest_catalog import ACTS, quest_by_slug
+    except Exception:
+        return []
+
+    newly_closed: list[int] = []
+    now = datetime.now().isoformat(timespec="seconds")
+
+    for act_num, act in ACTS.items():
+        if act.status != "available" or not act.quest_slugs:
+            continue
+
+        db_ids: list[str] = []
+        for slug in act.quest_slugs:
+            meta = quest_by_slug(slug)
+            if meta is not None:
+                db_ids.append(meta.db_id)
+        if not db_ids:
+            continue
+
+        placeholders = ",".join("?" * len(db_ids))
+        count_row = conn.execute(
+            f"SELECT COUNT(*) FROM quest_completion WHERE quest_id IN ({placeholders})",
+            db_ids,
+        ).fetchone()
+        if count_row is None or int(count_row[0]) != len(db_ids):
+            continue
+
+        cur = conn.execute(
+            "INSERT OR IGNORE INTO act_milestones (act_number, closed_at) VALUES (?, ?)",
+            (act_num, now),
+        )
+        if cur.rowcount > 0:
+            newly_closed.append(act_num)
+
+    return newly_closed
+
+
 def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
 
     init_db()
@@ -196,6 +247,7 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
     final_attempts = 1
     first_attempt_at: str | None = None
     total_time_seconds: int | None = None
+    newly_closed_acts: list[int] = []
 
     now_iso = datetime.now().isoformat(timespec="seconds")
 
@@ -286,6 +338,7 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
         )
 
         completion_was_new = True
+        newly_closed_acts = _check_and_close_acts(conn)
 
     if completion_was_new:
         _notify_dashboard(
@@ -300,6 +353,27 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
             attempts=final_attempts,
             total_time_seconds=total_time_seconds,
         )
+        for act_num in newly_closed_acts:
+            _notify_act_closed(act_num)
+
+
+def _notify_act_closed(act_number: int) -> None:
+    """Best-effort: arranca dashboard si no está y emite evento act_closed."""
+    try:
+        from common.dashboard.lifecycle import ensure_started
+        from common.progress.notify import emit_event
+    except Exception:
+        return
+
+    try:
+        ensure_started()
+    except Exception:
+        pass
+
+    try:
+        emit_event("act-closed", {"act_number": act_number})
+    except Exception:
+        pass
 
 
 def _notify_dashboard(

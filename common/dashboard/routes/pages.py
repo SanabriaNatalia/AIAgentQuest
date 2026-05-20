@@ -8,6 +8,7 @@ from common.dashboard.services.achievements import (
     total_achievements,
 )
 from common.dashboard.services.cost import has_any_cost, total_cost
+from common.dashboard.services.milestones import closed_act_numbers, closed_acts
 from common.dashboard.services.hints import (
     get_hint,
     list_hints_for,
@@ -74,11 +75,17 @@ def setup_page(request: Request):
 @router.get("/map", response_class=HTMLResponse)
 def map_page(request: Request):
     status_map = get_quest_status_map()
+    closed_acts_set = closed_act_numbers()
     acts_data = []
     for num in (1, 2, 3, 4):
         act = ACTS[num]
         quests = [q for q in QUESTS if q.act == num]
-        acts_data.append({"act": act, "quests": quests, "roman": ROMAN[num]})
+        acts_data.append({
+            "act": act,
+            "quests": quests,
+            "roman": ROMAN[num],
+            "is_closed": num in closed_acts_set,
+        })
     return templates.TemplateResponse(
         request,
         "map.html",
@@ -86,6 +93,19 @@ def map_page(request: Request):
             "request": request,
             "acts_data": acts_data,
             "status_map": status_map,
+            "roman": ROMAN,
+        },
+    )
+
+
+@router.get("/milestones", response_class=HTMLResponse)
+def milestones_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "milestones.html",
+        {
+            "request": request,
+            "milestones": closed_acts(),
             "roman": ROMAN,
         },
     )
