@@ -1,5 +1,12 @@
-# Pista III — Manifestación — El Medidor Arcano
+## La manifestación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+```python
+usage = response.usage_metadata
+if usage is None:
+    raise RuntimeError("No se recibió metadata de uso desde Gemini.")
 
-Esta pista será un fragmento de código mínimo (2-4 líneas) que rompe el bloqueo.
+print(f"Prompt tokens: {usage.prompt_token_count}")
+print(f"Response tokens: {usage.candidates_token_count}")
+```
+
+El check valida la presencia exacta de los strings `Prompt tokens:` y `Response tokens:` en stdout, antes del texto del agente.

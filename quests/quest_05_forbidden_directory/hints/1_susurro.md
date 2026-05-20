@@ -1,5 +1,5 @@
-# Pista I — Susurro — El Directorio Prohibido
+## El susurro
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+> Dos rutas absolutas. La primera define el territorio del agente; la segunda es a donde quiere ir. ¿Cómo verificas, sin ambigüedad, que la segunda no escapó de la primera?
 
-Esta pista será pregunta orientadora que te empuja a observar lo que ya tienes.
+No basta comparar strings: `../foo` y `foo/../foo` se ven distintos pero apuntan al mismo sitio. Necesitas comparar rutas como **rutas**, no como texto.

@@ -1,5 +1,5 @@
-# Pista I — Susurro — La Encarnación del Agente
+## El susurro
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+> El modelo dice "ejecuta `get_files_info` con `directory='.'`". Tú tienes el diccionario de funciones reales. ¿Cómo despachas el nombre que te llega a la función que toca, y le devuelves un resultado que el modelo entienda como observación?
 
-Esta pista será pregunta orientadora que te empuja a observar lo que ya tienes.
+Dos pasos separados: **ejecutar** la función real y **envolver** su retorno en una `Content` con el rol correcto.

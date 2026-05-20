@@ -1,5 +1,14 @@
-# Pista III — Manifestación — La Voz del Aprendiz
+## La manifestación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+```python
+parser = argparse.ArgumentParser()
+parser.add_argument("user_prompt")
+args = parser.parse_args()
+prompt = args.user_prompt
 
-Esta pista será un fragmento de código mínimo (2-4 líneas) que rompe el bloqueo.
+messages = [
+    types.Content(role="user", parts=[types.Part(text=prompt)])
+]
+```
+
+La lista `messages` arranca con un único elemento — los demás (respuestas del modelo, observaciones de tools) los irás agregando en los quests posteriores del Acto II.

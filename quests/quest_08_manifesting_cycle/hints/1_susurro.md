@@ -1,5 +1,5 @@
-# Pista I — Susurro — El Ciclo de la Manifestación
+## El susurro
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+> Una acción no basta. El agente lee, escribe, ejecuta — y luego necesita _ver_ el resultado para decidir el próximo paso. ¿Cómo construyes ese ciclo sin caer en un loop infinito?
 
-Esta pista será pregunta orientadora que te empuja a observar lo que ya tienes.
+El historial de mensajes es el río que conecta cada iteración. Cada tool deja un sedimento en él; cada respuesta del modelo, también.

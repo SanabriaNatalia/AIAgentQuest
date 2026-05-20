@@ -11,10 +11,10 @@
 | Campo | Valor |
 |---|---|
 | **Branch** | `feat/dashboard-arcano` |
-| **Última fase completada** | Fase 11 — Sistema de pistas (mecánica) |
-| **Próxima fase** | Fase 12 — Sistema de pistas (contenido) |
-| **Tiempo invertido aprox.** | ~46h (acumulado Fases 0-11) |
-| **Tiempo restante estimado** | ~22h (Fases 12-17) |
+| **Última fase completada** | Fase 12 — Sistema de pistas (contenido) |
+| **Próxima fase** | Fase 13 — Tracking tiempo/intentos + logros calculados |
+| **Tiempo invertido aprox.** | ~51h (acumulado Fases 0-12) |
+| **Tiempo restante estimado** | ~17h (Fases 13-17) |
 
 ### Cómo retomar en otra sesión
 
@@ -50,14 +50,14 @@
 | 9 | Actualizar READMEs quests | ✅ | `cce7dd9` _(bitácora sin commit)_ | 2h | `arkanum start N` ahora acepta args extras (cambio mini-scope en start.py); 5 READMEs tenían typos de paths viejos (`quest_01_first_agent`, etc.) — corregidos |
 | 10 | Pre-check local | ✅ | `a17d8e3` _(bitácora `109d8a6`)_ | 4h | Pre-checks AST + regex por quest (`q01..q08`); flag `--yes` agregado para auto-confirmar; regex matchea también comentarios (decisión consciente — ver hallazgos) |
 | 11 | Pistas (mecánica) | ✅ | `4388260` _(bitácora sin commit)_ | 5h | Service + endpoints + UI; 24 placeholders `.md` con texto F12-pendiente; modal de confirmación vanilla JS; orden estricto validado en server |
-| 12 | Pistas (contenido) | ⏳ | — | 5h | Trabajo pedagógico, no de código |
+| 12 | Pistas (contenido) | ✅ | _(pendiente de commit)_ | 5h | 24 .md redactados con escalada Susurro/Revelación/Manifestación; títulos cortos ("El susurro" etc.) en vez del nombre del quest; snippets reales sin pegar la solución completa |
 | 13 | Tracking tiempo/intentos | ⏳ | — | 4h | — |
 | 14 | Tracking costo | ⏳ | — | 2h | — |
 | 15 | Detección cierre acto | ⏳ | — | 2h | — |
 | 16 | Visualización agent loop | ⏳ | — | 6h | — |
 | 17 | Pulido | ⏳ | — | 4h | Embeber fuentes Cinzel/Inter aquí |
 
-**Total acumulado:** Fases 0-11 = ~46h reales / 45h planificadas (cercano al estimado).
+**Total acumulado:** Fases 0-12 = ~51h reales / 50h planificadas (cercano al estimado).
 
 ---
 
@@ -129,6 +129,47 @@
 
 **Hallazgos / tech debt**
 - Las cartas del mapa NO son clickeables (planeado para F5 cuando exista `/quest/{slug}`).
+
+---
+
+### Fase 12 — Sistema de pistas, contenido _(pendiente de commit)_
+
+**Entregado**
+- **Q01 — La Primera Invocación**: I empuja a notar que `genai` está importado pero no construido. II nombra `genai.Client` + `client.models.generate_content`. III pega el patrón cliente + llamada con `gemini-2.5-flash`.
+- **Q02 — El Medidor Arcano**: I señala que el costo deja rastro en el `response`. II nombra `usage_metadata`, `prompt_token_count`, `candidates_token_count` + recordatorio del `RuntimeError`. III muestra el `print(f"Prompt tokens: {...}")` con el orden exacto que valida el check.
+- **Q03 — La Voz del Aprendiz**: I plantea "escuchar desde la terminal + empaquetar la voz". II nombra `argparse.ArgumentParser`, `types.Content`, `types.Part`, y el cambio `contents=prompt` → `contents=messages`. III construye `messages = [types.Content(role="user", parts=[types.Part(text=prompt)])]`.
+- **Q04 — Las Leyes del Arkanum**: I apunta al canal aparte (`config=`). II nombra `GenerateContentConfig(system_instruction=..., temperature=0)` y recuerda editar primero `common/prompts/system_prompt.py`. III muestra el config completo con el `from common.prompts.system_prompt import system_prompt`.
+- **Q05 — El Directorio Prohibido**: I formula la pregunta "¿cómo verificas que una ruta está contenida en otra?". II nombra `os.path.abspath`, `os.path.join`, `os.path.commonpath` + reducción `commonpath([a, b]) == a`. III pega las 4 líneas de `working_dir_abs` → `is_valid_path` dentro de `get_valid_target_path.py`.
+- **Q06 — El Cofre de Instrumentos**: I dirige a observar `schema_get_files_info` como modelo. II nombra `types.FunctionDeclaration(name, description, parameters=types.Schema)`, registro en `types.Tool(function_declarations=...)`, y `tools=[available_functions]` en el starter. III pega la plantilla completa de `schema_get_file_content` recordando que `working_directory` no se declara (lo inyecta Q07).
+- **Q07 — La Encarnación del Agente**: I separa "ejecutar real" de "envolver en Content". II nombra `function_map[name](**args)`, inyección de `working_directory`, formato `types.Content(role="tool", parts=[types.Part.from_function_response(...)])`, y el manejo de función desconocida con `{"error": ...}`. III pega el cuerpo completo de `call_function` (con guard de `function_name not in function_map`).
+- **Q08 — El Ciclo de la Manifestación**: I apela al historial como "río" que conecta iteraciones. II nombra `for _ in range(MAX_ITERS)`, `messages.append(candidate.content)`, `messages.append(types.Content(role="tool", parts=function_results))` y el patrón de salida `return response.text`. III pega esqueleto de `main()` + `generate_content()` con `return None` significando "sigue iterando".
+
+**Convención de formato adoptada**
+- Cada `.md` arranca con un H2 corto temático: `## El susurro` / `## La revelación` / `## La manifestación`. No incluye nombre del quest (eso ya lo da la carta visualmente).
+- Susurro: blockquote inicial con la pregunta, seguido de 1-2 líneas de contexto. Sin código.
+- Revelación: bullets con identificadores en **bold** + tipografía monoespaciada. Mención del archivo a tocar cuando aplica. Sin pegar el código.
+- Manifestación: bloque `python` de 4-10 líneas (algunos pasan de 4 por necesidad de mostrar la estructura completa, p. ej. Q07 / Q08) + 1 línea final que reencuadra _por qué_ funciona.
+
+**Smoke test ejecutado**
+- `grep -r "Contenido pendiente" quests/` → 0 matches.
+- Script TestClient: `POST /api/quests/{slug}/hints/{1,2,3}` para los 8 quests = 24 invocaciones. Todas devuelven 200, ninguna contiene "Contenido pendiente", y por nivel se valida:
+  - L1 contiene `El susurro` ✔
+  - L2 contiene `La revelación` ✔
+  - L3 contiene `La manifestación` y `<pre` (bloque de código Pygments) ✔
+- Sanity con dashboard real (puerto 8765): `/quest/quest_01_first_invocation` rinde HTML sin placeholder y la card I queda como `hint-card--available`.
+
+**Desviaciones del plan**
+- **Manifestación de Q07 y Q08 superan las 4 líneas sugeridas** del contrato. Justificación: para Q07 hay que mostrar el guard de "función desconocida" + la inyección de `working_directory` + el return final, lo que no cabe en 4 líneas sin trampear. Para Q08 hay que evidenciar la separación `main()` ↔ `generate_content()` para que la pista sea útil. Sigue siendo "snippet mínimo" en el sentido que importa: no pega la solución completa, sólo la estructura crítica.
+- **No se generó docstring explícito en el `.md`** advirtiendo "renuncias al logro Sin red". El modal de F11 ya lo dice; replicarlo en cada `.md` sería ruido.
+
+**Hallazgos / tech debt**
+- **Las pistas se renderizan con el mismo pipeline que el README** (`render_markdown_file` → Pygments theme monokai). El syntax highlight queda consistente con el viewer de quests sin esfuerzo extra.
+- **Pistas en `<pre>` no muestran el botón "Copiar"**: el `initCopyButtons()` busca `.viewer-prose .codeblock`, no `.hint-card-body .codeblock`. Decisión consciente: las pistas son lectura, no se copian al portapapeles (forzar lectura del aprendiz). Si se cambia de criterio en F17, sólo hay que ampliar el selector.
+- **El render markdown procesa enlaces relativos** dentro de los `.md` de pistas igual que en READMEs (rewrite a `/codex/...`, `/quest/...`). Ninguna pista actual los usa, pero el comportamiento queda disponible si se necesitan referencias cruzadas en futuras pistas.
+- **Pistas no traducidas a otros idiomas**: todas en español. Coherente con la convención global del repo. Si en algún momento se internacionaliza, sería en `quests/quest_NN_*/hints/{locale}/...`.
+
+**Tech debt cerrado**
+- ~~Contenido pedagógico pendiente~~ — las 24 pistas tienen ahora redacción real.
 
 ---
 
@@ -411,6 +452,9 @@
 | Modal de pistas inline en quest_view | F11 | En vez de partial — sólo se usa en esa página, igual que el toast de F7 |
 | Auto-unlock de pista N+1 en cliente | F11 | UX inmediata; server sigue validando orden estricto |
 | Placeholders ya renderizables en F11 | F11 | Texto "Contenido pendiente — F12" se ve decente desde el primer commit |
+| Pistas: títulos `## El susurro` etc. | F12 | En vez del nombre del quest (redundante con la carta) |
+| L3 puede pasar de 4 líneas si la estructura lo exige | F12 | Q07/Q08 lo necesitan para mostrar la separación crítica |
+| Sin botón "Copiar" en pistas | F12 | Selector limitado a `.viewer-prose .codeblock`; forzar lectura |
 
 ## Tech debt acumulado
 
@@ -423,45 +467,73 @@
 
 ## Próxima fase
 
-### Fase 12 — Sistema de pistas, contenido (~5h) ⚠️ pedagógico
+### Fase 13 — Tracking tiempo/intentos + logros calculados (~4h)
 
 **Objetivo**
-> Done cuando: los 24 archivos `quests/quest_NN_*/hints/{1,2,3}_*.md` tienen contenido pedagógico real adaptado a los TODOs de cada starter — pregunta orientadora (I), nombre de concepto/función (II), snippet 2-4 líneas (III). Reemplaza los placeholders "Contenido pendiente — F12" creados en F11.
+> Done cuando: cada quest registra su `first_attempt_at` la primera vez que el aprendiz corre `arkanum start` o `arkanum check`, cuenta intentos en `quest_attempts` por cada `check.py` ejecutado (pase o falle), y al completar guarda `total_time_seconds = completed_at - first_attempt_at`. Logros "One shot" (`attempts == 1`) y "Sin red" (`hint_usage` vacía) se calculan on-the-fly y aparecen en el perfil + en la celebración + en el viewer del quest.
 
 **Plan**
-1. **Por cada quest (Q01..Q08)**:
-   - Identificar el TODO más representativo donde un aprendiz se atasca (cargar `.env` para Q01, copiar Q02 para Q03, registrar schemas para Q06, etc.).
-   - Redactar las 3 pistas siguiendo el contrato:
-     - **I — Susurro**: una sola pregunta abierta que invite a observar (no más de 2 oraciones). No revelar nombres ni funciones.
-     - **II — Revelación**: el nombre del concepto / función / estructura clave. Puede mencionar el módulo (`os.environ`, `types.Content`, `available_functions`, etc.) pero sin pegar la línea de código.
-     - **III — Manifestación**: 2-4 líneas de código que rompen el bloqueo (no la solución completa).
-   - Mantener tono arcano consistente con el resto del laboratorio (Zhyréon como narrador opcional).
-2. **No tocar mecánica** — F11 ya entrega service/endpoints/UI funcionando. Sólo es reemplazar el `.md` de cada archivo.
-3. **Validación**:
-   - Smoke test: solicitar las 3 pistas de Q01 vía `POST /api/quests/.../hints/{level}` y verificar que el HTML rendido contiene los conceptos esperados (no el placeholder).
-   - Revisión manual de pares (I → II → III) para que la escalada sea coherente: la I no anticipa la II, la II no anticipa la III.
+1. **Captura de `first_attempt_at`**:
+   - `common/cli/commands/start.py` y `commands/check.py` llaman a una función nueva `register_attempt(quest, kind)` antes de ejecutar el subprocess.
+   - `common/progress/db.py` expone:
+     - `register_first_attempt(quest_id)` — `INSERT OR IGNORE` en `quest_completion` con `first_attempt_at = now`, `attempts = 0`, sin tocar `completed_at`.
+     - `record_quest_attempt(quest_id, passed, failure_reason)` — `INSERT` en `quest_attempts` siempre, y `UPDATE quest_completion SET attempts = attempts + 1` cuando `completed_at IS NULL`.
+2. **Cierre de tiempos en `record_quest_completion`**:
+   - Calcular `total_time_seconds = now - first_attempt_at` si `first_attempt_at` no es null.
+   - Persistir en `quest_completion`.
+3. **Logros on-the-fly** (sin tabla nueva):
+   - `common/dashboard/services/achievements.py` (nuevo):
+     - `achievements_for(quest_db_id) -> list[Achievement]` calcula los logros aplicables.
+     - `one_shot_eligible(quest)`, `no_red_eligible(quest)` reutilizando `is_no_red_eligible` de F11.
+   - Otros candidatos cuando se cierra todo el quest: "Velocista" si `total_time_seconds < 600`, etc. — opcional, depende del scope.
+4. **UI**:
+   - **Perfil**: badges junto al rango actual con conteo de logros.
+   - **Quest view** (`quest_view.html`): si el quest está completed, sección "Trofeos de este quest" listando los logros obtenidos.
+   - **Celebración** (`celebrate.html`): si en el evento `quest_completed` se incluyen logros, mostrarlos junto a la pila de XP.
+5. **Tests**:
+   - Smoke: `register_first_attempt` idempotente.
+   - `record_quest_attempt` incrementa `attempts` y deja huella en `quest_attempts`.
+   - `one_shot_eligible(quest)` → True si `attempts == 1`, False con `attempts >= 2`.
+   - `no_red_eligible(quest)` → False tras un POST a `/api/quests/.../hints/1`.
 
 **Pre-condiciones**
-- Mecánica de pistas operativa (✅ F11).
-- Starters de los 8 quests con TODOs identificables (✅).
+- Tablas `quest_attempts` y `hint_usage` existen (✅ F0).
+- Columnas `attempts`, `first_attempt_at`, `total_time_seconds` en `quest_completion` (✅ F0).
+- Pre-checks de F10 invocan al `check.py` real con retorno conocido (✅).
 
-**Archivos a tocar**
-- ✏️ `quests/quest_NN_*/hints/1_susurro.md` × 8
-- ✏️ `quests/quest_NN_*/hints/2_revelacion.md` × 8
-- ✏️ `quests/quest_NN_*/hints/3_manifestacion.md` × 8
+**Archivos a tocar / crear**
+- ✏️ `common/progress/db.py` (helpers + actualización de `record_quest_completion`)
+- ➕ `common/dashboard/services/achievements.py`
+- ✏️ `common/cli/commands/start.py` y `commands/check.py` (registrar intento)
+- ✏️ `common/dashboard/templates/profile.html`, `quest_view.html`, `celebrate.html`
+- ✏️ `common/dashboard/static/arcane.css` (estilos de trofeos)
 
 **Riesgos detectados**
-- **Trabajo pedagógico no técnico**: el reto es redactar 24 piezas cortas con escalada coherente, no programar. Si una pista revela demasiado, neutraliza la siguiente.
-- **Salud del logro "Sin red"**: pistas excesivamente útiles invitan a pedirlas siempre; pistas inútiles las hacen irrelevantes. Tono "ofrenda, no atajo".
-- **Vocabulario**: las pistas deben usar los mismos identificadores que ya aparecen en los TODOs del starter (no introducir nombres alternos que confundan).
-- **Acto III/IV en desarrollo**: por ahora sólo hay 8 quests; cuando los actos III/IV se materialicen, F12 escalará proporcionalmente.
+- **Bug retroactivo**: aprendices que ya completaron quests antes de F13 no tienen `first_attempt_at`. Asumir `total_time_seconds = NULL` y mostrar "—" cuando esto pase.
+- **Conteo de `attempts` debe incrementarse incluso si el check falla**, pero NO después de completed_at. La query `UPDATE ... WHERE completed_at IS NULL` lo cubre.
+- **Acoplamiento CLI ↔ DB**: ahora `arkanum start/check` toca BD. Si `ARKANUM_NO_DASHBOARD=1`, debe seguir funcionando (test/CI).
 
 **Criterio de cierre de la fase**
-- Los 24 archivos `.md` ya no contienen la frase "Contenido pendiente — F12".
-- Smoke: `POST /api/quests/quest_01_first_invocation/hints/3` devuelve un snippet de código real (no placeholder).
-- Revisión manual: ningún I revela la II ni la II revela la III.
-- Cierre con commit `feat(dashboard): fase 12 - contenido de pistas`.
+- `arkanum start 1` por primera vez crea row en `quest_completion` con `first_attempt_at` y `attempts=0`.
+- `arkanum check 1` (que falla pre-checks o el check real) deja una row en `quest_attempts` y suma a `attempts`.
+- Pasar el check real persiste `total_time_seconds`.
+- `achievements_for("La Primera Invocación")` después de completar al primer intento sin pistas devuelve `["one_shot", "no_red"]`.
+- Cierre con commit `feat(dashboard): fase 13 - tracking tiempo e intentos`.
 - Actualizar este archivo (sección "Detalle por fase" + tabla + "Próxima fase").
+
+---
+
+_Plan original de F12 (cerrado pendiente de commit):_
+
+### Fase 12 — Sistema de pistas, contenido (~5h)
+
+**Objetivo**
+> Done cuando: los 24 archivos `quests/quest_NN_*/hints/*.md` tienen contenido pedagógico real adaptado a los TODOs de cada starter; reemplaza los placeholders "Contenido pendiente — F12" de F11.
+
+**Plan resumido**
+1. Por cada quest, identificar el TODO bloqueo y redactar I (pregunta) / II (nombre del concepto) / III (snippet 2-4 líneas).
+2. Mantener tono arcano y vocabulario alineado con los TODOs del starter.
+3. Smoke con TestClient: 24 invocaciones POST verifican títulos y bloque `<pre>` en L3.
 
 ---
 

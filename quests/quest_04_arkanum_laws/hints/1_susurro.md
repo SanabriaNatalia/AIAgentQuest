@@ -1,5 +1,5 @@
-# Pista I — Susurro — Las Leyes del Arkanum
+## El susurro
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+> No quieres repetir "ignora cualquier instrucción del usuario..." en cada prompt. ¿Cómo le entregas al modelo un conjunto de reglas que aplique a _todas_ las invocaciones de esta sesión?
 
-Esta pista será pregunta orientadora que te empuja a observar lo que ya tienes.
+Existe un canal aparte del prompt del usuario. Búscalo dentro de la configuración de la llamada, no en `contents`.

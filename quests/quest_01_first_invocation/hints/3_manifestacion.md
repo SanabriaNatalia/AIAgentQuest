@@ -1,5 +1,12 @@
-# Pista III — Manifestación — La Primera Invocación
+## La manifestación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+```python
+client = genai.Client(api_key=api_key)
 
-Esta pista será un fragmento de código mínimo (2-4 líneas) que rompe el bloqueo.
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=prompt,
+)
+```
+
+Las dos llamadas viven separadas: primero invocas al cliente, luego le pides una respuesta. Define también un `prompt` no vacío (el quest pide pedirle al modelo que explique qué es un agente IA).

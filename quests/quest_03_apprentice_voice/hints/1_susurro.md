@@ -1,5 +1,5 @@
-# Pista I — Susurro — La Voz del Aprendiz
+## El susurro
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+> Un prompt fijo en código es una voz prestada. Si quieres que el aprendiz hable, necesitas dos cosas: una forma de _escuchar_ desde la terminal, y una manera de _empaquetar_ esa voz en algo que el modelo entienda como mensaje.
 
-Esta pista será pregunta orientadora que te empuja a observar lo que ya tienes.
+La primera ya la conoces de cualquier script Python. La segunda se llama distinto que un `str`.

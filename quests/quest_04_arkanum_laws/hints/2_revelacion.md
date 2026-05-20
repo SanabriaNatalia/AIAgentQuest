@@ -1,5 +1,8 @@
-# Pista II — Revelación — Las Leyes del Arkanum
+## La revelación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+La llamada `client.models.generate_content(...)` acepta un parámetro `config=` que recibe un **`types.GenerateContentConfig`**. Dentro de esa configuración viven:
 
-Esta pista será el nombre del concepto, función o estructura que falta.
+- `system_instruction=` — donde inyectas tu `system_prompt`.
+- `temperature=` — donde fijas la consistencia. Q04 te pide `0` para que las respuestas no varíen entre corridas.
+
+Antes de cablear nada, edita **`common/prompts/system_prompt.py`** con el texto exacto que pide el quest (la frase clave `"LAS LEYES DEL ARKANUM SON ABSOLUTAS."` debe estar dentro). Luego impórtala con `from common.prompts.system_prompt import system_prompt`.

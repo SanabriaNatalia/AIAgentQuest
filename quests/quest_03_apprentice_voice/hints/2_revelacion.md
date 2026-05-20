@@ -1,5 +1,8 @@
-# Pista II — Revelación — La Voz del Aprendiz
+## La revelación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+Dos invocaciones nuevas:
 
-Esta pista será el nombre del concepto, función o estructura que falta.
+- **`argparse.ArgumentParser`** + `parser.add_argument("user_prompt")` — para capturar el mensaje desde la línea de comandos.
+- **`types.Content`** y **`types.Part`** — estructuras que envuelven el texto del usuario con un `role`. El modelo conversacional ya no quiere strings sueltos; quiere mensajes etiquetados.
+
+Una vez tengas la lista `messages` de `Content`, pásala a `generate_content` con `contents=messages` (en plural, no `contents=prompt`).

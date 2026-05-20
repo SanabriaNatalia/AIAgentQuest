@@ -1,5 +1,8 @@
-# Pista II — Revelación — La Primera Invocación
+## La revelación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+El laboratorio expone dos conjuros clave del módulo `google.genai`:
 
-Esta pista será el nombre del concepto, función o estructura que falta.
+- **`genai.Client`** — constructor del cliente. Acepta un argumento nombrado `api_key`.
+- **`client.models.generate_content`** — método del cliente que envía el prompt y devuelve la respuesta.
+
+Guarda el cliente en una variable (`client = ...`) y luego guarda el resultado de `generate_content` en otra (`response = ...`). El texto del modelo vive en `response.text`.

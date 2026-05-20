@@ -1,5 +1,16 @@
-# Pista III — Manifestación — Las Leyes del Arkanum
+## La manifestación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+```python
+from common.prompts.system_prompt import system_prompt
 
-Esta pista será un fragmento de código mínimo (2-4 líneas) que rompe el bloqueo.
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=messages,
+    config=types.GenerateContentConfig(
+        system_instruction=system_prompt,
+        temperature=0,
+    ),
+)
+```
+
+`system_instruction` y `contents` son canales distintos: uno define **quién eres**, el otro **qué te están preguntando**. Por eso las leyes del Arkanum dominan sobre cualquier pregunta del usuario.

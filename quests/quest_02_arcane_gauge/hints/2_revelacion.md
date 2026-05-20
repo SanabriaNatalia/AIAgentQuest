@@ -1,5 +1,8 @@
-# Pista II — Revelación — El Medidor Arcano
+## La revelación
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+La medida del costo vive en **`response.usage_metadata`**. Es un objeto con varios contadores; los dos que importan ahora son:
 
-Esta pista será el nombre del concepto, función o estructura que falta.
+- `prompt_token_count` — lo que costó **tu** mensaje.
+- `candidates_token_count` — lo que costó la **respuesta** del modelo.
+
+Si `usage_metadata` viene `None`, algo salió mal en la invocación: protégete con un `RuntimeError`. Recuerda imprimir los tokens **antes** de mostrar la respuesta — el orden importa para el check.

@@ -1,5 +1,5 @@
-# Pista I — Susurro — El Medidor Arcano
+## El susurro
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+> El modelo no sólo responde — también _cobra_. Cada invocación deja un rastro de su costo. ¿En qué objeto te entrega esa contabilidad?
 
-Esta pista será pregunta orientadora que te empuja a observar lo que ya tienes.
+Mira con atención el `response` que ya tienes del Quest 01. No todo lo importante vive en `.text`.

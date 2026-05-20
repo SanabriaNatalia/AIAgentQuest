@@ -1,5 +1,5 @@
-# Pista I — Susurro — La Primera Invocación
+## El susurro
 
-> _Contenido pendiente._ Las pistas pedagógicas serán redactadas en la **Fase 12**.
+> Tu archivo tiene un cliente _importado_, pero no _construido_. ¿Qué ritual transforma una librería en una entidad viva con la que puedas conversar?
 
-Esta pista será pregunta orientadora que te empuja a observar lo que ya tienes.
+Antes de pedirle algo al modelo, alguien necesita representarlo dentro de tu programa. La librería ya está en escena; falta darle forma.
