@@ -177,48 +177,31 @@ Puedes consultarlo en cualquier momento durante el laboratorio y usarlo para amp
 docs/README.md
 ```
 
-## Requisitos previos
+## Configuración inicial
 
-Antes de comenzar necesitarás:
+Esta sección te lleva desde cero hasta tener el **dashboard arcano** abierto en tu navegador. Desde ahí el dashboard se vuelve tu guía principal: mapa de quests, instrucciones, diagnóstico, rangos y celebraciones.
 
-- Python 3.12+
-- Git
-- uv
+### Prerrequisitos
 
----
+- **Python 3.12+**
+- **Git**
+- **`uv`** — gestor de paquetes y entornos. Instalación oficial:
 
-## Instalación de uv
+  **Windows (PowerShell):**
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
 
-`uv` es el gestor de paquetes y entornos utilizado por el laboratorio.
-Nos permite instalar y ejecutar todas las dependencias de forma simple y reproducible.
+  **macOS / Linux:**
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
 
-### Windows (PowerShell)
+  Verifica con `uv --version`.
 
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-### macOS / Linux
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
+  > Si el comando no se encuentra justo después de instalarlo, **cierra y vuelve a abrir la terminal**. El instalador agrega `uv` al `PATH` del usuario, pero las sesiones ya abiertas no lo recogen hasta reiniciarse.
 
 ---
-
-### Verificar instalación
-
-```bash
-uv --version
-```
-
-Si todo salió correctamente, ya puedes continuar con la instalación del laboratorio.
-
-> **Si `uv --version` falla justo después de instalarlo**, cierra y vuelve a abrir la terminal. El instalador deja `uv` en `%USERPROFILE%\.local\bin` (Windows) o `~/.local/bin` (macOS / Linux) y agrega esa ruta al `PATH` del usuario, pero las sesiones abiertas no recogen el cambio hasta reiniciarse.
-
----
-
-## Inicio Rápido
 
 ### 1. Clonar el repositorio
 
@@ -233,14 +216,13 @@ cd AIAgentQuest
 uv sync
 ```
 
-`uv sync` crea el entorno virtual en `.venv/` e instala el ejecutable del laboratorio en `.venv/Scripts/arkanum.exe` (Windows) o `.venv/bin/arkanum` (macOS / Linux), gracias a la entrada `[project.scripts]` declarada en `pyproject.toml`.
+Esto crea el entorno virtual en `.venv/` e instala el ejecutable `arkanum` (gracias a la entrada `[project.scripts]` declarada en `pyproject.toml`).
 
-### 3. Activar el entorno (para tener `arkanum` en el PATH)
+### 3. Activar el entorno virtual
 
-Para que el comando `arkanum` esté disponible directamente desde la terminal, activa el entorno virtual:
+Para que el comando `arkanum` esté disponible directamente:
 
 **Windows (PowerShell):**
-
 ```powershell
 . .\.venv\Scripts\Activate.ps1
 ```
@@ -251,38 +233,22 @@ Para que el comando `arkanum` esté disponible directamente desde la terminal, a
 > ```
 
 **macOS / Linux:**
-
 ```bash
 source .venv/bin/activate
 ```
 
-Verifica que el comando responde:
+Verifica con `arkanum --help`.
 
-```bash
-arkanum --help
-```
+> **Alternativa sin activar el venv.** Puedes invocar el CLI con `uv run arkanum ...` desde cualquier terminal, sin activar nada. Por ejemplo: `uv run arkanum --help`.
 
-Deberías ver los 10 subcomandos del laboratorio: `doctor`, `init`, `current`, `next`, `progress`, `start`, `run`, `check`, `cost`, `dashboard`.
+### 4. Configurar tu API key de Gemini
 
-> **Alternativa sin activar el venv.** Cada vez que abras una terminal nueva puedes invocar el CLI con `uv run arkanum ...` en lugar de activar el entorno. Por ejemplo: `uv run arkanum --help`.
+Crea el archivo `.env` a partir del ejemplo:
 
-### 4. Configurar variables de entorno
+**Windows (PowerShell):** `Copy-Item .env.example .env`
+**macOS / Linux:** `cp .env.example .env`
 
-Crea un archivo `.env` a partir del ejemplo `.env.example`:
-
-**Windows (PowerShell):**
-
-```powershell
-Copy-Item .env.example .env
-```
-
-**macOS / Linux:**
-
-```bash
-cp .env.example .env
-```
-
-Edita `.env` y reemplaza el placeholder por tu clave real de Gemini (la obtienes gratis en [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → *Create API key*):
+Edita `.env` y pega tu clave real (la obtienes gratis en [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → *Create API key*):
 
 ```env
 GEMINI_API_KEY=AIza...
@@ -292,105 +258,39 @@ GEMINI_API_KEY=AIza...
 
 ### 5. Registrar tu aprendiz y abrir el dashboard
 
-Crea tu perfil local de progreso con el wizard del CLI:
-
 ```bash
 arkanum init
 ```
 
-El wizard te pedirá tu nombre, verificará tu `.env`, hará ping a Gemini y abrirá el **dashboard arcano** en tu navegador. Esto también crea la base SQLite local de tu progreso:
+El wizard te pedirá tu nombre, validará tu `.env`, hará ping a Gemini y abrirá el **dashboard arcano** en tu navegador. Esto también crea tu base SQLite local de progreso (`.quest_progress.db`, ya está en `.gitignore`).
 
-```text
-.quest_progress.db
-```
-
-> El archivo es personal y no debe subirse a Git (ya está en `.gitignore`).
-
-**Dashboard arcano** — disponible por defecto en [http://127.0.0.1:8765](http://127.0.0.1:8765). Ahí encontrarás:
-
-- **Perfil** — tu rango, nivel, XP, pills de logros y panel de diagnóstico del setup.
-- **Mapa** — los 4 actos y todas las quests con su estado (actual / completada / sellada).
-- **Rangos / Hitos** — colección de rangos desbloqueados y actos cerrados.
-- **Setup** — diagnóstico continuo de los 9 prerrequisitos; si algo falla muestra instrucciones puntuales para arreglarlo.
-- **Live Agent** — visualización en vivo del agent loop (a partir del Acto II).
-
-Atajos útiles del CLI:
-
-```bash
-arkanum progress           # tabla de tu avance
-arkanum current            # quest en la que estás
-arkanum doctor             # diagnóstico completo (incluye ping real a Gemini)
-arkanum dashboard status   # PID y puerto del server
-arkanum dashboard stop     # detenerlo
-arkanum dashboard start    # volver a levantarlo
-```
-
-### 6. Comenzar el primer Quest
-
-Cada Quest contiene:
-
-- teoría breve
-- objetivos
-- instrucciones paso a paso
-- starter code
-- validaciones
-- solución final
-
-Para saber cuál es tu quest actual:
-
-```bash
-arkanum current
-```
-
-Esto te indicará, por ejemplo, **Quest 1 — La Primera Invocación**. Abre el README correspondiente:
-
-```text
-quests/quest_01_first_invocation/README.md
-```
-
-o desde terminal:
-
-```bash
-code quests/quest_01_first_invocation/README.md
-```
-
-Sigue las instrucciones del Quest y trabaja sobre:
-
-```text
-starter/main.py
-```
-
-Para ejecutar tu starter mientras avanzas:
-
-```bash
-arkanum start 1
-```
-
-Cuando termines, valida tu solución con:
-
-```bash
-arkanum check 1
-```
-
-Si la solución pasa, el dashboard sella la quest, otorga el rango correspondiente y abre la página de celebración automáticamente.
+Si el navegador no se abre solo, visita: [http://127.0.0.1:8765](http://127.0.0.1:8765)
 
 ---
 
-## Estructura del repositorio (lo esencial)
+## Tu travesía continúa en el dashboard
 
-```text
-AIAgentQuest/
-├── quests/              # Una carpeta por quest (Q01–Q08)
-│   └── quest_NN_*/
-│       ├── README.md    # Teoría + instrucciones
-│       ├── starter/     # Código que tú editas
-│       ├── solution/    # Solución de referencia
-│       └── workspace/   # Sandbox específico de la quest (Acto II+)
-├── common/              # CLI, dashboard, progreso, funciones compartidas
-├── docs/                # Códex arcano (referencia de conceptos)
-├── workspace/           # Sandbox libre del agente para tus experimentos
-├── .env                 # Tu API key (no se sube a git)
-└── .quest_progress.db   # Tu progreso local (no se sube a git)
+A partir de aquí el dashboard es tu mapa, tu bitácora y tu mentor. Explora sus pestañas:
+
+- **Perfil** — tu rango, nivel, XP, pills de logros y panel de diagnóstico continuo del setup.
+- **Mapa** — los 4 actos y las 8 quests con su estado (actual / sellada / bloqueada).
+- **Rangos** — colección de rangos desbloqueados, uno por cada quest completada.
+- **Hitos** — pergaminos que se sellan al cerrar cada acto.
+- **Setup** — diagnóstico de los 9 prerrequisitos en tiempo real. Si algo falla, te muestra debajo el comando exacto para arreglarlo.
+- **Live Agent** — visualización en vivo del agent loop (a partir del Acto II).
+- **Códex** — biblioteca de referencia con explicaciones de conceptos.
+
+Cada quest dentro del dashboard te indicará el comando para invocarla (`arkanum start N`, `arkanum check N`, `arkanum run N "..."`), las pistas disponibles y el archivo donde editar tu solución. Cuando completes una quest, el dashboard la sella automáticamente y abre la página de celebración.
+
+Atajos del CLI que probablemente uses todo el tiempo:
+
+```bash
+arkanum current            # quest en la que estás
+arkanum progress           # tabla de tu avance
+arkanum doctor             # diagnóstico completo (incluye ping real a Gemini)
+arkanum dashboard status   # PID y puerto del server
+arkanum dashboard stop     # detener el dashboard
+arkanum dashboard start    # volver a levantarlo
 ```
 
 ---
