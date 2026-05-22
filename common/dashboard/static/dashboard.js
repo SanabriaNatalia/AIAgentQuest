@@ -18,11 +18,17 @@
     });
   }
 
-  // --- Copy code: inyecta botón en cada div.codeblock ------------------
+  // --- Copy code: inyecta botón solo en bloques con código real --------
+  // Los bloques ```text se usan para rutas, output o ejemplos conceptuales:
+  // no se pegan en ningún lado, así que omitimos el botón.
+  var NON_COPYABLE_LANGS = { "": 1, "text": 1, "plain": 1, "txt": 1, "output": 1 };
+
   function initCopyButtons() {
     var blocks = document.querySelectorAll(".viewer-prose .codeblock");
     blocks.forEach(function (block) {
       if (block.querySelector(".codeblock-copy")) return;
+      var lang = (block.dataset.lang || "").toLowerCase();
+      if (NON_COPYABLE_LANGS[lang]) return;
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "codeblock-copy";

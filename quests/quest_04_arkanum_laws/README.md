@@ -147,17 +147,11 @@ Tu tarea será modificarla y utilizarla dentro del agente.
 
 ### Deberás:
 
-1. abrir:
-
-```text
-common/prompts/system_prompt.py
-```
-
-2. modificar el contenido de `system_prompt`
-3. importar el prompt desde tu aplicación principal
-4. usar `GenerateContentConfig`
-5. enviar el `system_instruction`
-6. configurar `temperature=0`
+1. abrir `common/prompts/system_prompt.py` en tu editor y modificar el contenido de `system_prompt`
+2. importar el prompt desde tu aplicación principal
+3. usar `GenerateContentConfig`
+4. enviar el `system_instruction`
+5. configurar `temperature=0`
 
 ---
 

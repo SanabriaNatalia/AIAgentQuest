@@ -212,13 +212,7 @@ En este Quest trabajarás en cuatro partes.
 
 ### 1. Completar el dispatcher de herramientas
 
-Abre:
-
-```text
-common/functions/call_function.py
-```
-
-y completa:
+Abre `common/functions/call_function.py` en tu editor y completa:
 
 ```python
 function_map = {
@@ -275,13 +269,7 @@ Si no estás familiarizado con `verbose` te recomendamos leer [esta entrada del 
 
 ### 4. Ejecutar herramientas reales
 
-En:
-
-```text
-starter/main.py
-```
-
-debes:
+En `starter/main.py` (dentro de la carpeta del quest) debes:
 
 - iterar sobre:
   ```python

@@ -101,20 +101,12 @@ a GitHub (a ningún repositorio en general).
 
 ### 3. Completar el starter
 
-Abre:
-
-```text
-quests/quest_01_first_invocation/starter/main.py
-```
-
-En este Quest aprenderás a:
+Abre `quests/quest_01_first_invocation/starter/main.py` en tu editor (VS Code u otro IDE) y completa los `TODO`s en orden. Aprenderás a:
 
 - cargar variables de entorno
 - crear un cliente de Gemini
 - enviar un prompt
 - imprimir la respuesta del modelo
-
-Los `TODO`s están organizados paso a paso.
 
 ---
 
