@@ -244,7 +244,7 @@
     var host = document.getElementById("event-toast");
     if (!host) return;
     pollToast(host);
-    var interval = parseInt(host.dataset.eventPollInterval || "15000", 10);
+    var interval = parseInt(host.dataset.eventPollInterval || "5000", 10);
     setInterval(function () { pollToast(host); }, interval);
   }
 
