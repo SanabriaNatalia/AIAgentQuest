@@ -197,10 +197,10 @@ para inspeccionar:
 Ejemplo:
 
 ```bash
-uv run python -m quests.quest_07_agent_embodiment.starter.main \
-"lee notes.txt" \
---verbose
+arkanum start 7 "lee notes.txt" --verbose
 ```
+
+(o el equivalente legacy: `uv run python -m quests.quest_07_agent_incarnation.starter.main "lee notes.txt" --verbose`)
 
 ---
 
@@ -212,13 +212,7 @@ En este Quest trabajarás en cuatro partes.
 
 ### 1. Completar el dispatcher de herramientas
 
-Abre:
-
-```text
-common/functions/call_function.py
-```
-
-y completa:
+Abre `common/functions/call_function.py` en tu editor y completa:
 
 ```python
 function_map = {
@@ -275,13 +269,7 @@ Si no estás familiarizado con `verbose` te recomendamos leer [esta entrada del 
 
 ### 4. Ejecutar herramientas reales
 
-En:
-
-```text
-starter/main.py
-```
-
-debes:
+En `starter/main.py` (dentro de la carpeta del quest) debes:
 
 - iterar sobre:
   ```python
@@ -335,3 +323,6 @@ Por ahora solo queremos:
 - ejecutar tools reales
 - observar resultados
 - conectar intención con acción
+
+---
+

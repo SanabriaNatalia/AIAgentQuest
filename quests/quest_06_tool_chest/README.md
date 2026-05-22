@@ -390,3 +390,6 @@ Calling function:
 get_files_info({'directory': '.'})
 ```
 
+---
+
+

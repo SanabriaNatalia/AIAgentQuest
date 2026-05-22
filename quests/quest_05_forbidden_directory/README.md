@@ -320,16 +320,7 @@ Léela así:
 
 ---
 
-## Criterio de éxito
-
-Completaste el Quest si:
-
-- las tools funcionan dentro del `working_directory`
-- las tools bloquean rutas externas
-- los errores se devuelven como texto
-- el agente no puede escapar del directorio permitido
-
-### Validación de rutas
+## Validación de rutas
 
 Para implementar la frontera del agente necesitarás trabajar con:
 

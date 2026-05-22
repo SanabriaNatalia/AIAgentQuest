@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Perfil del Aprendiz · Arkanum{% endblock %}
+
+{% block content %}
+<div
+  id="event-toast"
+  class="notification-toast notification-toast--hidden"
+  role="status"
+  aria-live="polite"
+  data-event-poll-url="/api/events/peek"
+  data-event-poll-interval="5000"
+  data-event-dismiss-url="/api/events/{id}/dismiss"
+></div>
+
+{% if not apprentice %}
+  <section class="arkanum-empty">
+    <h1>El laboratorio aguarda</h1>
+    <blockquote class="zhyreon-quote">
+      Aún no has sido registrado en los pergaminos del Arkanum.
+      Antes de iniciar la travesía, deberás dar tu nombre al maestro.
+      <cite>— Zhyréon</cite>
+    </blockquote>
+    <p class="arkanum-instruction">Ejecuta en tu terminal:</p>
+    <pre><code>arkanum init</code></pre>
+    <p class="arkanum-muted">
+      El wizard te pedirá tu nombre, validará tu <code>GEMINI_API_KEY</code> y
+      dejará todo listo para empezar tu primer quest.
+    </p>
+  </section>
+{% else %}
+  <section class="profile-hero">
+    <div class="profile-avatar">⚜</div>
+    <div class="profile-identity">
+      <h1>{{ apprentice.username }}</h1>
+      <p class="profile-rank">{{ apprentice.current_rank }}</p>
+    </div>
+  </section>
+
+  <section class="profile-level">
+    <header>
+      <span class="profile-level-label">Nivel {{ level }}</span>
+      <span class="profile-level-xp">{{ xp_in_level }} / {{ xp_required }} XP</span>
+    </header>
+    <div class="xp-bar" aria-label="Progreso de XP">
+      <div class="xp-bar-fill" style="width: {{ xp_pct }}%"></div>
+    </div>
+  </section>
+
+  <section class="profile-stats">
+    <div class="stat">
+      <span class="stat-value">{{ completed_count }}<span class="stat-divisor">/8</span></span>
+      <span class="stat-label">Quests</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">{{ apprentice.xp }}</span>
+      <span class="stat-label">XP total</span>
+    </div>
+    <div class="stat stat-act">
+      <span class="stat-value-text">{{ act_info }}</span>
+      <span class="stat-label">Travesía</span>
+    </div>
+  </section>
+
+  {% if achievement_counts %}
+  <section class="profile-achievements" aria-label="Logros desbloqueados">
+    <h2 class="profile-section-title">Logros</h2>
+    <div class="achievement-pills">
+      <div class="achievement-pill">
+        <span class="achievement-pill-icon">🎯</span>
+        <span class="achievement-pill-count">{{ achievement_counts.one_shot }}</span>
+        <span class="achievement-pill-label">One shot</span>
+      </div>
+      <div class="achievement-pill">
+        <span class="achievement-pill-icon">🕯️</span>
+        <span class="achievement-pill-count">{{ achievement_counts.no_red }}</span>
+        <span class="achievement-pill-label">Sin red</span>
+      </div>
+      {% if cost_summary %}
+      <div class="achievement-pill achievement-pill--cost" title="Tokens consumidos · estimación Gemini 2.5 Flash">
+        <span class="achievement-pill-icon">📜</span>
+        <span class="achievement-pill-count">${{ '%.4f' % cost_summary.estimated_usd if cost_summary.estimated_usd < 0.01 else '%.2f' % cost_summary.estimated_usd }}</span>
+        <span class="achievement-pill-label">{{ '{:,}'.format(cost_summary.total_tokens) }} tokens</span>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+{% endif %}
+{% endblock %}

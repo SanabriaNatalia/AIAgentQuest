@@ -1,0 +1,73 @@
+<div class="setup-panel">
+  <header class="setup-panel-header">
+    <h3>Estado del Laboratorio</h3>
+    <div class="setup-pills">
+      <span class="setup-pill setup-pill--ok">{{ counts.ok }} ok</span>
+      {% if counts.warn %}<span class="setup-pill setup-pill--warn">{{ counts.warn }} avisos</span>{% endif %}
+      {% if counts.fail %}<span class="setup-pill setup-pill--fail">{{ counts.fail }} errores</span>{% endif %}
+    </div>
+  </header>
+
+  <ul class="setup-checks">
+    {% for check in checks %}
+      <li class="setup-check setup-check--{{ check.status }}">
+        <span class="setup-check-icon" aria-hidden="true">
+          {% if check.status == "ok" %}✓
+          {% elif check.status == "warn" %}⚠
+          {% else %}✗
+          {% endif %}
+        </span>
+        <span class="setup-check-label">{{ check.label }}</span>
+        {% if check.detail %}
+          <span class="setup-check-detail">{{ check.detail }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+
+  {% if issues %}
+    <section class="setup-remedies" aria-live="polite" aria-label="Cómo arreglar">
+      <h4 class="setup-remedies-title">Cómo arreglar</h4>
+      <ul class="setup-remedies-list">
+        {% for issue in issues %}
+          <li class="setup-remedy setup-remedy--{{ issue.check.status }}">
+            <p class="setup-remedy-line">
+              <span class="setup-remedy-badge setup-remedy-badge--{{ issue.check.status }}">{{ issue.check.label }}</span>
+              {% if issue.remedy %}
+                {{ issue.remedy.instruction }}
+              {% else %}
+                Sin receta automática. Revisa la documentación del proyecto.
+              {% endif %}
+            </p>
+
+            {% if issue.remedy and issue.remedy.commands %}
+              <div class="setup-remedy-commands">
+                {% for cmd in issue.remedy.commands %}
+                  <figure class="setup-remedy-command">
+                    <figcaption>{{ cmd.label }}</figcaption>
+                    <pre><code>{{ cmd.command }}</code></pre>
+                  </figure>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            {% if issue.remedy and issue.remedy.note %}
+              <p class="setup-remedy-note">{{ issue.remedy.note }}</p>
+            {% endif %}
+
+            {% if issue.remedy and issue.remedy.docs_url %}
+              <p class="setup-remedy-docs">
+                📚 <a href="{{ issue.remedy.docs_url }}" target="_blank" rel="noopener">{{ issue.remedy.docs_label or issue.remedy.docs_url }}</a>
+              </p>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% else %}
+    <div class="setup-all-clear">
+      <p class="setup-all-clear-text">✨ Todo en verde. Nada que arreglar — listo para invocar.</p>
+      <a href="/" class="setup-all-clear-cta">Ir a tu perfil →</a>
+    </div>
+  {% endif %}
+</div>

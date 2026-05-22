@@ -57,9 +57,10 @@ Este módulo permite construir aplicaciones de terminal capaces de recibir argum
 Por ejemplo:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main \
-"¿Qué es un agente IA?"
+arkanum start 3 "¿Qué es un agente IA?"
 ```
+
+(o el equivalente legacy: `uv run python -m quests.quest_03_apprentice_voice.starter.main "¿Qué es un agente IA?"`)
 
 Aquí el texto:
 
@@ -148,7 +149,7 @@ es que Python valida automáticamente los argumentos.
 Por ejemplo, si ejecutas el programa sin enviar un prompt:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main
+arkanum start 3
 ```
 
 `argparse` mostrará un error explicando qué argumento falta.
@@ -290,21 +291,3 @@ La memoria permite que un agente mantenga contexto...
 
 ---
 
-## Ejecutar el Quest
-
-Desde la raíz del proyecto:
-
-```bash
-uv run python -m quests.quest_03_user_input.starter.main "¿Qué es un agente IA?"
-```
-
----
-
-## Criterio de éxito
-
-Completaste el Quest si:
-
-- el prompt se recibe desde consola
-- el modelo responde correctamente
-- los tokens siguen mostrándose
-- `contents` recibe una lista de mensajes

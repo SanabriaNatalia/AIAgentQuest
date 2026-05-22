@@ -101,20 +101,12 @@ a GitHub (a ningún repositorio en general).
 
 ### 3. Completar el starter
 
-Abre:
-
-```text
-quests/quest_01_first_agent/starter/main.py
-```
-
-En este Quest aprenderás a:
+Abre `quests/quest_01_first_invocation/starter/main.py` en tu editor (VS Code u otro IDE) y completa los `TODO`s en orden. Aprenderás a:
 
 - cargar variables de entorno
 - crear un cliente de Gemini
 - enviar un prompt
 - imprimir la respuesta del modelo
-
-Los `TODO`s están organizados paso a paso.
 
 ---
 
@@ -137,24 +129,3 @@ Los agentes IA son sistemas capaces de...
 
 ---
 
-## Ejecutar el Quest
-
-Desde la raíz del proyecto:
-
-```bash
-uv run python -m quests.quest_01_first_agent.starter.main
-```
-
----
-
-## Criterio de éxito
-
-Cuando termines, ejecuta el siguiente comando para validar:
-
-```bash
-uv run python -m quests.quest_01_first_agent.check
-```
-
-Mini nota: este check consume una llamada real a Gemini porque ejecuta el starter. Tenlo presente y no lo corras hasta terminar todos los TODOs para evitar pasarte de los límites.
-
----

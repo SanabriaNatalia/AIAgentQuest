@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Estado del Laboratorio · Arkanum{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Estado del Laboratorio</h1>
+  <p class="page-header-subtitle">
+    Diagnóstico continuo de los prerrequisitos del aprendiz.
+    El panel se refresca automáticamente cada 30 segundos y muestra instrucciones
+    paso a paso solo para lo que esté pendiente.
+  </p>
+</header>
+
+<div data-poll-url="/api/setup/status" data-poll-interval="30000">
+  {% include "partials/setup_panel.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}{{ quest.title }} · Arkanum{% endblock %}
+
+{% block content %}
+<header class="viewer-header">
+  <a href="/map" class="viewer-back">← Mapa del Laboratorio</a>
+  <div class="viewer-meta">
+    <span class="viewer-meta-tag">Quest {{ quest.order }}</span>
+    <span class="viewer-meta-tag viewer-meta-tag--act">Acto {{ roman[quest.act] }} · {{ act.name }}</span>
+    {% if status == "completed" %}
+      <span class="viewer-meta-tag viewer-meta-tag--completed">Completado</span>
+    {% elif status == "current" %}
+      <span class="viewer-meta-tag viewer-meta-tag--current">En curso</span>
+    {% else %}
+      <span class="viewer-meta-tag viewer-meta-tag--locked">Sellado</span>
+    {% endif %}
+  </div>
+</header>
+
+{% if status == "locked" %}
+  <section class="viewer-sealed">
+    <h1>Pergamino sellado</h1>
+    <p class="viewer-sealed-quote">
+      “No se desvelan secretos antes de tiempo. Completa los quests previos para
+      ganar el derecho a leer este pergamino.”
+    </p>
+    <p class="arkanum-muted">— Zhyréon</p>
+    <a href="/map" class="viewer-cta">Volver al mapa</a>
+  </section>
+{% else %}
+  <div class="viewer-layout">
+    <aside class="viewer-toc" aria-label="Tabla de contenidos">
+      <h4>En este pergamino</h4>
+      {% if rendered.toc %}
+        <ol class="viewer-toc-list">
+          {% for entry in rendered.toc %}
+            <li class="viewer-toc-level-{{ entry.level }}">
+              <a href="#{{ entry.anchor }}">{{ entry.text }}</a>
+            </li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <p class="arkanum-muted">Sin secciones detectadas.</p>
+      {% endif %}
+
+      <div class="viewer-toc-actions">
+        <button
+          type="button"
+          class="viewer-mark-read{% if already_read %} viewer-mark-read--done{% endif %}"
+          data-mark-read-url="/api/quests/{{ quest.slug }}/mark-read"
+          {% if already_read %}disabled{% endif %}
+        >
+          {% if already_read %}✓ Pergamino estudiado{% else %}Marcar como leído{% endif %}
+        </button>
+      </div>
+    </aside>
+
+    <article class="viewer-prose">
+      {{ rendered.html | safe }}
+    </article>
+  </div>
+
+  {% if status != "completed" %}
+  <section
+    class="quest-start"
+    data-quest-start
+    data-quest-slug="{{ quest.slug }}"
+    data-quest-order="{{ quest.order }}"
+    data-started-at="{{ started_at or '' }}"
+    aria-label="Empezar este quest"
+  >
+    {% if started_at %}
+      <div class="quest-start-panel" data-quest-start-panel>
+        <header class="quest-start-panel-header">
+          <span class="quest-start-badge">⏱ En curso</span>
+          <h3>Manos a la obra</h3>
+        </header>
+        <p class="quest-start-elapsed" data-quest-start-elapsed data-started-at="{{ started_at }}">
+          Cronómetro corriendo desde {{ started_at }}
+        </p>
+        <ol class="quest-start-steps">
+          <li>
+            <span class="quest-start-step-text">Abre <code>quests/{{ quest.slug }}/starter/main.py</code> en tu editor (VS Code u otro IDE) y completa los <code>TODO</code>s.</span>
+          </li>
+          <li>
+            <span class="quest-start-step-text">Cuando termines, valida desde la terminal:</span>
+            <pre class="quest-start-cmd"><code>arkanum check {{ quest.order }}</code></pre>
+          </li>
+        </ol>
+      </div>
+    {% else %}
+      <div class="quest-start-cta" data-quest-start-cta>
+        <div class="quest-start-cta-copy">
+          <h3>¿Listo para invocar?</h3>
+          <p>
+            Al pulsar el botón se abre el panel con los pasos concretos y
+            arranca el cronómetro de este quest.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="viewer-cta quest-start-button"
+          data-quest-start-button
+          data-start-url="/api/quests/{{ quest.slug }}/start"
+        >⚜ Empezar ahora</button>
+      </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if status == "completed" %}
+  <section class="trophies-section" aria-label="Trofeos de este quest">
+    <header class="trophies-header">
+      <h2>Trofeos de este quest</h2>
+      {% if stats %}
+        <p class="arkanum-muted trophies-stats">
+          {% if stats.attempts %}Intentos: <strong>{{ stats.attempts }}</strong>{% endif %}
+          {% if stats.total_time_seconds is not none %}
+            · Tiempo total: <strong>{{ stats.total_time_seconds | format_duration }}</strong>
+          {% endif %}
+        </p>
+      {% endif %}
+    </header>
+    {% if achievements %}
+      <div class="trophies-grid">
+        {% for ach in achievements %}
+          <article class="trophy-card">
+            <span class="trophy-icon" aria-hidden="true">{{ ach.icon }}</span>
+            <h3 class="trophy-title">{{ ach.title }}</h3>
+            <p class="trophy-desc">{{ ach.description }}</p>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="arkanum-muted">
+        Aún sin trofeos. Completar el quest a la primera o sin pistas otorga reconocimiento.
+      </p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if hints %}
+  <section class="hints-section" aria-label="Ofrendas del aprendiz" data-hints-slug="{{ quest.slug }}">
+    <header class="hints-header">
+      <h2>Las ofrendas del aprendiz</h2>
+      <p class="arkanum-muted">
+        Las pistas son ofrenda, no atajo. Solicitar una no penaliza tu XP, pero
+        renuncia al logro <em>«Sin red»</em> de este quest.
+      </p>
+    </header>
+    <div class="hints-grid">
+      {% for hint in hints %}
+        {% set state = 'revealed' if hint.requested else ('available' if hint.eligible else 'locked') %}
+        <article class="hint-card hint-card--{{ state }}" data-hint-level="{{ hint.level }}">
+          <header class="hint-card-header">
+            <span class="hint-card-numeral">{{ roman[hint.level] }}</span>
+            <h3 class="hint-card-title">{{ hint.title }}</h3>
+          </header>
+          <p class="hint-card-description">{{ hint.description }}</p>
+
+          {% if hint.requested %}
+            <div class="hint-card-body" data-hint-content>
+              {{ hint_contents.get(hint.level, '') | safe }}
+            </div>
+            {% if hint.requested_at %}
+              <p class="hint-card-footer arkanum-muted">Revelada el {{ hint.requested_at }}</p>
+            {% endif %}
+          {% elif hint.eligible and hint.file_exists %}
+            <button
+              type="button"
+              class="hint-card-button"
+              aria-haspopup="dialog"
+              aria-controls="hint-modal"
+              data-hint-request-url="/api/quests/{{ quest.slug }}/hints/{{ hint.level }}"
+            >Solicitar pista</button>
+          {% elif not hint.file_exists %}
+            <p class="hint-card-footer arkanum-muted">Pista todavía no escrita.</p>
+          {% else %}
+            <p class="hint-card-footer arkanum-muted">Requiere la pista anterior.</p>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div id="hint-modal" class="hint-modal hint-modal--hidden" role="dialog" aria-modal="true" aria-labelledby="hint-modal-title" hidden>
+    <div class="hint-modal-backdrop" data-hint-modal-dismiss></div>
+    <div class="hint-modal-card">
+      <h3 id="hint-modal-title">Solicitar pista</h3>
+      <p>
+        Esta ofrenda no resta XP, pero <strong>renuncias al logro «Sin red»</strong>
+        de este quest. Las pistas son orientación, no sustituto de la práctica.
+      </p>
+      <p class="hint-modal-target arkanum-muted" data-hint-modal-target></p>
+      <div class="hint-modal-actions">
+        <button type="button" class="viewer-cta--ghost" data-hint-modal-dismiss>Cancelar</button>
+        <button type="button" class="viewer-cta" data-hint-modal-confirm>Sí, revelar</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endif %}
+{% endblock %}
