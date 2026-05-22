@@ -280,7 +280,7 @@ A partir de aquí el dashboard es tu mapa, tu bitácora y tu mentor. Explora sus
 - **Live Agent** — visualización en vivo del agent loop (a partir del Acto II).
 - **Códex** — biblioteca de referencia con explicaciones de conceptos.
 
-Cada quest dentro del dashboard te indicará el comando para invocarla (`arkanum start N`, `arkanum check N`, `arkanum run N "..."`), las pistas disponibles y el archivo donde editar tu solución. Cuando completes una quest, el dashboard la sella automáticamente y abre la página de celebración.
+Cada quest tiene su propio pergamino con la teoría, las pistas y un botón **"⚜ Empezar ahora"** al final. Al pulsarlo arranca el cronómetro y aparecen los dos pasos concretos: abrir el archivo `starter/main.py` en tu editor y, al terminar, validar con `arkanum check N` desde la terminal. Cuando el check pasa, el dashboard sella la quest automáticamente y abre la página de celebración.
 
 Atajos del CLI que probablemente uses todo el tiempo:
 

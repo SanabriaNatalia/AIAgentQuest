@@ -40,6 +40,14 @@ Fundamentos para navegar e interactuar con herramientas desde consola.
 
 ---
 
+## CLI del laboratorio
+
+Referencia de los comandos `arkanum *`: para qué sirve cada uno, cuándo invocarlos y qué efecto tienen en el cronómetro, la BD y el dashboard.
+
+- [comandos del CLI](./cli/commands.md)
+
+---
+
 ## Python
 
 Herramientas y conceptos utilizados durante el laboratorio.

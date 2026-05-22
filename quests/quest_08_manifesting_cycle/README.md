@@ -371,22 +371,11 @@ Todo utilizando el ciclo de manifestación.
 
 ## Prompt sugerido
 
-> 💡 Para saber en qué quest estás: `arkanum current`
+Usa este prompt cuando valides con `arkanum check 8` (o cuando experimentes con tu agente):
 
-Prueba ejecutar el agente usando:
-
-```bash
-arkanum start 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
+```text
+Los tests de calculator están fallando. Ayúdame a corregir el error.
 ```
-
-<details>
-<summary>Alternativa con <code>uv run</code></summary>
-
-```bash
-uv run python -m quests.quest_08_manifesting_cycle.starter.main "Los tests de calculator están fallando. Ayúdame a corregir el error."
-```
-
-</details>
 
 ---
 
