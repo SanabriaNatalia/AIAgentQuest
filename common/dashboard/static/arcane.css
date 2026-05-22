@@ -860,14 +860,43 @@ code {
 /* === Setup remedies (instrucciones dinámicas, formato compacto) === */
 .setup-all-clear {
   margin-top: 1.25rem;
-  padding: 0.85rem 1.15rem;
+  padding: 1.1rem 1.4rem;
   background: rgba(101, 209, 150, 0.08);
   border-left: 3px solid var(--arkanum-success);
   border-radius: 0 6px 6px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.setup-all-clear-text {
+  margin: 0;
   color: var(--arkanum-success);
   font-family: var(--font-serif);
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   letter-spacing: 0.03em;
+}
+
+.setup-all-clear-cta {
+  display: inline-block;
+  padding: 0.5rem 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--arkanum-bg);
+  background: var(--arkanum-success);
+  border-radius: 4px;
+  text-decoration: none;
+  transition: filter 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.setup-all-clear-cta:hover {
+  filter: brightness(1.1);
+  transform: translateX(2px);
 }
 
 .setup-remedies {

@@ -1,6 +1,6 @@
 """Rutas HTML del dashboard."""
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from common.dashboard.services.achievements import (
     achievements_for,
@@ -38,9 +38,16 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 def profile_page(request: Request):
+    setup_ctx = build_setup_context()
+    counts = setup_ctx["counts"]
+    # Onboarding: si el setup tiene avisos o errores, llevamos al aprendiz a /setup.
+    # El perfil queda como destino reservado para cuando los 9 checks estén verdes.
+    # El querystring `?from=auto` evita ciclos si el usuario regresa con el botón "Atrás".
+    if (counts["warn"] + counts["fail"] > 0) and request.query_params.get("from") != "auto":
+        return RedirectResponse(url="/setup?from=auto", status_code=303)
+
     apprentice = get_apprentice()
     context: dict = {"request": request, "apprentice": apprentice}
-    context.update(build_setup_context())
 
     if apprentice:
         level, xp_in_level, xp_required, xp_pct = get_xp_breakdown(apprentice.xp)
