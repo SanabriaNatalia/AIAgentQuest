@@ -22,7 +22,7 @@ from common.cli.pre_checks.runner import (
     run_pre_checks,
 )
 from common.dashboard.services.cost import parse_tokens, record_cost
-from common.progress.db import record_quest_attempt, register_first_attempt
+from common.progress.db import record_quest_attempt
 
 console = Console()
 
@@ -68,8 +68,6 @@ def check(
             f"[red]No existe el check para Quest {quest.order}:[/] {check_path(quest)}"
         )
         raise typer.Exit(1)
-
-    register_first_attempt(quest.db_id)
 
     results = run_pre_checks(quest)
     _render_table(f"Quest {quest.order} — {quest.title}", results)

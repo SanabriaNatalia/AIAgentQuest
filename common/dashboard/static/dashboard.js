@@ -78,6 +78,83 @@
     }, 1400);
   }
 
+  // --- Start quest: POST al endpoint y reemplaza CTA por panel ---------
+  function formatElapsed(startedAt) {
+    var start = new Date(startedAt);
+    if (isNaN(start.getTime())) return "";
+    var diffMs = Date.now() - start.getTime();
+    if (diffMs < 0) diffMs = 0;
+    var seconds = Math.floor(diffMs / 1000);
+    if (seconds < 60) return seconds + "s";
+    var minutes = Math.floor(seconds / 60);
+    var remSec = seconds % 60;
+    if (minutes < 60) return minutes + "m " + remSec + "s";
+    var hours = Math.floor(minutes / 60);
+    var remMin = minutes % 60;
+    return hours + "h " + remMin + "m";
+  }
+
+  function tickElapsed(node) {
+    var startedAt = node.dataset.startedAt;
+    if (!startedAt) return;
+    node.textContent = "Cronómetro corriendo · " + formatElapsed(startedAt);
+  }
+
+  function initElapsedTickers() {
+    var nodes = document.querySelectorAll("[data-quest-start-elapsed]");
+    nodes.forEach(function (node) {
+      tickElapsed(node);
+      setInterval(function () { tickElapsed(node); }, 1000);
+    });
+  }
+
+  function buildStartedPanel(slug, order, startedAt) {
+    return (
+      '<div class="quest-start-panel" data-quest-start-panel>' +
+        '<header class="quest-start-panel-header">' +
+          '<span class="quest-start-badge">⏱ En curso</span>' +
+          '<h3>Manos a la obra</h3>' +
+        '</header>' +
+        '<p class="quest-start-elapsed" data-quest-start-elapsed data-started-at="' + startedAt + '">' +
+          'Cronómetro corriendo · 0s' +
+        '</p>' +
+        '<ol class="quest-start-steps">' +
+          '<li><span class="quest-start-step-text">Abre <code>quests/' + slug + '/starter/main.py</code> en tu editor (VS Code u otro IDE) y completa los <code>TODO</code>s.</span></li>' +
+          '<li><span class="quest-start-step-text">Cuando termines, valida desde la terminal:</span>' +
+            '<pre class="quest-start-cmd"><code>arkanum check ' + order + '</code></pre>' +
+          '</li>' +
+        '</ol>' +
+      '</div>'
+    );
+  }
+
+  function initStartQuest() {
+    var btns = document.querySelectorAll("[data-quest-start-button]");
+    btns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var host = btn.closest("[data-quest-start]");
+        if (!host) return;
+        var url = btn.dataset.startUrl;
+        var slug = host.dataset.questSlug;
+        var order = host.dataset.questOrder;
+        btn.disabled = true;
+        btn.textContent = "Invocando…";
+        fetch(url, { method: "POST", headers: { Accept: "application/json" } })
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+          .then(function (data) {
+            var startedAt = data.started_at || new Date().toISOString();
+            host.dataset.startedAt = startedAt;
+            host.innerHTML = buildStartedPanel(slug, order, startedAt);
+            initElapsedTickers();
+          })
+          .catch(function () {
+            btn.disabled = false;
+            btn.textContent = "Reintentar";
+          });
+      });
+    });
+  }
+
   // --- Mark-read: POST al endpoint y deshabilita botón -----------------
   function initMarkRead() {
     var btns = document.querySelectorAll("[data-mark-read-url]");
@@ -424,6 +501,8 @@
     initToast();
     initHints();
     initLiveAgent();
+    initStartQuest();
+    initElapsedTickers();
   }
 
   if (document.readyState === "loading") {

@@ -15,7 +15,12 @@ from common.dashboard.services.markdown import pygments_css
 from common.dashboard.services.quest_catalog import quest_by_slug
 from common.dashboard.services.setup_check import build_setup_context
 from common.dashboard.templating import templates
-from common.progress.db import get_connection, init_db
+from common.progress.db import (
+    get_connection,
+    get_quest_progress,
+    init_db,
+    register_first_attempt,
+)
 
 router = APIRouter()
 
@@ -190,6 +195,32 @@ def current_trace(
             for s in reversed(steps)  # cronológico para el viewer
         ],
     })
+
+
+@router.post("/api/quests/{slug}/start")
+def start_quest(slug: str) -> JSONResponse:
+    """Marca el quest como iniciado: arranca el cronómetro de tiempo total.
+
+    Idempotente — pulsar dos veces no resetea `started_at`. Si la quest ya
+    estaba completada, devuelve 409 (no tiene sentido reiniciar).
+    """
+    quest = quest_by_slug(slug)
+    if quest is None:
+        raise HTTPException(status_code=404, detail="Quest desconocida.")
+
+    init_db()
+    with get_connection() as conn:
+        already_done = conn.execute(
+            "SELECT 1 FROM quest_completion WHERE quest_id = ?", (quest.db_id,)
+        ).fetchone()
+    if already_done is not None:
+        raise HTTPException(
+            status_code=409, detail="Quest ya completado; el cronómetro está sellado.",
+        )
+
+    register_first_attempt(quest.db_id)
+    started_at, _ = get_quest_progress(quest.db_id)
+    return JSONResponse({"slug": slug, "started_at": started_at})
 
 
 @router.post("/api/quests/{slug}/mark-read")

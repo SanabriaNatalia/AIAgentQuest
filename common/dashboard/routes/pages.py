@@ -29,6 +29,7 @@ from common.dashboard.services.progress import (
 from common.dashboard.services.quest_catalog import ACTS, QUESTS, quest_by_slug
 from common.dashboard.services.setup_check import build_setup_context
 from common.dashboard.templating import templates
+from common.progress.db import get_quest_progress
 
 ROMAN = {1: "I", 2: "II", 3: "III", 4: "IV", 5: "V", 6: "VI", 7: "VII", 8: "VIII"}
 
@@ -182,6 +183,7 @@ def quest_page(request: Request, slug: str):
 
     achievements = achievements_for(quest) if status == "completed" else []
     stats = quest_stats(quest) if status == "completed" else None
+    started_at, _ = get_quest_progress(quest.db_id)
 
     return templates.TemplateResponse(
         request,
@@ -198,6 +200,7 @@ def quest_page(request: Request, slug: str):
             "hint_contents": hint_contents,
             "achievements": achievements,
             "stats": stats,
+            "started_at": started_at,
         },
     )
 

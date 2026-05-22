@@ -1190,6 +1190,147 @@ code {
   cursor: default;
 }
 
+/* === Quest start (CTA + panel en curso) ============================ */
+.quest-start {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(201, 169, 97, 0.18);
+}
+
+.quest-start-cta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.4rem 1.6rem;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(201, 169, 97, 0.06));
+  border: 1px solid rgba(201, 169, 97, 0.25);
+  border-radius: 8px;
+}
+
+.quest-start-cta-copy h3 {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--arkanum-gold);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.45rem;
+}
+
+.quest-start-cta-copy p {
+  color: var(--arkanum-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.quest-start-button {
+  white-space: nowrap;
+  font-size: 1rem;
+  padding: 0.75rem 1.5rem;
+}
+
+.quest-start-button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.quest-start-panel {
+  padding: 1.4rem 1.6rem;
+  background: rgba(26, 21, 53, 0.55);
+  border: 1px solid rgba(201, 169, 97, 0.18);
+  border-left: 3px solid var(--arkanum-gold);
+  border-radius: 0 8px 8px 0;
+}
+
+.quest-start-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.quest-start-panel-header h3 {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--arkanum-text);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.quest-start-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.18rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid rgba(232, 185, 77, 0.45);
+  background: rgba(232, 185, 77, 0.1);
+  color: var(--arkanum-warn);
+}
+
+.quest-start-elapsed {
+  margin-bottom: 1.1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--arkanum-glow);
+}
+
+.quest-start-steps {
+  list-style: decimal;
+  padding-left: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 0;
+}
+
+.quest-start-steps li::marker {
+  color: var(--arkanum-gold);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.quest-start-step-text {
+  color: var(--arkanum-text);
+  line-height: 1.55;
+}
+
+.quest-start-step-text code {
+  background: var(--arkanum-bg-soft);
+  color: var(--arkanum-glow);
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.85em;
+  font-family: var(--font-mono);
+}
+
+.quest-start-cmd {
+  margin: 0.45rem 0 0;
+  padding: 0.6rem 0.85rem;
+  background: var(--arkanum-bg-soft);
+  border: 1px solid rgba(201, 169, 97, 0.2);
+  border-radius: 5px;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--arkanum-glow);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+@media (max-width: 720px) {
+  .quest-start-cta {
+    grid-template-columns: 1fr;
+  }
+  .quest-start-button {
+    width: 100%;
+  }
+}
+
 /* Prose: estilos del markdown renderizado */
 .viewer-prose {
   font-size: 1rem;

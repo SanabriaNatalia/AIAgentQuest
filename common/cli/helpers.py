@@ -10,6 +10,7 @@
 """
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -19,6 +20,21 @@ import typer
 from common.dashboard.services.quest_catalog import QUESTS, QuestMeta
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _utf8_env(extra: dict[str, str] | None = None) -> dict[str, str]:
+    """Env para subprocess que fuerza UTF-8 en stdout/stderr del hijo.
+
+    Sin esto, en Windows con consola en español Python usa cp1252 y
+    revienta al imprimir emojis (`✅`, `🤖`, etc.). `PYTHONIOENCODING`
+    cubre stdin/stdout/stderr; `PYTHONUTF8=1` activa el modo UTF-8 global.
+    """
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+    if extra:
+        env.update(extra)
+    return env
 
 
 def resolve_quest_by_number(n: int) -> QuestMeta:
@@ -51,7 +67,7 @@ def run_module(module_path: str, extra_args: list[str] | None = None) -> int:
     if extra_args:
         cmd.extend(extra_args)
     try:
-        result = subprocess.run(cmd, cwd=str(REPO_ROOT))
+        result = subprocess.run(cmd, cwd=str(REPO_ROOT), env=_utf8_env())
         return result.returncode
     except KeyboardInterrupt:
         return 130
@@ -71,15 +87,11 @@ def run_module_capturing(
     Errores dentro de `on_line` se loguean a stderr pero NO matan el
     subprocess. Devuelve `(returncode, captured_stdout)`.
     """
-    import os
-
     cmd = [sys.executable, "-u", "-m", module_path]
     if extra_args:
         cmd.extend(extra_args)
 
-    env = os.environ.copy()
-    if env_extra:
-        env.update(env_extra)
+    env = _utf8_env(env_extra)
 
     captured: list[str] = []
     try:

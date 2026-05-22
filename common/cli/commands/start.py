@@ -10,7 +10,6 @@ from common.cli.helpers import (
     starter_module,
     starter_path,
 )
-from common.progress.db import register_first_attempt
 
 console = Console()
 
@@ -33,8 +32,6 @@ def start(
             f"{starter_path(quest)}"
         )
         raise typer.Exit(1)
-
-    register_first_attempt(quest.db_id)
 
     extra = list(ctx.args)
     console.print(

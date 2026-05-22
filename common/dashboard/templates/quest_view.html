@@ -60,6 +60,54 @@
     </article>
   </div>
 
+  {% if status != "completed" %}
+  <section
+    class="quest-start"
+    data-quest-start
+    data-quest-slug="{{ quest.slug }}"
+    data-quest-order="{{ quest.order }}"
+    data-started-at="{{ started_at or '' }}"
+    aria-label="Empezar este quest"
+  >
+    {% if started_at %}
+      <div class="quest-start-panel" data-quest-start-panel>
+        <header class="quest-start-panel-header">
+          <span class="quest-start-badge">⏱ En curso</span>
+          <h3>Manos a la obra</h3>
+        </header>
+        <p class="quest-start-elapsed" data-quest-start-elapsed data-started-at="{{ started_at }}">
+          Cronómetro corriendo desde {{ started_at }}
+        </p>
+        <ol class="quest-start-steps">
+          <li>
+            <span class="quest-start-step-text">Abre <code>quests/{{ quest.slug }}/starter/main.py</code> en tu editor (VS Code u otro IDE) y completa los <code>TODO</code>s.</span>
+          </li>
+          <li>
+            <span class="quest-start-step-text">Cuando termines, valida desde la terminal:</span>
+            <pre class="quest-start-cmd"><code>arkanum check {{ quest.order }}</code></pre>
+          </li>
+        </ol>
+      </div>
+    {% else %}
+      <div class="quest-start-cta" data-quest-start-cta>
+        <div class="quest-start-cta-copy">
+          <h3>¿Listo para invocar?</h3>
+          <p>
+            Al pulsar el botón se abre el panel con los pasos concretos y
+            arranca el cronómetro de este quest.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="viewer-cta quest-start-button"
+          data-quest-start-button
+          data-start-url="/api/quests/{{ quest.slug }}/start"
+        >⚜ Empezar ahora</button>
+      </div>
+    {% endif %}
+  </section>
+  {% endif %}
+
   {% if status == "completed" %}
   <section class="trophies-section" aria-label="Trofeos de este quest">
     <header class="trophies-header">

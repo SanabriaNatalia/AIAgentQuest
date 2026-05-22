@@ -443,29 +443,3 @@ Y eso cambia todo.
 
 ---
 
-## Criterio de éxito
-
-Completaste el Quest si:
-
-- `main()` y `generate_content(messages, verbose)` están separados
-- el agent loop itera hasta `MAX_ITERS` o respuesta final
-- el historial conversacional persiste prompts, respuestas y tool results
-- los `tool_response` se devuelven al modelo como `types.Content(role="tool", ...)`
-- el agente puede corregir el bug del `calculator.py` del workspace
-
-Valida con:
-
-```bash
-arkanum check 8
-```
-
-<details>
-<summary>Alternativa con <code>uv run</code></summary>
-
-```bash
-uv run python -m quests.quest_08_manifesting_cycle.check
-```
-
-</details>
-
-Al pasar el check, el [dashboard arcano](http://127.0.0.1:8765) abrirá tu celebración automáticamente. Si era tu última quest, también verás un evento de cierre de acto.

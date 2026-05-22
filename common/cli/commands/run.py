@@ -20,7 +20,6 @@ from rich.console import Console
 
 from common.cli.helpers import resolve_quest_by_number, run_module_capturing, starter_module, starter_path
 from common.dashboard.services.trace import record_step, start_trace
-from common.progress.db import register_first_attempt
 from common.progress.notify import emit_event
 
 console = Console()
@@ -115,7 +114,6 @@ def run(
         )
 
     trace_id = start_trace()
-    register_first_attempt(quest.db_id)
 
     # Marca el inicio del trace con un step "session_start" para que
     # /live-agent muestre algo aunque el starter no imprima nada en seguida.
