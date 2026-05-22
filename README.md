@@ -214,6 +214,8 @@ uv --version
 
 Si todo salió correctamente, ya puedes continuar con la instalación del laboratorio.
 
+> **Si `uv --version` falla justo después de instalarlo**, cierra y vuelve a abrir la terminal. El instalador deja `uv` en `%USERPROFILE%\.local\bin` (Windows) o `~/.local/bin` (macOS / Linux) y agrega esa ruta al `PATH` del usuario, pero las sesiones abiertas no recogen el cambio hasta reiniciarse.
+
 ---
 
 ## Inicio Rápido
@@ -231,42 +233,99 @@ cd AIAgentQuest
 uv sync
 ```
 
-### 3. Configurar variables de entorno
+`uv sync` crea el entorno virtual en `.venv/` e instala el ejecutable del laboratorio en `.venv/Scripts/arkanum.exe` (Windows) o `.venv/bin/arkanum` (macOS / Linux), gracias a la entrada `[project.scripts]` declarada en `pyproject.toml`.
 
-Crea un archivo `.env` a partir del ejemplo `.env.example` 
+### 3. Activar el entorno (para tener `arkanum` en el PATH)
+
+Para que el comando `arkanum` esté disponible directamente desde la terminal, activa el entorno virtual:
+
+**Windows (PowerShell):**
+
+```powershell
+. .\.venv\Scripts\Activate.ps1
+```
+
+> Si PowerShell rechaza el script con un error de política de ejecución, ejecuta una sola vez:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+
+**macOS / Linux:**
+
+```bash
+source .venv/bin/activate
+```
+
+Verifica que el comando responde:
+
+```bash
+arkanum --help
+```
+
+Deberías ver los 10 subcomandos del laboratorio: `doctor`, `init`, `current`, `next`, `progress`, `start`, `run`, `check`, `cost`, `dashboard`.
+
+> **Alternativa sin activar el venv.** Cada vez que abras una terminal nueva puedes invocar el CLI con `uv run arkanum ...` en lugar de activar el entorno. Por ejemplo: `uv run arkanum --help`.
+
+### 4. Configurar variables de entorno
+
+Crea un archivo `.env` a partir del ejemplo `.env.example`:
+
+**Windows (PowerShell):**
+
+```powershell
+Copy-Item .env.example .env
+```
+
+**macOS / Linux:**
+
 ```bash
 cp .env.example .env
 ```
 
-Agrega tu API key:
+Edita `.env` y reemplaza el placeholder por tu clave real de Gemini (la obtienes gratis en [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → *Create API key*):
 
 ```env
-GEMINI_API_KEY=your_api_key
+GEMINI_API_KEY=AIza...
 ```
 
-### 4. Registrar tu aprendiz
+> Sin comillas, sin espacios, una sola línea.
 
-Antes de comenzar, crea tu perfil local de progreso:
+### 5. Registrar tu aprendiz y abrir el dashboard
+
+Crea tu perfil local de progreso con el wizard del CLI:
 
 ```bash
-uv run python -m common.progress.init_user
+arkanum init
 ```
 
-Esto creará una base SQLite local llamada:
+El wizard te pedirá tu nombre, verificará tu `.env`, hará ping a Gemini y abrirá el **dashboard arcano** en tu navegador. Esto también crea la base SQLite local de tu progreso:
 
 ```text
 .quest_progress.db
 ```
 
-El archivo es personal y no debe subirse a Git.
+> El archivo es personal y no debe subirse a Git (ya está en `.gitignore`).
 
-Puedes consultar tu progreso con:
+**Dashboard arcano** — disponible por defecto en [http://127.0.0.1:8765](http://127.0.0.1:8765). Ahí encontrarás:
+
+- **Perfil** — tu rango, nivel, XP, pills de logros y panel de diagnóstico del setup.
+- **Mapa** — los 4 actos y todas las quests con su estado (actual / completada / sellada).
+- **Rangos / Hitos** — colección de rangos desbloqueados y actos cerrados.
+- **Setup** — diagnóstico continuo de los 9 prerrequisitos; si algo falla muestra instrucciones puntuales para arreglarlo.
+- **Live Agent** — visualización en vivo del agent loop (a partir del Acto II).
+
+Atajos útiles del CLI:
 
 ```bash
-uv run python -m common.progress.show_progress
+arkanum progress           # tabla de tu avance
+arkanum current            # quest en la que estás
+arkanum doctor             # diagnóstico completo (incluye ping real a Gemini)
+arkanum dashboard status   # PID y puerto del server
+arkanum dashboard stop     # detenerlo
+arkanum dashboard start    # volver a levantarlo
 ```
 
-### 5. Comenzar el primer Quest
+### 6. Comenzar el primer Quest
 
 Cada Quest contiene:
 
@@ -277,16 +336,22 @@ Cada Quest contiene:
 - validaciones
 - solución final
 
-Comienza abriendo el README del primer Quest:
+Para saber cuál es tu quest actual:
+
+```bash
+arkanum current
+```
+
+Esto te indicará, por ejemplo, **Quest 1 — La Primera Invocación**. Abre el README correspondiente:
 
 ```text
-quests/quest_01_first_agent/README.md
+quests/quest_01_first_invocation/README.md
 ```
 
 o desde terminal:
 
 ```bash
-code quests/quest_01_first_agent/README.md
+code quests/quest_01_first_invocation/README.md
 ```
 
 Sigue las instrucciones del Quest y trabaja sobre:
@@ -295,11 +360,63 @@ Sigue las instrucciones del Quest y trabaja sobre:
 starter/main.py
 ```
 
-Cuando termines, puedes validar tu solución ejecutando:
+Para ejecutar tu starter mientras avanzas:
 
 ```bash
-uv run python -m quests.quest_01_first_agent.check
+arkanum start 1
 ```
+
+Cuando termines, valida tu solución con:
+
+```bash
+arkanum check 1
+```
+
+Si la solución pasa, el dashboard sella la quest, otorga el rango correspondiente y abre la página de celebración automáticamente.
+
+---
+
+## Estructura del repositorio (lo esencial)
+
+```text
+AIAgentQuest/
+├── quests/              # Una carpeta por quest (Q01–Q08)
+│   └── quest_NN_*/
+│       ├── README.md    # Teoría + instrucciones
+│       ├── starter/     # Código que tú editas
+│       ├── solution/    # Solución de referencia
+│       └── workspace/   # Sandbox específico de la quest (Acto II+)
+├── common/              # CLI, dashboard, progreso, funciones compartidas
+├── docs/                # Códex arcano (referencia de conceptos)
+├── workspace/           # Sandbox libre del agente para tus experimentos
+├── .env                 # Tu API key (no se sube a git)
+└── .quest_progress.db   # Tu progreso local (no se sube a git)
+```
+
+---
+
+## Si algo no funciona
+
+El laboratorio incluye dos herramientas de diagnóstico que te dicen exactamente qué arreglar:
+
+### 1. Pestaña **Setup** del dashboard
+
+Visita [http://127.0.0.1:8765/setup](http://127.0.0.1:8765/setup). Verás los 9 checks del laboratorio (Python, uv, dependencias, `.env`, API key, BD, dashboard, workspace) con su estado en tiempo real. Cuando algo falla, aparece debajo una sección **"Cómo arreglar"** con el comando exacto para Windows y macOS / Linux. El panel se refresca solo cada 30 segundos.
+
+### 2. Comando `arkanum doctor`
+
+```bash
+arkanum doctor
+```
+
+Misma información en la terminal, en formato tabla, y con un ping real a Gemini para verificar que tu clave funciona.
+
+### Problemas comunes
+
+- **`arkanum` no se encuentra** → no activaste el venv. Vuelve al paso 3 o usa `uv run arkanum ...`.
+- **`uv` no se encuentra después de instalarlo** → cierra y vuelve a abrir la terminal (el `PATH` del usuario se actualiza, pero las sesiones abiertas no lo recogen).
+- **El dashboard no responde** → `arkanum dashboard status` para ver si está vivo; si no, `arkanum dashboard start`.
+- **API key inválida** → revisa que la clave en `.env` no tenga comillas, espacios ni saltos de línea, y que siga activa en [aistudio.google.com](https://aistudio.google.com).
 
 ---
 
