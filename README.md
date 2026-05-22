@@ -200,6 +200,8 @@ Esta sección te lleva desde cero hasta tener el **dashboard arcano** abierto en
   Verifica con `uv --version`.
 
   > Si el comando no se encuentra justo después de instalarlo, **cierra y vuelve a abrir la terminal**. El instalador agrega `uv` al `PATH` del usuario, pero las sesiones ya abiertas no lo recogen hasta reiniciarse.
+  >
+  > Si estás usando el terminal integrado de **VS Code**, cerrar solo el panel del terminal no basta: VS Code captura el `PATH` al iniciar y lo hereda a todos los terminales que abras dentro. Cierra la ventana entera de VS Code y vuelve a abrirla, o usa `Ctrl+Shift+P` → *Developer: Reload Window* (más rápido).
 
 ---
 
@@ -314,7 +316,7 @@ Misma información en la terminal, en formato tabla, y con un ping real a Gemini
 ### Problemas comunes
 
 - **`arkanum` no se encuentra** → no activaste el venv. Vuelve al paso 3 o usa `uv run arkanum ...`.
-- **`uv` no se encuentra después de instalarlo** → cierra y vuelve a abrir la terminal (el `PATH` del usuario se actualiza, pero las sesiones abiertas no lo recogen).
+- **`uv` no se encuentra después de instalarlo** → cierra y vuelve a abrir la terminal (el `PATH` del usuario se actualiza, pero las sesiones abiertas no lo recogen). Si estás en el terminal integrado de **VS Code**, cierra la ventana entera o usa `Ctrl+Shift+P` → *Developer: Reload Window*; cerrar solo el panel del terminal no es suficiente.
 - **El dashboard no responde** → `arkanum dashboard status` para ver si está vivo; si no, `arkanum dashboard start`.
 - **API key inválida** → revisa que la clave en `.env` no tenga comillas, espacios ni saltos de línea, y que siga activa en [aistudio.google.com](https://aistudio.google.com).
 
