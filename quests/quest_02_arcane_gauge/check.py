@@ -48,6 +48,8 @@ def main() -> None:
         cwd=ROOT_DIR,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=20,
     )
 

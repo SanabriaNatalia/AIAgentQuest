@@ -54,7 +54,8 @@ def main() -> None:
         cwd=ROOT_DIR,
         capture_output=True,
         text=True,
-        timeout=200,
+        encoding="utf-8",
+        errors="replace",
     )
 
     output = result.stdout.strip()
