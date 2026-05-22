@@ -371,11 +371,10 @@ Todo utilizando el ciclo de manifestación.
 
 ## Prompt sugerido
 
-Prueba ejecutar el agente usando:
+Usa este prompt cuando valides con `arkanum check 8` (o cuando experimentes con tu agente):
 
-```bash
-uv run python -m quests.quest_08_manifesting_cycle.starter.main \
-"Los tests de calculator están fallando. Ayúdame a corregir el error."
+```text
+Los tests de calculator están fallando. Ayúdame a corregir el error.
 ```
 
 ---
@@ -430,3 +429,6 @@ acción → observación → iteración
 ```
 
 Y eso cambia todo.
+
+---
+

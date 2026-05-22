@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Hitos · Arkanum{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Hitos de la travesía</h1>
+  <p class="page-flow">
+    Cada acto cerrado es un sello irreversible. Su nombre, sus rangos, su fecha —
+    el laboratorio los recuerda.
+  </p>
+</header>
+
+{% if milestones %}
+  <section class="milestones-list">
+    {% for ms in milestones %}
+      <article class="milestone-card">
+        <header class="milestone-card-header">
+          <span class="milestone-card-roman">Acto {{ roman[ms.act.number] }}</span>
+          <h2 class="milestone-card-title">{{ ms.act.name }}</h2>
+          <p class="milestone-card-date">Sellado el {{ ms.closed_at }}</p>
+        </header>
+
+        <blockquote class="zhyreon-quote milestone-card-quote">
+          {{ ms.act.quote_zhyreon }}
+          <cite>— Zhyréon</cite>
+        </blockquote>
+
+        <div class="milestone-card-body">
+          <div class="milestone-card-section">
+            <h3>Quests selladas</h3>
+            <ol class="milestone-card-list">
+              {% for q in ms.quests %}
+                <li>
+                  <a href="/quest/{{ q.slug }}">{{ q.title }}</a>
+                  <span class="arkanum-muted">· {{ q.rank_unlocked }}</span>
+                </li>
+              {% endfor %}
+            </ol>
+          </div>
+
+          <div class="milestone-card-section">
+            <h3>Rangos obtenidos</h3>
+            <ul class="milestone-card-ranks">
+              {% for rank in ms.ranks %}
+                <li class="milestone-rank-pill">⚜ {{ rank }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </article>
+    {% endfor %}
+  </section>
+{% else %}
+  <section class="arkanum-empty milestones-empty">
+    <h2>Tu travesía aún no marca pergaminos cerrados</h2>
+    <blockquote class="zhyreon-quote">
+      Sella el primer acto completando sus quests. El primer hito siempre es el
+      que más cuesta — y el que se recuerda primero.
+      <cite>— Zhyréon</cite>
+    </blockquote>
+    <a href="/map" class="viewer-cta">Ir al mapa</a>
+  </section>
+{% endif %}
+{% endblock %}

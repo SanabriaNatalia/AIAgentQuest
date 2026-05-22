@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{% if rendered.title %}{{ rendered.title }}{% else %}Códex{% endif %} · Arkanum{% endblock %}
+
+{% block content %}
+<header class="viewer-header">
+  <nav class="viewer-crumbs" aria-label="Ruta del Códex">
+    {% for crumb in crumbs %}
+      {% if not loop.last %}
+        <a href="{{ crumb.href }}">{{ crumb.label }}</a>
+        <span class="viewer-crumb-sep">›</span>
+      {% else %}
+        <span class="viewer-crumb-current">{{ crumb.label }}</span>
+      {% endif %}
+    {% endfor %}
+  </nav>
+  <div class="viewer-meta">
+    <span class="viewer-meta-tag">Códex Arcano</span>
+  </div>
+</header>
+
+<div class="viewer-layout">
+  <aside class="viewer-toc" aria-label="Tabla de contenidos">
+    <h4>En este pergamino</h4>
+    {% if rendered.toc %}
+      <ol class="viewer-toc-list">
+        {% for entry in rendered.toc %}
+          <li class="viewer-toc-level-{{ entry.level }}">
+            <a href="#{{ entry.anchor }}">{{ entry.text }}</a>
+          </li>
+        {% endfor %}
+      </ol>
+    {% else %}
+      <p class="arkanum-muted">Sin secciones detectadas.</p>
+    {% endif %}
+  </aside>
+
+  <article class="viewer-prose">
+    {{ rendered.html | safe }}
+  </article>
+</div>
+{% endblock %}

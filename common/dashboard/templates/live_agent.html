@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Agente en directo · Arkanum{% endblock %}
+
+{% block content %}
+<header class="page-header">
+  <h1>Agente en directo</h1>
+  <p class="page-flow">
+    Cada llamada a una herramienta, cada observación, cada token —
+    el grafo se actualiza cada segundo mientras corras el agente.
+  </p>
+</header>
+
+<section class="live-agent" data-trace-poll-url="/api/trace/current" aria-label="Agente en directo">
+  <header class="live-agent-toolbar">
+    <div class="live-agent-status" role="status" aria-live="polite">
+      <span class="live-agent-dot" aria-hidden="true"></span>
+      <span data-trace-status>Esperando trace…</span>
+    </div>
+    <div class="live-agent-meta" data-trace-meta></div>
+  </header>
+
+  <div class="live-agent-empty" data-trace-empty>
+    <p class="arkanum-muted">
+      Aún no hay traces registrados. Lanza el wrapper desde la terminal:
+    </p>
+    <pre><code>arkanum run 7 "¿Qué archivos hay en la raíz?"</code></pre>
+    <p class="arkanum-muted">
+      La página se actualizará en tiempo real con cada <code>Calling function:</code> y
+      cada <code>-&gt; …</code> que el starter imprima.
+    </p>
+  </div>
+
+  <ol class="live-agent-steps" data-trace-steps aria-live="polite"></ol>
+</section>
+{% endblock %}

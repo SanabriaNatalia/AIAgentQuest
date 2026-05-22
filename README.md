@@ -177,46 +177,33 @@ Puedes consultarlo en cualquier momento durante el laboratorio y usarlo para amp
 docs/README.md
 ```
 
-## Requisitos previos
+## Configuración inicial
 
-Antes de comenzar necesitarás:
+Esta sección te lleva desde cero hasta tener el **dashboard arcano** abierto en tu navegador. Desde ahí el dashboard se vuelve tu guía principal: mapa de quests, instrucciones, diagnóstico, rangos y celebraciones.
 
-- Python 3.12+
-- Git
-- uv
+### Prerrequisitos
 
----
+- **Python 3.12+**
+- **Git**
+- **`uv`** — gestor de paquetes y entornos. Instalación oficial:
 
-## Instalación de uv
+  **Windows (PowerShell):**
+  ```powershell
+  powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+  ```
 
-`uv` es el gestor de paquetes y entornos utilizado por el laboratorio.
-Nos permite instalar y ejecutar todas las dependencias de forma simple y reproducible.
+  **macOS / Linux:**
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  ```
 
-### Windows (PowerShell)
+  Verifica con `uv --version`.
 
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-```
-
-### macOS / Linux
-
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
----
-
-### Verificar instalación
-
-```bash
-uv --version
-```
-
-Si todo salió correctamente, ya puedes continuar con la instalación del laboratorio.
+  > Si el comando no se encuentra justo después de instalarlo, **cierra y vuelve a abrir la terminal**. El instalador agrega `uv` al `PATH` del usuario, pero las sesiones ya abiertas no lo recogen hasta reiniciarse.
+  >
+  > Si estás usando el terminal integrado de **VS Code**, cerrar solo el panel del terminal no basta: VS Code captura el `PATH` al iniciar y lo hereda a todos los terminales que abras dentro. Cierra la ventana entera de VS Code y vuelve a abrirla, o usa `Ctrl+Shift+P` → *Developer: Reload Window* (más rápido).
 
 ---
-
-## Inicio Rápido
 
 ### 1. Clonar el repositorio
 
@@ -231,75 +218,107 @@ cd AIAgentQuest
 uv sync
 ```
 
-### 3. Configurar variables de entorno
+Esto crea el entorno virtual en `.venv/` e instala el ejecutable `arkanum` (gracias a la entrada `[project.scripts]` declarada en `pyproject.toml`).
 
-Crea un archivo `.env` a partir del ejemplo `.env.example` 
-```bash
-cp .env.example .env
+### 3. Activar el entorno virtual
+
+Para que el comando `arkanum` esté disponible directamente:
+
+**Windows (PowerShell):**
+```powershell
+. .\.venv\Scripts\Activate.ps1
 ```
 
-Agrega tu API key:
+> Si PowerShell rechaza el script con un error de política de ejecución, ejecuta una sola vez:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+> ```
+
+**macOS / Linux:**
+```bash
+source .venv/bin/activate
+```
+
+Verifica con `arkanum --help`.
+
+> **Alternativa sin activar el venv.** Puedes invocar el CLI con `uv run arkanum ...` desde cualquier terminal, sin activar nada. Por ejemplo: `uv run arkanum --help`.
+
+### 4. Configurar tu API key de Gemini
+
+Crea el archivo `.env` a partir del ejemplo:
+
+**Windows (PowerShell):** `Copy-Item .env.example .env`
+**macOS / Linux:** `cp .env.example .env`
+
+Edita `.env` y pega tu clave real (la obtienes gratis en [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → *Create API key*):
 
 ```env
-GEMINI_API_KEY=your_api_key
+GEMINI_API_KEY=AIza...
 ```
 
-### 4. Registrar tu aprendiz
+> Sin comillas, sin espacios, una sola línea.
 
-Antes de comenzar, crea tu perfil local de progreso:
+### 5. Registrar tu aprendiz y abrir el dashboard
 
 ```bash
-uv run python -m common.progress.init_user
+arkanum init
 ```
 
-Esto creará una base SQLite local llamada:
+El wizard te pedirá tu nombre, validará tu `.env`, hará ping a Gemini y abrirá el **dashboard arcano** en tu navegador. Esto también crea tu base SQLite local de progreso (`.quest_progress.db`, ya está en `.gitignore`).
 
-```text
-.quest_progress.db
-```
+Si el navegador no se abre solo, visita: [http://127.0.0.1:8765](http://127.0.0.1:8765)
 
-El archivo es personal y no debe subirse a Git.
+---
 
-Puedes consultar tu progreso con:
+## Tu travesía continúa en el dashboard
+
+A partir de aquí el dashboard es tu mapa, tu bitácora y tu mentor. Explora sus pestañas:
+
+- **Perfil** — tu rango, nivel, XP, pills de logros y panel de diagnóstico continuo del setup.
+- **Mapa** — los 4 actos y las 8 quests con su estado (actual / sellada / bloqueada).
+- **Rangos** — colección de rangos desbloqueados, uno por cada quest completada.
+- **Hitos** — pergaminos que se sellan al cerrar cada acto.
+- **Setup** — diagnóstico de los 9 prerrequisitos en tiempo real. Si algo falla, te muestra debajo el comando exacto para arreglarlo.
+- **Live Agent** — visualización en vivo del agent loop (a partir del Acto II).
+- **Códex** — biblioteca de referencia con explicaciones de conceptos.
+
+Cada quest tiene su propio pergamino con la teoría, las pistas y un botón **"⚜ Empezar ahora"** al final. Al pulsarlo arranca el cronómetro y aparecen los dos pasos concretos: abrir el archivo `starter/main.py` en tu editor y, al terminar, validar con `arkanum check N` desde la terminal. Cuando el check pasa, el dashboard sella la quest automáticamente y abre la página de celebración.
+
+Atajos del CLI que probablemente uses todo el tiempo:
 
 ```bash
-uv run python -m common.progress.show_progress
+arkanum current            # quest en la que estás
+arkanum progress           # tabla de tu avance
+arkanum doctor             # diagnóstico completo (incluye ping real a Gemini)
+arkanum dashboard status   # PID y puerto del server
+arkanum dashboard stop     # detener el dashboard
+arkanum dashboard start    # volver a levantarlo
 ```
 
-### 5. Comenzar el primer Quest
+---
 
-Cada Quest contiene:
+## Si algo no funciona
 
-- teoría breve
-- objetivos
-- instrucciones paso a paso
-- starter code
-- validaciones
-- solución final
+El laboratorio incluye dos herramientas de diagnóstico que te dicen exactamente qué arreglar:
 
-Comienza abriendo el README del primer Quest:
+### 1. Pestaña **Setup** del dashboard
 
-```text
-quests/quest_01_first_invocation/README.md
-```
+Visita [http://127.0.0.1:8765/setup](http://127.0.0.1:8765/setup). Verás los 9 checks del laboratorio (Python, uv, dependencias, `.env`, API key, BD, dashboard, workspace) con su estado en tiempo real. Cuando algo falla, aparece debajo una sección **"Cómo arreglar"** con el comando exacto para Windows y macOS / Linux. El panel se refresca solo cada 30 segundos.
 
-o desde terminal:
+### 2. Comando `arkanum doctor`
 
 ```bash
-code quests/quest_01_first_invocation/README.md
+arkanum doctor
 ```
 
-Sigue las instrucciones del Quest y trabaja sobre:
+Misma información en la terminal, en formato tabla, y con un ping real a Gemini para verificar que tu clave funciona.
 
-```text
-starter/main.py
-```
+### Problemas comunes
 
-Cuando termines, puedes validar tu solución ejecutando:
-
-```bash
-uv run python -m quests.quest_01_first_invocation.check
-```
+- **`arkanum` no se encuentra** → no activaste el venv. Vuelve al paso 3 o usa `uv run arkanum ...`.
+- **`uv` no se encuentra después de instalarlo** → cierra y vuelve a abrir la terminal (el `PATH` del usuario se actualiza, pero las sesiones abiertas no lo recogen). Si estás en el terminal integrado de **VS Code**, cierra la ventana entera o usa `Ctrl+Shift+P` → *Developer: Reload Window*; cerrar solo el panel del terminal no es suficiente.
+- **El dashboard no responde** → `arkanum dashboard status` para ver si está vivo; si no, `arkanum dashboard start`.
+- **API key inválida** → revisa que la clave en `.env` no tenga comillas, espacios ni saltos de línea, y que siga activa en [aistudio.google.com](https://aistudio.google.com).
 
 ---
 
