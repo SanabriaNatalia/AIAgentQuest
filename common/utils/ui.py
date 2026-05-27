@@ -1,6 +1,13 @@
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+import sys
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 console = Console()
 

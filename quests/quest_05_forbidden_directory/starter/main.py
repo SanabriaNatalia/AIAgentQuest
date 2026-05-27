@@ -17,11 +17,11 @@ En este Quest trabajarás en dos lugares:
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_05_forbidden_directory.starter.main
+    arkanum start 5
 
 Una vez hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_05_forbidden_directory.check
+    arkanum check 5
 """
 
 from common.functions.get_valid_target_path import get_valid_target_path

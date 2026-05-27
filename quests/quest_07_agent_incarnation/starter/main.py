@@ -7,14 +7,11 @@ y convertir sus resultados en respuestas estructuradas.
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_07_agent_embodiment.starter.main \
-    "¿Qué archivos hay en la raíz?"
+    arkanum start 7 "¿Qué archivos hay en la raíz?"
 
 También puedes usar modo verbose:
 
-    uv run python -m quests.quest_07_agent_embodiment.starter.main \
-    "¿Qué archivos hay en la raíz?" \
-    --verbose
+    arkanum start 7 "¿Qué archivos hay en la raíz?" --verbose
 
 Una vez hayas terminado, valida tu solución ejecutando:
 

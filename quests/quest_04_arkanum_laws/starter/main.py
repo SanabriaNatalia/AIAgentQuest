@@ -7,12 +7,12 @@ un system prompt.
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_04_arkanum_laws.starter.main \
+    arkanum start 4 \
     "¿Cuál es la capital de Francia?"
 
 Una vez hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_04_arkanum_laws.check
+    akranum check 4
     
 """
 

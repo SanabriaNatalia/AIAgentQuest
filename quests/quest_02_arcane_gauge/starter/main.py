@@ -10,11 +10,11 @@ que construiste en el Quest 01.
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_02_arcane_gauge.starter.main
+    arkanum start 2
 
 Una vez que hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_02_arcane_gauge.check
+    arkanum check 2
 """
 import os
 
