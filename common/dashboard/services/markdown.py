@@ -37,6 +37,12 @@ _HEADING_RE = re.compile(r"^(#{1,3})\s+(.+?)\s*$", re.MULTILINE)
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _HTML_HREF_RE = re.compile(r"(<a\b[^>]*?\bhref=)([\"'])(.*?)\2", re.IGNORECASE)
 _HTML_SRC_RE = re.compile(r"(<img\b[^>]*?\bsrc=)([\"'])(.*?)\2", re.IGNORECASE)
+_DOC_LINK_RE = re.compile(
+    r"""<a\b([^>]*\bhref=["'](?:https?://[^"']*|/(?:codex|quest|assets)(?:/[^"']*)?)["'][^>]*)>""",
+    re.IGNORECASE,
+)
+_HAS_TARGET_RE = re.compile(r"\btarget\s*=", re.IGNORECASE)
+_HAS_REL_RE = re.compile(r"\brel\s*=", re.IGNORECASE)
 
 _PYGMENTS_FORMATTER = HtmlFormatter(nowrap=False, cssclass="hl", style="monokai", noclasses=False)
 
@@ -241,6 +247,29 @@ def _build_renderer(source_path: Path) -> MarkdownIt:
     return md
 
 
+def _open_doc_links_in_new_tab(html: str) -> str:
+    """Abre links a documentación en pestaña nueva.
+
+    Cubre links del contenido renderizado: `/codex/...`, `/quest/...`,
+    `/assets/...` y URLs externas (`http(s)://`). Mantiene la lectura del
+    pergamino sin interrumpirla: el aprendiz puede dejar la referencia
+    abierta en background o leerla en paralelo.
+
+    Quedan intactos: anchors internos (`#section`), `mailto:`/`tel:`, y
+    cualquier `<a>` que ya defina su propio `target`.
+    """
+    def add_target(match: re.Match) -> str:
+        attrs = match.group(1)
+        if _HAS_TARGET_RE.search(attrs):
+            return match.group(0)
+        addition = ' target="_blank"'
+        if not _HAS_REL_RE.search(attrs):
+            addition += ' rel="noopener noreferrer"'
+        return f"<a{attrs}{addition}>"
+
+    return _DOC_LINK_RE.sub(add_target, html)
+
+
 def render_markdown_file(source_path: Path) -> RenderedMarkdown:
     """Renderiza un archivo `.md`. Lanza FileNotFoundError si no existe."""
     text = source_path.read_text(encoding="utf-8")
@@ -248,6 +277,7 @@ def render_markdown_file(source_path: Path) -> RenderedMarkdown:
     text = _rewrite_inline_html(source_path, text)
     md = _build_renderer(source_path)
     html = md.render(text)
+    html = _open_doc_links_in_new_tab(html)
     return RenderedMarkdown(html=html, toc=toc, title=title)
 
 
