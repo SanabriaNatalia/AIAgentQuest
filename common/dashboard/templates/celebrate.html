@@ -78,12 +78,10 @@
         <span class="celebrate-stat-label">Intentos</span>
       </div>
     {% endif %}
-    {% if c.total_time_seconds is not none %}
-      <div class="celebrate-stat">
-        <span class="celebrate-stat-value">{{ c.total_time_seconds | format_duration }}</span>
-        <span class="celebrate-stat-label">Tiempo</span>
-      </div>
-    {% endif %}
+    <div class="celebrate-stat">
+      <span class="celebrate-stat-value">{{ c.total_time_seconds | format_duration }}</span>
+      <span class="celebrate-stat-label">Tiempo</span>
+    </div>
   </div>
 
   {% if c.achievements %}

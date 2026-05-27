@@ -126,13 +126,23 @@ def init_db() -> None:
         _add_column_if_missing(conn, "quest_completion", "attempts", "INTEGER DEFAULT 1")
         _add_column_if_missing(conn, "quest_completion", "first_attempt_at", "TEXT")
         _add_column_if_missing(conn, "quest_completion", "total_time_seconds", "INTEGER")
+        # Marca si el aprendiz arrancó el cronómetro pulsando "⚜ Empezar ahora"
+        # en el dashboard. Si vale 0 al completarse el quest, no podemos
+        # contabilizar el tiempo y guardamos total_time_seconds = NULL (N/A).
+        _add_column_if_missing(conn, "quest_progress", "started_explicitly", "INTEGER DEFAULT 0")
 
 
 def register_first_attempt(quest_id: str) -> None:
-    """Marca el primer touch del aprendiz en un quest. Idempotente.
+    """Marca el arranque explícito del cronómetro al pulsar "⚜ Empezar ahora".
 
-    Se llama desde `arkanum start` y `arkanum check`. Si el quest ya está
-    completado, no hace nada. Si quest_progress ya tiene la entrada, tampoco.
+    - Si no hay row de quest_progress: la crea con `started_explicitly = 1`.
+    - Si ya existe pero todavía no se inició explícitamente (fue creada por
+      el fallback de `record_quest_attempt`), la "rebobina": `first_attempt_at`
+      pasa a este momento y `started_explicitly` queda en 1. Razonamiento:
+      si el aprendiz pulsa el botón después de un check fallido, el cronómetro
+      debería arrancar ahora, no desde el check fallido.
+    - Si ya estaba marcada como iniciada explícitamente, es no-op (idempotente).
+    - Si el quest ya está completado, no toca nada.
     """
     init_db()
     now = datetime.now().isoformat(timespec="seconds")
@@ -143,9 +153,16 @@ def register_first_attempt(quest_id: str) -> None:
         if done is not None:
             return
         conn.execute(
-            "INSERT OR IGNORE INTO quest_progress (quest_id, first_attempt_at, attempts) "
-            "VALUES (?, ?, 0)",
+            "INSERT OR IGNORE INTO quest_progress "
+            "(quest_id, first_attempt_at, attempts, started_explicitly) "
+            "VALUES (?, ?, 0, 1)",
             (quest_id, now),
+        )
+        conn.execute(
+            "UPDATE quest_progress "
+            "SET started_explicitly = 1, first_attempt_at = ? "
+            "WHERE quest_id = ? AND started_explicitly = 0",
+            (now, quest_id),
         )
 
 
@@ -292,29 +309,38 @@ def record_quest_completion(quest_id: str, difficulty : int, rank: str) -> None:
         if existing_completion is not None:
             return
 
-        # Lee quest_progress: si el aprendiz vino vía arkanum start/check, ya
-        # existe. Si invocó check.py directamente, no hay row y caemos a
-        # attempts=1 + first_attempt_at=now.
+        # Lee quest_progress: si el aprendiz vino vía arkanum check o pulsó
+        # el botón "⚜ Empezar ahora", ya existe. Si invocó check.py
+        # directamente sin pasar por el CLI, no hay row.
         progress_row = conn.execute(
-            "SELECT first_attempt_at, attempts FROM quest_progress WHERE quest_id = ?",
+            "SELECT first_attempt_at, attempts, started_explicitly "
+            "FROM quest_progress WHERE quest_id = ?",
             (quest_id,),
         ).fetchone()
 
+        started_explicitly = False
         if progress_row is not None:
             first_attempt_at = progress_row[0]
             # +1 porque éste es el intento que pasa; record_quest_attempt no
             # lo cuenta para evitar que llegue aquí ya incrementado.
             final_attempts = int(progress_row[1]) + 1
+            started_explicitly = bool(progress_row[2])
         else:
             first_attempt_at = now_iso
             final_attempts = 1
 
-        try:
-            start_dt = datetime.fromisoformat(first_attempt_at)
-            end_dt = datetime.fromisoformat(now_iso)
-            total_time_seconds = max(0, int((end_dt - start_dt).total_seconds()))
-        except ValueError:
+        # El cronómetro sólo cuenta si el aprendiz pulsó "⚜ Empezar ahora".
+        # Sin ese arranque explícito no podemos contabilizar el tiempo y
+        # guardamos NULL → el dashboard mostrará "N/A".
+        if not started_explicitly:
             total_time_seconds = None
+        else:
+            try:
+                start_dt = datetime.fromisoformat(first_attempt_at)
+                end_dt = datetime.fromisoformat(now_iso)
+                total_time_seconds = max(0, int((end_dt - start_dt).total_seconds()))
+            except ValueError:
+                total_time_seconds = None
 
         xp_reward = get_xp_reward(difficulty)
         new_xp = xp_before + xp_reward

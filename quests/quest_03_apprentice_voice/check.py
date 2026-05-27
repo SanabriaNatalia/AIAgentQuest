@@ -57,6 +57,14 @@ def main() -> None:
     output = result.stdout
     error = result.stderr
 
+    # Reemite la salida del starter en la terminal del aprendiz, para que
+    # la respuesta del agente quede visible durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
+
     if result.returncode != 0:
         fail(
             "El programa terminó con errores.\n\n"

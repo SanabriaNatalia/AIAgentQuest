@@ -65,9 +65,18 @@ success("API key encontrada.")
 success("Cliente de Gemini inicializado.")
 
 # TODO 5:
-# Define un prompt fijo. 
+# Define un prompt fijo.
 # Solicita al modelo que explique qué es un agente IA en un párrafo corto.
 prompt = ""
+
+if not prompt:
+    raise SystemExit(
+        "\n❌ Falta resolver el TODO 5 (definir el prompt).\n"
+        "\nReemplaza:\n"
+        '  prompt = ""\n'
+        "\nPor algo como:\n"
+        '  prompt = "Explícame qué es un agente IA en un párrafo corto."\n'
+    )
 
 narrator("Enviando la primera invocación al modelo...")
 show_prompt(prompt)
@@ -80,7 +89,17 @@ show_prompt(prompt)
 # Guarda la respuesta en la variable response.
 response = None
 
-
+if response is None:
+    raise SystemExit(
+        "\n❌ Falta resolver el TODO 6 (llamar al modelo).\n"
+        "\nReemplaza:\n"
+        "  response = None\n"
+        "\nPor una llamada a Gemini:\n"
+        "  response = client.models.generate_content(\n"
+        '      model="gemini-2.5-flash",\n'
+        "      contents=prompt,\n"
+        "  )\n"
+    )
 
 success("Respuesta recibida.")
 

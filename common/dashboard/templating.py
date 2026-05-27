@@ -10,15 +10,16 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 def _format_duration(seconds) -> str:
     """Renderiza un número de segundos como `XmYs` / `Xs` / `Xh Ym`.
 
-    Acepta None y devuelve "—" para que las plantillas no tengan que
-    chequear antes de pasarlo al filter.
+    Devuelve "N/A" cuando el cronómetro nunca arrancó (el aprendiz no pulsó
+    "⚜ Empezar ahora"), para que quede claro que el tiempo no se pudo
+    contabilizar — en lugar de mostrar "0s" engañoso.
     """
     if seconds is None:
-        return "—"
+        return "N/A"
     try:
         total = int(seconds)
     except (TypeError, ValueError):
-        return "—"
+        return "N/A"
     if total < 60:
         return f"{total}s"
     minutes, secs = divmod(total, 60)

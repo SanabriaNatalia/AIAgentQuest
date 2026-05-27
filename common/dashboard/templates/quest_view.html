@@ -114,10 +114,8 @@
       <h2>Trofeos de este quest</h2>
       {% if stats %}
         <p class="arkanum-muted trophies-stats">
-          {% if stats.attempts %}Intentos: <strong>{{ stats.attempts }}</strong>{% endif %}
-          {% if stats.total_time_seconds is not none %}
-            · Tiempo total: <strong>{{ stats.total_time_seconds | format_duration }}</strong>
-          {% endif %}
+          {% if stats.attempts %}Intentos: <strong>{{ stats.attempts }}</strong> · {% endif %}
+          Tiempo total: <strong>{{ stats.total_time_seconds | format_duration }}</strong>
         </p>
       {% endif %}
     </header>

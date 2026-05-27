@@ -92,6 +92,14 @@ def main() -> None:
     output = result.stdout
     error = result.stderr
 
+    # Reemite la salida de los tests en la terminal del aprendiz, para que
+    # los resultados queden visibles durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
+
     if result.returncode != 0:
         fail(
             "Los tests de calculator todavía fallan.\n\n"
