@@ -1,5 +1,5 @@
 ## El susurro
 
-> Tu archivo tiene un cliente _importado_, pero no _construido_. ¿Qué ritual transforma una librería en una entidad viva con la que puedas conversar?
+> Importaste `genai`, pero ¿en qué momento creas una instancia concreta del cliente con tu API key? Y una vez creada, ¿quién es el responsable de enviarle el prompt y devolverte la respuesta?
 
-Antes de pedirle algo al modelo, alguien necesita representarlo dentro de tu programa. La librería ya está en escena; falta darle forma.
+Importar un módulo no es lo mismo que instanciar un cliente. Y un cliente instanciado no hace nada hasta que llamas a uno de sus métodos.

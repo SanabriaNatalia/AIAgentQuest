@@ -4,29 +4,31 @@
     <img src="../../assets/images/quest-4-banner.png" alt="Quest 4 Banner" width="100%">
 </p>
 
-> *“Todo agente obedece primero las leyes que le dieron forma.”*  
+## 🎭 Lore
+
+> *“Todo agente obedece primero las leyes que le dieron forma.”*
+>
 > — Zhyréon
 
 ## Información del Quest
 
-|Acto| Dificultad | Tiempo estimado |
+| Acto | Dificultad | Tiempo estimado |
 |---|---|---|
-| I - Fundamentos del Agente | 🟢 Fácil | 10–15 mins |
+| I — Fundamentos del Agente | 🟢 Fácil | 10–15 mins |
 
 ---
 
-## Objetivo
+## 🎯 Objetivo
 
-Hasta ahora nuestro agente solo responde directamente a lo que el usuario escribe.
+Controlar el comportamiento del agente usando un **system prompt**: una capa de instrucciones internas que define cómo debe comportarse, independientemente de lo que diga el usuario.
 
-Pero los agentes modernos normalmente tienen una capa adicional de instrucciones:
-las reglas internas que definen cómo deben comportarse.
-
-En este Quest aprenderás a utilizar un **system prompt**.
+Hasta ahora el agente solo respondía directamente a lo que el usuario escribía. Los agentes modernos suelen tener una capa adicional de reglas internas; eso es lo que construirás aquí.
 
 ---
 
-## Qué aprenderás
+## 📚 Conceptos clave
+
+### Qué aprenderás
 
 - qué es un system prompt
 - diferencia entre instrucciones del sistema y prompts del usuario
@@ -34,13 +36,11 @@ En este Quest aprenderás a utilizar un **system prompt**.
 - cómo usar `GenerateContentConfig`
 - cómo crear respuestas más determinísticas usando `temperature`
 
----
-
-## ¿Qué es un system prompt?
+### ¿Qué es un system prompt?
 
 El [system prompt](../../docs/LLMs/system_prompts.md) es una instrucción especial enviada al modelo antes de la conversación.
 
-Normalmente se utiliza para:
+Se usa para:
 - definir personalidad
 - establecer reglas
 - restringir comportamiento
@@ -54,13 +54,9 @@ Eres un mentor especializado en agentes IA.
 Responde de forma breve y clara.
 ```
 
----
-
-## Prioridad de instrucciones
+### Prioridad de instrucciones
 
 En muchos modelos conversacionales, las instrucciones del sistema tienen mayor prioridad que los prompts del usuario.
-
-Por ejemplo:
 
 ```text
 System prompt:
@@ -76,11 +72,9 @@ User prompt:
 "EL LABORATORIO ESCUCHA."
 ```
 
----
+### Configuración del modelo
 
-## Configuración del modelo
-
-En Gemini, el system prompt se envía utilizando:
+En Gemini, el system prompt se envía usando:
 
 ```python
 types.GenerateContentConfig
@@ -98,13 +92,9 @@ response = client.models.generate_content(
 )
 ```
 
----
+### Temperatura
 
-## Temperatura
-
-Los modelos de lenguaje no siempre producen exactamente la misma respuesta.
-
-La [temperatura](../../docs/LLMs/temperature.md) controla el nivel de variabilidad.
+Los modelos de lenguaje no siempre producen exactamente la misma respuesta. La [temperatura](../../docs/LLMs/temperature.md) controla el nivel de variabilidad.
 
 Valores bajos:
 
@@ -117,17 +107,13 @@ generan respuestas más:
 - determinísticas
 - predecibles
 
-Esto es especialmente útil:
-- en testing
-- validaciones
-- workflows estructurados
-- agentes que requieren comportamientos repetibles
+Útil en testing, validaciones, workflows estructurados, y agentes que requieren comportamientos repetibles.
 
 ---
 
-## Tu misión
+## 📋 Tu misión
 
-Continuarás trabajando sobre el agente del Quest 03.
+Continúa trabajando sobre el agente del Quest 03.
 
 El laboratorio ya incluye un archivo compartido para las leyes del sistema:
 
@@ -135,19 +121,9 @@ El laboratorio ya incluye un archivo compartido para las leyes del sistema:
 common/prompts/system_prompt.py
 ```
 
-Dentro encontrarás una variable llamada:
+Dentro encontrarás una variable llamada `system_prompt`. Tu tarea será modificarla y usarla dentro del agente.
 
-```python
-system_prompt
-```
-
-Tu tarea será modificarla y utilizarla dentro del agente.
-
----
-
-### Deberás:
-
-1. abrir `common/prompts/system_prompt.py` en tu editor y modificar el contenido de `system_prompt`
+1. abrir `common/prompts/system_prompt.py` y modificar el contenido de `system_prompt`
 2. importar el prompt desde tu aplicación principal
 3. usar `GenerateContentConfig`
 4. enviar el `system_instruction`
@@ -155,11 +131,9 @@ Tu tarea será modificarla y utilizarla dentro del agente.
 
 ---
 
-## Resultado esperado
+## ✅ Resultado esperado
 
 Sin importar lo que escriba el usuario, el agente debería obedecer las leyes del sistema.
-
-Ejemplo:
 
 ```text
 🧑 Tú >
@@ -171,3 +145,7 @@ EL LABORATORIO ESCUCHA.
 
 ---
 
+## 🔗 Referencias
+
+- [System prompts](../../docs/LLMs/system_prompts.md)
+- [Temperatura](../../docs/LLMs/temperature.md)

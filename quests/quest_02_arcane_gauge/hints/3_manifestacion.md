@@ -9,4 +9,4 @@ print(f"Prompt tokens: {usage.prompt_token_count}")
 print(f"Response tokens: {usage.candidates_token_count}")
 ```
 
-El check valida la presencia exacta de los strings `Prompt tokens:` y `Response tokens:` en stdout, antes del texto del agente.
+El check valida que los strings exactos `Prompt tokens:` y `Response tokens:` aparezcan en stdout **antes** del texto del agente.

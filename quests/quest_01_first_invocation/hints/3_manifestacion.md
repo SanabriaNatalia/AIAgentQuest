@@ -9,4 +9,4 @@ response = client.models.generate_content(
 )
 ```
 
-Las dos llamadas viven separadas: primero invocas al cliente, luego le pides una respuesta. Define también un `prompt` no vacío (el quest pide pedirle al modelo que explique qué es un agente IA).
+Las dos llamadas viven separadas: primero creas el cliente, luego usas su método `generate_content` para enviar el prompt. Recuerda también definir un `prompt` no vacío (el quest pide pedirle al modelo que explique qué es un agente IA).

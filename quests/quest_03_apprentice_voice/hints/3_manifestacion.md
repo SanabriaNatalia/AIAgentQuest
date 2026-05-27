@@ -11,4 +11,4 @@ messages = [
 ]
 ```
 
-La lista `messages` arranca con un único elemento — los demás (respuestas del modelo, observaciones de tools) los irás agregando en los quests posteriores del Acto II.
+La lista `messages` arranca con un único elemento. En los quests siguientes irás agregando más mensajes (respuestas del modelo, observaciones de tools) para construir un historial conversacional.
