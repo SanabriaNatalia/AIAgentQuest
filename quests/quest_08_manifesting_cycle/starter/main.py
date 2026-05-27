@@ -40,27 +40,25 @@ show_quest_header(
     "El agente se manifiesta en un ciclo de acción, observación y reflexión.",
 )
 
-# TODO 1:
+# TODO 8.0 — Preparación:
 # Copia tu solución del Quest 07 en este archivo.
+# No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.x … 7.x — esos pasos ya los resolviste.
 #
 # Puedes usar:
+# - quests/quest_07_agent_incarnation/solution/solution.py, o
+# - tu propia versión completada.
 #
-# quests/quest_07_agent_incarnation/solution/main.py
-#
-# o tu propia versión completada.
-#
-# No copies los imports ni la función show_quest_header,
-# solo el código que va después.
-#
-# En este quest refactorizarás tu código, por lo que prepárate para 
+# En este quest refactorizarás tu código, por lo que prepárate para
 # mover partes de tu solución a nuevas funciones.
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 08
-# ============================================
 
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 08                       ║
+# ║   A partir de aquí, los TODOs son nuevos (8.x).      ║
+# ╚══════════════════════════════════════════════════════╝
 
-# TODO 2:
+# TODO 8.1:
 # Refactoriza tu archivo para que la lógica principal viva dentro de:
 #
 # def main():
@@ -76,7 +74,7 @@ show_quest_header(
 def main():
     pass
 
-# TODO 3:
+# TODO 8.2:
 # Crea una función llamada:
 #
 # generate_content(messages, verbose)
@@ -93,7 +91,7 @@ def generate_content(messages, verbose=False):
     pass
 
 
-# TODO 4:
+# TODO 8.3:
 # Importa:
 #
 # MAX_ITERS
@@ -101,15 +99,15 @@ def generate_content(messages, verbose=False):
 # desde:
 #
 # common.config
-# 
-# Preferiblemente al inicio de tu archivo, 
+#
+# Preferiblemente al inicio de tu archivo,
 # junto con los otros imports.
 #
 # Este valor limitará la cantidad máxima
 # de iteraciones del agente.
 
 
-# TODO 5:
+# TODO 8.4:
 # Dentro de main(), crea un loop usando:
 #
 # for _ in range(MAX_ITERS):
@@ -122,7 +120,7 @@ def generate_content(messages, verbose=False):
 # - continuar si el agente solo ejecutó tools
 
 
-# TODO 6:
+# TODO 8.5:
 # Dentro de generate_content(...), cuando recibas response.candidates,
 # agrega el content del modelo al historial:
 #
@@ -132,7 +130,7 @@ def generate_content(messages, verbose=False):
 #             messages.append(candidate.content)
 
 
-# TODO 7:
+# TODO 8.6:
 # Dentro de generate_content(...), si NO hay function calls:
 #
 # return response.text
@@ -140,7 +138,7 @@ def generate_content(messages, verbose=False):
 # Esto romperá el loop principal.
 
 
-# TODO 8:
+# TODO 8.7:
 # Después de ejecutar las tools, agrega sus resultados al historial:
 #
 # messages.append(
@@ -150,11 +148,11 @@ def generate_content(messages, verbose=False):
 #     )
 # )
 #
-# Esto permitirá que el agente reflexione sobre los resultados 
+# Esto permitirá que el agente reflexione sobre los resultados
 # de las tools en la siguiente iteración.
 
 
-# TODO 9:
+# TODO 8.8:
 # Si el agente alcanza MAX_ITERS sin respuesta final,
 # imprime:
 #

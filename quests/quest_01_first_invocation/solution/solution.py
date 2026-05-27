@@ -24,13 +24,13 @@ show_quest_header(
     "El laboratorio escucha tu primer llamado.",
 )
 
-# TODO 1:
+# TODO 1.1:
 load_dotenv()
 
-# TODO 2:
+# TODO 1.2:
 api_key = os.environ.get("GEMINI_API_KEY")
 
-# TODO 3:
+# TODO 1.3:
 if api_key is None:
     raise RuntimeError(
         "No se encontró GEMINI_API_KEY en el archivo .env"
@@ -38,18 +38,18 @@ if api_key is None:
 
 success("API key encontrada.")
 
-# TODO 4:
+# TODO 1.4:
 client = genai.Client(api_key=api_key)
 
 success("Cliente de Gemini inicializado.")
 
-# TODO 5:
+# TODO 1.5:
 prompt = "Explícame qué es un agente IA en un párrafo corto."
 
 narrator("Enviando la primera invocación al modelo...")
 show_prompt(prompt)
 
-# TODO 6:
+# TODO 1.6:
 response = client.models.generate_content(
     model="gemini-2.5-flash",
     contents=prompt,

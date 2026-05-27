@@ -33,23 +33,22 @@ show_quest_header(
     "El agente descubre sus primeras herramientas.",
 )
 
-# TODO 1:
-
+# TODO 6.0 — Preparación:
 # Copia tu solución del Quest 04 en este archivo.
+# No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.x … 4.x — esos pasos ya los resolviste.
+#
 # Puedes usar:
-#
-# quests/quest_04_arkanum_laws/solution/solution.py
-#
-# o tu propia versión completada.
-#
-# No copies los imports ni la función show_quest_header,
-# solo el código que va después.
+# - quests/quest_04_arkanum_laws/solution/solution.py, o
+# - tu propia versión completada.
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 06
-# ============================================
 
-# TODO 2:
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 06                       ║
+# ║   A partir de aquí, los TODOs son nuevos (6.x).      ║
+# ╚══════════════════════════════════════════════════════╝
+
+# TODO 6.1:
 # Abre el archivo:
 #
 # common/prompts/system_prompt.py
@@ -73,13 +72,14 @@ show_quest_header(
 # - Ejecutar archivos Python
 # """
 
-# TODO 3:
-
+# TODO 6.2:
 # Completa los schemas faltantes en:
 #
 # common/functions/get_file_content.py
 # common/functions/write_file.py
 # common/functions/run_python_file.py
+#
+# (en cada uno verás el marcador `TODO 6.2`).
 #
 # Usa como referencia el schema ya existente en:
 #
@@ -88,8 +88,7 @@ show_quest_header(
 # También puedes revisar esta entrada del códice:
 # docs/agents/tool_schemas.md
 
-# TODO 4:
-
+# TODO 6.3:
 # Abre:
 #
 # common/functions/call_function.py
@@ -102,7 +101,7 @@ show_quest_header(
 #     ]
 # )
 
-# TODO 5:
+# TODO 6.4:
 # Importa:
 #
 # available_functions
@@ -113,7 +112,7 @@ show_quest_header(
 #
 # Preferiblemente, al inicio del archivo, junto con los otros imports.
 
-# TODO 6:
+# TODO 6.5:
 # En la llamada a:
 #
 # client.models.generate_content(...)
@@ -126,7 +125,7 @@ show_quest_header(
 #     temperature=0,
 # )
 
-# TODO 7:
+# TODO 6.6:
 # Después de recibir la respuesta, revisa:
 #
 # response.function_calls
@@ -137,7 +136,7 @@ show_quest_header(
 #
 # Si no existen function calls, imprime la respuesta del agente normalmente.
 
-# TODO 8:
+# TODO 6.7:
 # Ejecuta el programa con prompts que deberían activar tools.
 #
 # Ejemplo:
@@ -149,7 +148,7 @@ show_quest_header(
 #
 # Calling function: get_files_info({'directory': '.'})
 #
-# Cuando hayas validado que las tools se están llamando correctamente, 
+# Cuando hayas validado que las tools se están llamando correctamente,
 # ejecuta el check para completar la quest:
 #
 # uv run python -m quests.quest_06_tool_chest.check

@@ -5,7 +5,7 @@ from google.genai import types
 from common.functions.get_valid_target_path import get_valid_target_path
 
 
-# TODO 3 - Quest 6: Define el schema para la función run_python_file, 
+# TODO 6.2 (run_python_file.py): Define el schema para la función run_python_file,
 # similar a schema_get_files_info
 # Puedes revisar esta entrada si tienes dudas:
 # docs/agents/tool_schemas.md

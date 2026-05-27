@@ -51,7 +51,7 @@ for path in valid_paths:
 
     test(f"Validando ruta permitida: {path}")
 
-    # TODO 1:
+    # TODO 5.7:
     # Ejecuta get_valid_target_path(WORKING_DIRECTORY, path).
     #
     # Si la ruta es válida, usa:
@@ -66,7 +66,7 @@ for path in invalid_paths:
 
     test(f"Validando ruta prohibida: {path}")
 
-    # TODO 2:
+    # TODO 5.8:
     # Ejecuta get_valid_target_path(WORKING_DIRECTORY, path).
     #
     # Si la ruta prohibida NO genera error, usa:

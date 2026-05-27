@@ -36,20 +36,22 @@ show_quest_header(
     "Las leyes del Arkanum son absolutas.",
 )
 
-# TODO 1:
+# TODO 4.0 — Preparación:
 # Copia tu solución del Quest 03 en este archivo.
-# Puedes usar:
-# quests/quest_03_apprentice_voice/solution/solution.py
-# o tu propia versión completada.
 # No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.x, 2.x y 3.x — esos pasos ya los resolviste.
+#
+# Puedes usar:
+# - quests/quest_03_apprentice_voice/solution/solution.py, o
+# - tu propia versión completada.
 
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 04
-# ============================================
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 04                       ║
+# ║   A partir de aquí, los TODOs son nuevos (4.x).      ║
+# ╚══════════════════════════════════════════════════════╝
 
-
-# TODO 2:
+# TODO 4.1:
 # Abre el archivo:
 #
 # common/prompts/system_prompt.py
@@ -66,7 +68,7 @@ show_quest_header(
 # """
 
 
-# TODO 3:
+# TODO 4.2:
 # Importa:
 #
 # system_prompt
@@ -78,7 +80,7 @@ show_quest_header(
 # Preferiblemente, al inicio del archivo, junto con los otros imports.
 
 
-# TODO 4:
+# TODO 4.3:
 # Utiliza:
 #
 # types.GenerateContentConfig
@@ -92,7 +94,7 @@ show_quest_header(
 # client.models.generate_content(...)
 
 
-# TODO 5:
+# TODO 4.4:
 # Configura:
 #
 # temperature=0
@@ -101,7 +103,7 @@ show_quest_header(
 # durante las validaciones.
 
 
-# TODO 6:
+# TODO 4.5:
 # Ejecuta el programa utilizando distintos prompts.
 #
 # Sin importar el mensaje enviado,

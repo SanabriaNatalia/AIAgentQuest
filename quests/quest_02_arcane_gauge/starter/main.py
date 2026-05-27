@@ -33,20 +33,23 @@ show_quest_header(
     "Es hora de conocer el costo de tus respuestas",
 )
 
-# TODO 1:
-# Copia tu solución del Quest 01 en este archivo. 
+# TODO 2.0 — Preparación:
+# Copia tu solución del Quest 01 en este archivo.
 # No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.1 … TODO 1.6
+# (esos pasos ya los resolviste; son el cimiento sobre el que construyes).
 #
 # Puedes usar:
-# - quests/quest_01_first_agent/solution/main.py o
+# - quests/quest_01_first_invocation/solution/solution.py, o
 # - tu propia versión completada.
 
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 02
-# ============================================
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 02                       ║
+# ║   A partir de aquí, los TODOs son nuevos (2.x).      ║
+# ╚══════════════════════════════════════════════════════╝
 
-# TODO 2:
+# TODO 2.1:
 # Después de generar la respuesta, obtén la
 # metadata de uso desde:
 #
@@ -55,7 +58,7 @@ show_quest_header(
 # Guárdala en una variable llamada `usage`.
 
 
-# TODO 3:
+# TODO 2.2:
 # Verifica que `usage` no sea None.
 # Si es None, lanza:
 # RuntimeError(
@@ -63,7 +66,7 @@ show_quest_header(
 # )
 
 
-# TODO 4:
+# TODO 2.3:
 # Imprime los tokens consumidos usando:
 # usage.prompt_token_count
 # y:
@@ -74,6 +77,6 @@ show_quest_header(
 # Response tokens: Y
 
 
-# TODO 5:
+# TODO 2.4:
 # Asegúrate de imprimir los tokens ANTES
 # de mostrar la respuesta final del agente.

@@ -17,7 +17,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-# TODO 5
+# TODO 6.4:
 from common.functions.call_function import available_functions
 
 from common.prompts.system_prompt import system_prompt
@@ -33,6 +33,8 @@ show_quest_header(
     "Quest 06 — El Cofre de Instrumentos",
     "El agente descubre sus primeras herramientas.",
 )
+
+# TODO 6.0 — Preparación: código heredado del Quest 04.
 
 load_dotenv()
 
@@ -66,7 +68,12 @@ messages = [
     )
 ]
 
-# TODO 6:
+
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 06                       ║
+# ╚══════════════════════════════════════════════════════╝
+
+# TODO 6.5:
 response = client.models.generate_content(
     model="gemini-2.5-flash",
     contents=messages,
@@ -87,7 +94,7 @@ success("Respuesta recibida.")
 print(f"Prompt tokens: {usage.prompt_token_count}")
 print(f"Response tokens: {usage.candidates_token_count}")
 
-# TODO 7:
+# TODO 6.6:
 function_calls = response.function_calls
 
 if function_calls:

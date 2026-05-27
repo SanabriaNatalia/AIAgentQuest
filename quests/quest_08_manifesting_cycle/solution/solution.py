@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-# TODO 4
+# TODO 8.3:
 from common.config import MAX_ITERS
 from common.functions.call_function import available_functions, call_function
 from common.prompts.system_prompt import system_prompt
@@ -26,13 +26,20 @@ show_quest_header(
     "El agente se manifiesta en un ciclo de acción, observación y reflexión.",
 )
 
+# TODO 8.0 — Preparación: código heredado del Quest 07.
+
 load_dotenv()
 
 api_key = os.environ.get("GEMINI_API_KEY")
 
 client = genai.Client(api_key=api_key)
 
-# TODO 2
+
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 08                       ║
+# ╚══════════════════════════════════════════════════════╝
+
+# TODO 8.1:
 def main():
     if api_key is None:
         raise RuntimeError(
@@ -66,7 +73,7 @@ def main():
     narrator("Recibiendo la voluntad del aprendiz...")
     show_prompt(args.user_prompt)
 
-    # TODO 5
+    # TODO 8.4:
     for _ in range(MAX_ITERS):
         try:
             final_response = generate_content(
@@ -83,10 +90,10 @@ def main():
         except Exception as e:
             print(f"Error in generate_content: {e}")
 
-    # TODO 9
+    # TODO 8.8:
     print(f"Maximum iterations ({MAX_ITERS}) reached.")
 
-# TODO 3
+# TODO 8.2:
 def generate_content(messages, verbose):
     response = client.models.generate_content(
         model="gemini-2.5-flash",
@@ -107,12 +114,13 @@ def generate_content(messages, verbose):
         print(f"Prompt tokens: {usage.prompt_token_count}")
         print(f"Response tokens: {usage.candidates_token_count}")
 
+    # TODO 8.5:
     if response.candidates:
         for candidate in response.candidates:
             if candidate.content:
                 messages.append(candidate.content)
 
-    # TODO 7
+    # TODO 8.6:
     if not response.function_calls:
         return response.text
 
@@ -146,7 +154,7 @@ def generate_content(messages, verbose):
         if verbose:
             print(f"-> {part.function_response.response}")
 
-    # TODO 6
+    # TODO 8.7:
     messages.append(
         types.Content(
             role="tool",

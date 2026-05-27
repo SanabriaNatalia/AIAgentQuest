@@ -7,7 +7,7 @@ Enviar un mensaje a Gemini y mostrar la respuesta en la terminal.
 Completa los TODOS en orden.
 No borres el código existente, solo añádele lo que se pide en cada paso.
 
-Puedes ejecutar el siguiente comando desde la raíz del proyecto 
+Puedes ejecutar el siguiente comando desde la raíz del proyecto
 para validar que funcione:
 
     uv run python -m quests.quest_01_first_invocation.starter.main
@@ -35,28 +35,28 @@ show_quest_header(
     "El laboratorio escucha tu primer llamado.",
 )
 
-# TODO 1:
+# TODO 1.1:
 # Carga las variables de entorno desde el archivo .env.
 # Pista: usa load_dotenv().
 
-# TODO 2:
+# TODO 1.2:
 # Lee la variable GEMINI_API_KEY desde el entorno.
 # Pista: usa os.environ.get("GEMINI_API_KEY").
 
 
-# TODO 3:
+# TODO 1.3:
 # Si api_key no existe, lanza un RuntimeError.
 # Pista:
 # if api_key is None:
 #     raise RuntimeError("...")
-# Asegúrate de incluir un mensaje claro indicando que no se 
+# Asegúrate de incluir un mensaje claro indicando que no se
 # encontró la API key en el archivo .env.
 
 
 
 success("API key encontrada.")
 
-# TODO 4:
+# TODO 1.4:
 # Crea un cliente de Gemini usando la API key.
 # Pista: genai.Client(api_key=api_key)
 
@@ -64,14 +64,14 @@ success("API key encontrada.")
 
 success("Cliente de Gemini inicializado.")
 
-# TODO 5:
+# TODO 1.5:
 # Define un prompt fijo.
 # Solicita al modelo que explique qué es un agente IA en un párrafo corto.
 prompt = ""
 
 if not prompt:
     raise SystemExit(
-        "\n❌ Falta resolver el TODO 5 (definir el prompt).\n"
+        "\n❌ Falta resolver el TODO 1.5 (definir el prompt).\n"
         "\nReemplaza:\n"
         '  prompt = ""\n'
         "\nPor algo como:\n"
@@ -81,7 +81,7 @@ if not prompt:
 narrator("Enviando la primera invocación al modelo...")
 show_prompt(prompt)
 
-# TODO 6:
+# TODO 1.6:
 # Usa client.models.generate_content() para enviar el prompt al modelo.
 # Debe recibir:
 # - model="gemini-2.5-flash"
@@ -91,7 +91,7 @@ response = None
 
 if response is None:
     raise SystemExit(
-        "\n❌ Falta resolver el TODO 6 (llamar al modelo).\n"
+        "\n❌ Falta resolver el TODO 1.6 (llamar al modelo).\n"
         "\nReemplaza:\n"
         "  response = None\n"
         "\nPor una llamada a Gemini:\n"
