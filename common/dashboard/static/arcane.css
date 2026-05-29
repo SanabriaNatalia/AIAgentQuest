@@ -2823,6 +2823,70 @@ code {
   font-weight: 500;
 }
 
+/* function_call agrupada con su function_result (mejora #2). */
+.trace-step--function_call[data-pair-status="pending"] {
+  border-left-color: var(--arkanum-glow);
+  opacity: 0.92;
+}
+
+.trace-step--paired {
+  border-left-color: var(--arkanum-success);
+}
+
+.trace-step-pending {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.trace-step-pending-spinner {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 2px solid rgba(192, 132, 252, 0.3);
+  border-top-color: var(--arkanum-glow);
+  animation: trace-spinner 0.9s linear infinite;
+}
+
+@keyframes trace-spinner {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.trace-step-result {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(101, 209, 150, 0.45);
+}
+
+.trace-step-result-label {
+  display: inline-block;
+  margin-bottom: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--arkanum-success);
+  text-transform: uppercase;
+}
+
+.trace-step-result-payload {
+  margin: 0.3rem 0 0;
+  padding: 0.55rem 0.85rem;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 8px;
+  color: var(--arkanum-text);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
 /* Chip (latencia, etc.) — pequeño bloque a la derecha del header. */
 .trace-step-chip {
   margin-left: auto;

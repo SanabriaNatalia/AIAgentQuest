@@ -506,6 +506,39 @@
         .replace(/'/g, "&#39;");
     }
 
+    function attachResultToPendingCall(stepsHost, step) {
+      // Busca la última function_call pendiente y le ancla el resultado.
+      // Devuelve true si emparejó, false si no había candidata.
+      var pending = stepsHost.querySelectorAll(
+        '.trace-step--function_call[data-pair-status="pending"]'
+      );
+      if (!pending.length) return false;
+      var call = pending[pending.length - 1];
+
+      call.dataset.pairStatus = "resolved";
+      call.classList.add("trace-step--paired");
+
+      var spinner = call.querySelector(".trace-step-pending");
+      if (spinner) spinner.remove();
+
+      var resBlock = document.createElement("div");
+      resBlock.className = "trace-step-result";
+      resBlock.innerHTML =
+        '<span class="trace-step-result-label">' +
+        '<span aria-hidden="true">📦</span> Resultado' +
+        '</span>';
+
+      var payload = payloadText(step);
+      if (payload) {
+        var pre = document.createElement("pre");
+        pre.className = "trace-step-result-payload";
+        pre.textContent = payload;
+        resBlock.appendChild(pre);
+      }
+      call.appendChild(resBlock);
+      return true;
+    }
+
     function renderStep(step) {
       var li = document.createElement("li");
       li.className = "trace-step trace-step--" + step.step_type;
@@ -520,6 +553,25 @@
         (step.name ? '<span class="trace-step-name">' + escapeHtml(step.name) + '</span>' : '') +
         '<span class="trace-step-time">' + escapeHtml(step.created_at) + '</span>';
       li.appendChild(head);
+
+      // function_call: marcamos como "pending" para que su function_result
+      // posterior se ancle dentro de la misma tarjeta (mejora #2).
+      if (step.step_type === "function_call") {
+        li.dataset.pairStatus = "pending";
+        li.dataset.pairName = step.name || "";
+        var payload = payloadText(step);
+        if (payload) {
+          var body = document.createElement("pre");
+          body.className = "trace-step-payload";
+          body.textContent = payload;
+          li.appendChild(body);
+        }
+        var pending = document.createElement("p");
+        pending.className = "trace-step-pending";
+        pending.innerHTML = '<span class="trace-step-pending-spinner" aria-hidden="true"></span>ejecutando…';
+        li.appendChild(pending);
+        return li;
+      }
 
       // agent_thought / agent_final: body en prosa (no monoespacial)
       if (step.step_type === "agent_thought" || step.step_type === "agent_final") {
@@ -596,7 +648,17 @@
         var step = data.steps[i];
         if (seenIds.has(step.id)) continue;
         seenIds.add(step.id);
-        if (stepsHost) stepsHost.appendChild(renderStep(step));
+
+        if (step.step_type === "function_result" && stepsHost) {
+          // Ancla el resultado dentro de la última function_call pendiente.
+          // Si no hay (caso patológico), cae al render normal como card.
+          var anchored = attachResultToPendingCall(stepsHost, step);
+          if (!anchored) {
+            stepsHost.appendChild(renderStep(step));
+          }
+        } else if (stepsHost) {
+          stepsHost.appendChild(renderStep(step));
+        }
         added += 1;
 
         // Captura el user_prompt del session_start si está disponible.
