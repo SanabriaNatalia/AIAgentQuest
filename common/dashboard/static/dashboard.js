@@ -410,6 +410,7 @@
     var preview = host.querySelector("[data-system-prompt-preview]");
     var body = host.querySelector("[data-system-prompt-body]");
     var note = host.querySelector("[data-system-prompt-note]");
+    var panel = body ? body.closest(".live-agent-prompt-panel") : null;
     fetch(url, { headers: { Accept: "application/json" } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
@@ -436,8 +437,91 @@
             note.classList.remove("live-agent-prompt-note--warn");
           }
         }
+        // Mejora #18: botón Editar (si hay panel y backend disponible).
+        if (panel && !data.error) {
+          attachSystemPromptEditor(panel, body, url, data.content || "");
+        }
       })
       .catch(function () { /* best-effort */ });
+  }
+
+  function attachSystemPromptEditor(panel, body, url, currentContent) {
+    if (panel.querySelector("[data-system-prompt-edit]")) return; // ya está
+    var actions = document.createElement("div");
+    actions.className = "live-agent-prompt-actions";
+    actions.innerHTML =
+      '<button type="button" class="live-agent-action" data-system-prompt-edit>✏ Editar</button>';
+    body.parentNode.insertBefore(actions, body);
+
+    var editBtn = actions.querySelector("[data-system-prompt-edit]");
+    editBtn.addEventListener("click", function () {
+      // Reemplaza el body por un textarea editable + Guardar/Cancelar.
+      var textarea = document.createElement("textarea");
+      textarea.className = "live-agent-prompt-textarea";
+      textarea.value = currentContent;
+      textarea.rows = 8;
+
+      var btnRow = document.createElement("div");
+      btnRow.className = "live-agent-prompt-edit-actions";
+      var saveBtn = document.createElement("button");
+      saveBtn.type = "button";
+      saveBtn.className = "live-agent-action";
+      saveBtn.textContent = "💾 Guardar";
+      var cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.className = "live-agent-action";
+      cancelBtn.textContent = "Cancelar";
+      btnRow.appendChild(saveBtn);
+      btnRow.appendChild(cancelBtn);
+
+      var originalBody = body.cloneNode(true);
+      body.replaceWith(textarea);
+      textarea.after(btnRow);
+      actions.style.display = "none";
+
+      function restoreOriginal() {
+        textarea.replaceWith(originalBody);
+        body = originalBody;
+        btnRow.remove();
+        actions.style.display = "";
+      }
+
+      cancelBtn.addEventListener("click", restoreOriginal);
+
+      saveBtn.addEventListener("click", function () {
+        var newContent = textarea.value;
+        if (newContent.indexOf('"""') !== -1) {
+          window.alert("El contenido no puede incluir comillas triples.");
+          return;
+        }
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Guardando…";
+        fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ content: newContent }),
+        })
+          .then(function (r) {
+            if (!r.ok) {
+              return r.json().catch(function () { return { detail: "Error" }; })
+                .then(function (e) { throw new Error(e.detail || "Error"); });
+            }
+            return r.json();
+          })
+          .then(function () {
+            // Recarga limpia para reflejar el nuevo contenido y el note.
+            window.location.reload();
+          })
+          .catch(function (err) {
+            saveBtn.disabled = false;
+            saveBtn.textContent = "💾 Guardar";
+            window.alert("No se pudo guardar: " + (err && err.message ? err.message : ""));
+          });
+      });
+    });
   }
 
   function initLiveAgent() {

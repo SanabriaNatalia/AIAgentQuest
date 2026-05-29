@@ -6,6 +6,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
+from pydantic import BaseModel
 
 from common.dashboard.services.hints import (
     HintRequestError,
@@ -185,6 +186,57 @@ def system_prompt_endpoint() -> JSONResponse:
         "content": content,
         "is_placeholder": _SYSTEM_PROMPT_PLACEHOLDER_HINT in content,
         "path": str(_SYSTEM_PROMPT_PATH),
+    })
+
+
+class SystemPromptUpdate(BaseModel):
+    content: str
+
+
+@router.post("/api/system-prompt")
+def update_system_prompt(payload: SystemPromptUpdate) -> JSONResponse:
+    """Reescribe el bloque entre triple-quotes en system_prompt.py.
+
+    Mitigaciones (mejora #18):
+    - Crea un backup .system_prompt.py.bak antes de tocar el original.
+    - Rechaza contenido con '\"\"\"' literal (rompería la sintaxis).
+    - Solo reemplaza el primer match de la asignación system_prompt = '''...'''.
+    - El cambio se aplica al próximo arkanum run (no afecta procesos en curso).
+    """
+    if not _SYSTEM_PROMPT_PATH.exists():
+        raise HTTPException(
+            status_code=404,
+            detail=f"No existe {_SYSTEM_PROMPT_PATH}",
+        )
+    if '"""' in payload.content:
+        raise HTTPException(
+            status_code=400,
+            detail="El contenido no puede incluir comillas triples (rompería la sintaxis).",
+        )
+
+    raw = _SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
+    if not _SYSTEM_PROMPT_TRIPLE_RE.search(raw):
+        raise HTTPException(
+            status_code=400,
+            detail="No se encontró el bloque `system_prompt = \"\"\"...\"\"\"` en el archivo.",
+        )
+
+    backup_path = _SYSTEM_PROMPT_PATH.with_suffix(".py.bak")
+    backup_path.write_text(raw, encoding="utf-8")
+
+    new_content = payload.content
+    new_raw = _SYSTEM_PROMPT_TRIPLE_RE.sub(
+        lambda _m: f'system_prompt = """{new_content}"""',
+        raw,
+        count=1,
+    )
+    _SYSTEM_PROMPT_PATH.write_text(new_raw, encoding="utf-8")
+
+    return JSONResponse({
+        "ok": True,
+        "path": str(_SYSTEM_PROMPT_PATH),
+        "backup": str(backup_path),
+        "is_placeholder": _SYSTEM_PROMPT_PLACEHOLDER_HINT in new_content,
     })
 
 

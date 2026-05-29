@@ -2970,6 +2970,35 @@ code {
   color: var(--arkanum-warn);
 }
 
+/* Editor del system prompt (mejora #18). */
+.live-agent-prompt-actions {
+  padding: 0 1rem 0.55rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.live-agent-prompt-textarea {
+  display: block;
+  width: calc(100% - 1.5rem);
+  margin: 0.65rem 0.75rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  border-radius: 8px;
+  color: var(--arkanum-text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 0.55rem 0.7rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.live-agent-prompt-edit-actions {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  padding: 0 0.75rem 0.85rem;
+}
+
 .live-agent-empty pre {
   background: rgba(0, 0, 0, 0.35);
   border-radius: 8px;
