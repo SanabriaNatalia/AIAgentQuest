@@ -115,6 +115,16 @@ def run(
 
     trace_id = start_trace()
 
+    # Capturamos el primer arg como user_prompt cuando es texto plano
+    # (sin guiones). Para `arkanum run 8 "lee notes.txt"`, ctx.args es
+    # `["lee notes.txt"]`. Si el aprendiz pasa flags primero (`--verbose
+    # "..."`), nos saltamos los que empiezan por "-".
+    extra_args = list(ctx.args)
+    user_prompt = next(
+        (a for a in extra_args if a and not a.startswith("-")),
+        None,
+    )
+
     # Marca el inicio del trace con un step "session_start" para que
     # /live-agent muestre algo aunque el starter no imprima nada en seguida.
     _emit_step(
@@ -122,7 +132,11 @@ def run(
         quest.db_id,
         "session_start",
         quest.title,
-        json.dumps({"quest_order": quest.order, "slug": quest.slug}),
+        json.dumps({
+            "quest_order": quest.order,
+            "slug": quest.slug,
+            "user_prompt": user_prompt,
+        }),
     )
 
     console.print(
@@ -134,10 +148,9 @@ def run(
     def on_line(line: str) -> None:
         _parse_line(line, trace_id=trace_id, quest_db_id=quest.db_id)
 
-    extra = list(ctx.args)
     rc, _captured = run_module_capturing(
         starter_module(quest),
-        extra_args=extra,
+        extra_args=extra_args,
         on_line=on_line,
         env_extra={
             "ARKANUM_TRACE_ID": trace_id,

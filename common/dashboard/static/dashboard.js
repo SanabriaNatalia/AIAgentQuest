@@ -380,6 +380,66 @@
   }
 
   // --- Live agent: polling de /api/trace/current + render ---------------
+  function truncate(text, max) {
+    if (text == null) return "—";
+    var s = String(text).replace(/\s+/g, " ").trim();
+    if (!s) return "—";
+    if (s.length <= max) return s;
+    return s.slice(0, max - 1) + "…";
+  }
+
+  function setUserPrompt(host, prompt) {
+    var preview = host.querySelector("[data-user-prompt-preview]");
+    var body = host.querySelector("[data-user-prompt-body]");
+    if (preview) preview.textContent = truncate(prompt, 60);
+    if (body) {
+      if (prompt) {
+        body.textContent = prompt;
+        body.classList.remove("live-agent-prompt-body--muted");
+      } else {
+        body.textContent =
+          "Lanza `arkanum run 7 \"…\"` o `arkanum run 8 \"…\"` para registrar el prompt del aprendiz.";
+        body.classList.add("live-agent-prompt-body--muted");
+      }
+    }
+  }
+
+  function loadSystemPrompt(host) {
+    var url = host.dataset.systemPromptUrl;
+    if (!url) return;
+    var preview = host.querySelector("[data-system-prompt-preview]");
+    var body = host.querySelector("[data-system-prompt-body]");
+    var note = host.querySelector("[data-system-prompt-note]");
+    fetch(url, { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data) {
+          if (preview) preview.textContent = "(no disponible)";
+          if (body) body.textContent = "No se pudo cargar el system prompt.";
+          return;
+        }
+        var content = (data.content || "").trim();
+        if (preview) preview.textContent = truncate(content, 60) || "(vacío)";
+        if (body) body.textContent = content || "(vacío)";
+        if (note) {
+          if (data.is_placeholder) {
+            note.textContent =
+              "Este archivo todavía contiene el placeholder. La Quest 04 te pide reescribirlo.";
+            note.classList.add("live-agent-prompt-note--warn");
+          } else if (data.error) {
+            note.textContent = data.error;
+            note.classList.add("live-agent-prompt-note--warn");
+          } else {
+            note.textContent = data.path
+              ? "Origen: " + data.path
+              : "";
+            note.classList.remove("live-agent-prompt-note--warn");
+          }
+        }
+      })
+      .catch(function () { /* best-effort */ });
+  }
+
   function initLiveAgent() {
     var host = document.querySelector("[data-trace-poll-url]");
     if (!host) return;
@@ -392,6 +452,12 @@
 
     var seenIds = new Set();
     var lastTraceId = null;
+    var lastUserPrompt = null;
+
+    // System prompt: cargar una vez al inicio.
+    loadSystemPrompt(host);
+    // User prompt: placeholder hasta que llegue session_start.
+    setUserPrompt(host, null);
 
     function iconFor(stepType) {
       switch (stepType) {
@@ -512,6 +578,8 @@
         if (stepsHost) stepsHost.innerHTML = "";
         seenIds = new Set();
         lastTraceId = data.trace_id;
+        lastUserPrompt = null;
+        setUserPrompt(host, null);
       }
 
       if (data.steps.length === 0) {
@@ -530,6 +598,18 @@
         seenIds.add(step.id);
         if (stepsHost) stepsHost.appendChild(renderStep(step));
         added += 1;
+
+        // Captura el user_prompt del session_start si está disponible.
+        if (
+          step.step_type === "session_start" &&
+          step.payload &&
+          typeof step.payload === "object" &&
+          step.payload.user_prompt &&
+          step.payload.user_prompt !== lastUserPrompt
+        ) {
+          lastUserPrompt = step.payload.user_prompt;
+          setUserPrompt(host, lastUserPrompt);
+        }
       }
 
       if (statusHost && data.summary) {

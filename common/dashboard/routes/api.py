@@ -1,6 +1,8 @@
 """Endpoints JSON / fragmentos HTML consumidos por el cliente (polling)."""
 import json
+import re
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -149,6 +151,40 @@ def request_quest_hint(slug: str, level: int) -> JSONResponse:
         "level": level,
         "requested_at": requested_at,
         "html": rendered.html if rendered else "",
+    })
+
+
+_SYSTEM_PROMPT_PATH = Path("common/prompts/system_prompt.py")
+_SYSTEM_PROMPT_TRIPLE_RE = re.compile(
+    r"""system_prompt\s*=\s*(?:r?["']{3})(.*?)(?:["']{3})""",
+    re.DOTALL,
+)
+_SYSTEM_PROMPT_PLACEHOLDER_HINT = "Escribe tu prompt del sistema aquí"
+
+
+@router.get("/api/system-prompt")
+def system_prompt_endpoint() -> JSONResponse:
+    """Devuelve el system_prompt activo, leyendo el archivo del repo.
+
+    Se lee el archivo en cada request para que el aprendiz pueda editarlo
+    sin reiniciar el dashboard. Si el archivo no existe o el regex no
+    matchea, devolvemos `content=""` con `error` explicativo.
+    """
+    if not _SYSTEM_PROMPT_PATH.exists():
+        return JSONResponse({
+            "content": "",
+            "is_placeholder": False,
+            "error": f"No existe {_SYSTEM_PROMPT_PATH}",
+        })
+
+    raw = _SYSTEM_PROMPT_PATH.read_text(encoding="utf-8")
+    m = _SYSTEM_PROMPT_TRIPLE_RE.search(raw)
+    content = m.group(1) if m else ""
+
+    return JSONResponse({
+        "content": content,
+        "is_placeholder": _SYSTEM_PROMPT_PLACEHOLDER_HINT in content,
+        "path": str(_SYSTEM_PROMPT_PATH),
     })
 
 

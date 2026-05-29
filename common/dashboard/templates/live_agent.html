@@ -10,7 +10,10 @@
   </p>
 </header>
 
-<section class="live-agent" data-trace-poll-url="/api/trace/current" aria-label="Agente en directo">
+<section class="live-agent"
+         data-trace-poll-url="/api/trace/current"
+         data-system-prompt-url="/api/system-prompt"
+         aria-label="Agente en directo">
   <header class="live-agent-toolbar">
     <div class="live-agent-status" role="status" aria-live="polite">
       <span class="live-agent-dot" aria-hidden="true"></span>
@@ -18,6 +21,34 @@
     </div>
     <div class="live-agent-meta" data-trace-meta></div>
   </header>
+
+  <div class="live-agent-prompts" data-trace-prompts>
+    <details class="live-agent-prompt-panel">
+      <summary>
+        <span class="live-agent-prompt-icon" aria-hidden="true">🜂</span>
+        <span class="live-agent-prompt-label">Prompt del usuario</span>
+        <span class="live-agent-prompt-preview"
+              data-user-prompt-preview>—</span>
+      </summary>
+      <p class="live-agent-prompt-body"
+         data-user-prompt-body>
+        Lanza <code>arkanum run 7 "…"</code> o <code>arkanum run 8 "…"</code>
+        para registrar el prompt del aprendiz.
+      </p>
+    </details>
+    <details class="live-agent-prompt-panel">
+      <summary>
+        <span class="live-agent-prompt-icon" aria-hidden="true">⚜</span>
+        <span class="live-agent-prompt-label">System prompt</span>
+        <span class="live-agent-prompt-preview"
+              data-system-prompt-preview>Cargando…</span>
+      </summary>
+      <pre class="live-agent-prompt-body live-agent-prompt-body--mono"
+           data-system-prompt-body>Cargando…</pre>
+      <p class="live-agent-prompt-note"
+         data-system-prompt-note></p>
+    </details>
+  </div>
 
   <div class="live-agent-empty" data-trace-empty>
     <p class="arkanum-muted">
