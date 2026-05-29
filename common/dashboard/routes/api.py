@@ -221,10 +221,15 @@ def current_trace(
         latest_trace_summary,
         recent_steps,
         safe_parse_payload,
+        trace_summary_for,
     )
 
-    summary = latest_trace_summary()
-    target = trace_id or (summary.trace_id if summary else None)
+    if trace_id:
+        summary = trace_summary_for(trace_id)
+        target = summary.trace_id if summary else trace_id
+    else:
+        summary = latest_trace_summary()
+        target = summary.trace_id if summary else None
     steps = recent_steps(limit=limit, trace_id=target) if target else []
 
     return JSONResponse({
@@ -237,6 +242,8 @@ def current_trace(
                 "started_at": summary.started_at,
                 "last_step_at": summary.last_step_at,
                 "steps": summary.steps,
+                "seconds_since_last_step": summary.seconds_since_last_step,
+                "has_session_end": summary.has_session_end,
             }
             if summary
             else None

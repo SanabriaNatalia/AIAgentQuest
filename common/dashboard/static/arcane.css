@@ -2536,6 +2536,27 @@ code {
   border-radius: 12px;
   padding: 0.85rem 1.1rem;
   margin-bottom: 1.25rem;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.live-agent-toolbar--stale {
+  border-color: rgba(232, 122, 122, 0.55);
+  background: rgba(232, 122, 122, 0.08);
+}
+
+.live-agent-toolbar--stale .live-agent-dot {
+  background: var(--arkanum-fail);
+  box-shadow: 0 0 12px var(--arkanum-fail);
+}
+
+.live-agent-toolbar--sealed {
+  border-color: rgba(101, 209, 150, 0.45);
+}
+
+.live-agent-toolbar--sealed .live-agent-dot {
+  background: var(--arkanum-success);
+  box-shadow: 0 0 12px var(--arkanum-success);
+  animation: none;
 }
 
 .live-agent-status {

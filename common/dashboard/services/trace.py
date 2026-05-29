@@ -42,6 +42,8 @@ class TraceSummary:
     started_at: str
     last_step_at: str
     steps: int
+    seconds_since_last_step: float | None = None
+    has_session_end: bool = False
 
 
 def start_trace() -> str:
@@ -174,21 +176,43 @@ def latest_trace_summary() -> TraceSummary | None:
         if row is None:
             return None
         trace_id = row[0]
+        return trace_summary_for(trace_id)
+
+
+def trace_summary_for(trace_id: str) -> TraceSummary | None:
+    """Calcula el summary (con cálculo de staleness) para un trace_id dado."""
+    init_db()
+    with get_connection() as conn:
         stats = conn.execute(
             "SELECT MIN(created_at), MAX(created_at), COUNT(*), MIN(quest_id) "
             "FROM agent_traces WHERE trace_id = ?",
             (trace_id,),
         ).fetchone()
+        if stats is None or stats[2] == 0:
+            return None
+        started_at, last_step_at, count, q_db_id = stats
+        has_end = conn.execute(
+            "SELECT 1 FROM agent_traces "
+            "WHERE trace_id = ? AND step_type = 'session_end' LIMIT 1",
+            (trace_id,),
+        ).fetchone() is not None
 
-    if stats is None:
-        return None
-    started_at, last_step_at, count, q_db_id = stats
+    seconds_since = None
+    if last_step_at:
+        try:
+            last_dt = datetime.fromisoformat(last_step_at)
+            seconds_since = max(0.0, (datetime.now() - last_dt).total_seconds())
+        except ValueError:
+            seconds_since = None
+
     return TraceSummary(
         trace_id=trace_id,
         quest=quest_by_db_id(q_db_id) if q_db_id else None,
         started_at=started_at or "",
         last_step_at=last_step_at or "",
         steps=int(count or 0),
+        seconds_since_last_step=seconds_since,
+        has_session_end=has_end,
     )
 
 

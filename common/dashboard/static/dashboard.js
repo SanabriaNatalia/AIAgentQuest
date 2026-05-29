@@ -822,11 +822,29 @@
       if (statusHost && data.summary) {
         statusHost.textContent = "Trace " + data.summary.trace_id;
       }
+      // Mejora #5: stale detection. >30s sin step nuevo y sin session_end.
+      var trToolbar = host.querySelector(".live-agent-toolbar");
+      if (trToolbar) trToolbar.classList.remove("live-agent-toolbar--stale", "live-agent-toolbar--sealed");
+      if (data.summary) {
+        var sinceLast = data.summary.seconds_since_last_step;
+        var hasEnd = data.summary.has_session_end;
+        if (hasEnd) {
+          if (trToolbar) trToolbar.classList.add("live-agent-toolbar--sealed");
+        } else if (sinceLast != null && sinceLast > 30) {
+          if (trToolbar) trToolbar.classList.add("live-agent-toolbar--stale");
+        }
+      }
       if (metaHost && data.summary) {
         var meta = [];
         if (data.summary.quest_title) meta.push(data.summary.quest_title);
         meta.push(data.summary.steps + " pasos");
-        meta.push("último: " + data.summary.last_step_at);
+        if (data.summary.has_session_end) {
+          meta.push("sellado");
+        } else if (data.summary.seconds_since_last_step != null && data.summary.seconds_since_last_step > 30) {
+          meta.push("stale (" + Math.round(data.summary.seconds_since_last_step) + "s sin actividad)");
+        } else {
+          meta.push("último: " + data.summary.last_step_at);
+        }
         metaHost.textContent = meta.join(" · ");
       }
 
