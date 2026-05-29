@@ -1,0 +1,141 @@
+# Tracing — emitir steps al Live Agent
+
+El módulo [`common/tracing.py`](../../common/tracing.py) permite que tu
+agente envíe eventos estructurados al visualizador `/live-agent` del
+dashboard. Es la forma "rica" de trazar — más fiel que el regex que
+`arkanum run` aplica sobre tu `stdout`.
+
+## Cómo se activa
+
+`tracing.emit` solo hace algo cuando `ARKANUM_TRACE_ID` está en el
+entorno. Ese ID lo inyecta `arkanum run` cuando lanza tu starter como
+subprocess. Si corres `python -m quests…` directamente, el módulo es
+no-op silencioso.
+
+| Variable de entorno      | Quien la set      | Para qué |
+|---|---|---|
+| `ARKANUM_TRACE_ID`       | `arkanum run`     | Identifica el trace activo. Sin esto, `emit` no hace nada. |
+| `ARKANUM_QUEST_DB_ID`    | `arkanum run`     | Asocia el trace a una quest concreta. |
+| `ARKANUM_TRACE_URL`      | (override)        | Por defecto `http://127.0.0.1:8765/events/trace`. Cambia el destino si el dashboard corre en otro puerto. |
+
+## API mínima
+
+```python
+from common.tracing import emit, trace_enabled
+
+if trace_enabled():
+    emit("agent_thought", payload={"text": "voy a leer notes.txt"})
+```
+
+`emit(step_type, name=None, payload=None)` hace un POST best-effort
+(timeout 500ms, swallow de errores). No interrumpe el flujo del agente:
+si el dashboard está caído, tu starter sigue funcionando.
+
+`payload` se serializa con `json.dumps(..., default=str)`. Pasa dicts,
+listas, primitivos — todo se vuelve JSON.
+
+## Helpers de alto nivel
+
+Para los patrones más comunes de Q07/Q08, hay atajos:
+
+```python
+from common.tracing import (
+    emit_function_call,
+    emit_function_result,
+    emit_thought,
+    emit_final,
+)
+
+emit_function_call("get_files_info", args={"path": "notes.txt"})
+emit_function_result("get_files_info", result={"size": 1024, "content": "..."})
+emit_thought("Voy a leer notes.txt para entender qué pide el usuario.")
+emit_final("El archivo contiene la lista de la compra: pan, leche, café.")
+```
+
+El frontend ya sabe renderizar estos `step_type` con icono y prosa
+distintiva (ver `common/dashboard/static/dashboard.js:iconFor` y
+`renderStep`).
+
+## Step types reconocidos
+
+Lista mantenida en [`dashboard.js`](../../common/dashboard/static/dashboard.js):
+
+| `step_type`         | Origen                              | Render |
+|---|---|---|
+| `session_start`     | `arkanum run`                       | Marca el inicio del trace; payload incluye `user_prompt`. |
+| `session_end`       | `arkanum run`                       | Marca el final con exit code; toolbar pasa a sealed. |
+| `function_call`     | regex de `run.py` **o** `emit`      | Tarjeta agrupada con pending spinner hasta que llega su result. |
+| `function_result`   | regex de `run.py` **o** `emit`      | Se ancla dentro de su `function_call` (FIFO). |
+| `tokens`            | regex de `run.py` **o** `emit`      | Chip de uso (prompt/response). Suma al costo de la banda. |
+| `agent_thought`     | `emit` solo                         | Burbuja de prosa serif italic — el razonamiento del modelo. |
+| `agent_final`       | `emit` solo                         | Burbuja final dorada — respuesta sin más tool calls. |
+| `iteration_start`   | `emit` solo                         | Abre una banda visual ("Iteración N / MAX"). |
+| `latency`           | `emit` solo                         | Chip de tiempo; suma al meta de la banda. |
+| `context_growth`    | `emit` solo                         | Panel desplegable con el delta de `messages` tras la iteración. |
+
+## El regex como fallback
+
+`common/cli/commands/run.py` parsea el `stdout` del starter línea por
+línea y emite los step_types "clásicos" (`function_call`, `function_result`,
+`tokens`). Esto significa que:
+
+- Starters que no usan `tracing.emit` siguen mostrando algo en
+  `/live-agent`.
+- Si el aprendiz reformatea el `print(f"Calling function: ...")`, el
+  regex falla en silencio — pero `tracing.emit` no se ve afectado.
+- **No es necesario** elegir entre regex y `tracing.emit`: pueden
+  coexistir. Si emites lo mismo dos veces, verás duplicados en la UI
+  (un escenario poco habitual).
+
+## Patrón recomendado para Q07
+
+```python
+from common.tracing import (
+    emit_function_call,
+    emit_function_result,
+    emit_thought,
+    trace_enabled,
+)
+
+# Dentro de tu loop del agente:
+for candidate in response.candidates or []:
+    if not candidate.content:
+        continue
+    for part in candidate.content.parts or []:
+        if part.text and response.function_calls:
+            emit_thought(part.text)
+
+for fc in response.function_calls or []:
+    if trace_enabled():
+        emit_function_call(fc.name, args=dict(fc.args or {}))
+    result = call_function(fc, verbose=args.verbose)
+    # ... extraer part.function_response.response ...
+    if trace_enabled():
+        emit_function_result(fc.name, result=response_dict)
+```
+
+## Cómo agregar nuevos step types
+
+1. Inventa un nombre `kebab_or_snake_case`. No colisiones con los de
+   arriba.
+2. Llama `emit("mi_nuevo_tipo", payload={...})` desde el starter o
+   solución.
+3. En `dashboard.js`, añade el case en `iconFor`, `labelFor` y
+   `explainerFor` (este último para el modo explicador).
+4. En `arcane.css`, añade `.trace-step--mi_nuevo_tipo` con el color
+   distintivo.
+
+La tabla `agent_traces` no necesita migración — los `step_type` son
+strings opacos para SQLite.
+
+## Smoke local
+
+```bash
+# En una terminal: arranca el dashboard.
+arkanum dashboard
+
+# En otra: corre tu agente con tracing.
+arkanum run 8 "Lee notes.txt y dime qué contiene"
+
+# Abre http://127.0.0.1:8765/live-agent — los steps aparecen en vivo.
+```

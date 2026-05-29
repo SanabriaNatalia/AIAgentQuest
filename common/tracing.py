@@ -81,3 +81,29 @@ def _stringify_payload(payload: Any) -> str | None:
         return json.dumps(payload, ensure_ascii=False, default=str)
     except (TypeError, ValueError):
         return str(payload)
+
+
+# Helpers de alto nivel — atajos para los patrones más comunes en Q07/Q08.
+# El frontend ya sabe renderizar estos step_types con icono y label.
+
+def emit_function_call(name: str, args: Any = None) -> None:
+    """Emite un `function_call` estructurado. Sustituye al print del starter
+    cuando el aprendiz quiera tracing rico (args como dict, no string)."""
+    emit("function_call", name=name, payload={"args": args})
+
+
+def emit_function_result(name: str | None, result: Any) -> None:
+    """Emite un `function_result` con el payload de la herramienta."""
+    emit("function_result", name=name, payload={"result": result})
+
+
+def emit_thought(text: str) -> None:
+    """Emite el texto que el modelo generó entre tool calls (su razonamiento)."""
+    if text and text.strip():
+        emit("agent_thought", payload={"text": text.strip()})
+
+
+def emit_final(text: str) -> None:
+    """Emite la respuesta final del agente (cuando termina el loop)."""
+    if text and text.strip():
+        emit("agent_final", payload={"text": text.strip()})
