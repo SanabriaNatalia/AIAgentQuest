@@ -307,3 +307,262 @@ Lo que **no** entra en este plan, para evitar scope creep:
 - La regla de commits es **sin coautor** (ver `MEMORY.md`).
 - Cada mejora debe llevar su smoke local mínimo (cargar `/live-agent` + correr un `arkanum run 8 "..."` y verificar render).
 - Si la mejora #1 se implementa, conviene crear una entrada nueva en `docs/agents/` explicando el módulo `common/tracing.py` y su API.
+
+---
+
+## 10. Adenda 2026-05-29 — Mejoras adicionales (post-v2)
+
+Tras revisar el estado real del visualizador y la solución de Q08, se identifica que la mejora más estructural ausente del plan original es **hacer visible el "pensamiento" del agente** (el `Part.text` que el modelo genera entre tool calls y que hoy se descarta). De ahí salen 10 mejoras adicionales (#9–#18), agrupadas por objetivo:
+
+- **Hacer visible lo invisible** (#9, #10, #11, #17): pensamiento del agente, prompts, contexto, diffs.
+- **Cinematografía y telemetría** (#12, #13, #15): latencia, HUD, modo explicador.
+- **Reproducción y compartir** (#14, #16): replay y export.
+- **Experimentación** (#18): edición del system prompt.
+
+### Mejora #9 — Pensamiento del agente (`agent_thought`)
+
+**Problema que resuelve:** en Q08, cuando hay tool calls, el modelo a menudo genera también `Part.text` (su razonamiento intermedio: *"voy a leer notes.txt para entender qué pide el usuario"*). Hoy ese texto se descarta — `messages.append(candidate.content)` lo guarda en el historial pero nadie lo imprime ni lo trazea. El aprendiz ve la cadena `function_call → function_result → function_call → ...` pero no entiende *por qué* el modelo eligió esa cadena.
+
+**Alcance:**
+- Nuevo `step_type=agent_thought` con `payload={"text": ...}`.
+- Emitido desde la solución de Q08 vía `common/tracing.emit("agent_thought", payload=text)` dentro del loop por cada `candidate.content.parts[i].text` no vacío que coexista con function calls.
+- También capturable desde el wrapper para starters que no usen el emisor, agregando una regex de fallback para líneas que empiecen por `[think] ...` (si el aprendiz decide imprimir su razonamiento).
+- UI: tarjeta con icono 🧠, fondo distinto al de tool calls, texto envuelto con tipografía de prosa (no monoespaciada) para enfatizar que es lenguaje natural, no código.
+- Si la respuesta final también lleva texto (caso sin function calls), emitir `agent_final` para distinguirlo visualmente.
+
+**Archivos a tocar:**
+- Crear `common/tracing.py` (mínimo viable, subset de #1).
+- Modificar `quests/quest_08_manifesting_cycle/solution/solution.py` (introspección de `candidate.content.parts`).
+- `common/dashboard/static/dashboard.js` (`iconFor`, `renderStep` con clase `--agent_thought`).
+- `common/dashboard/static/arcane.css` (nuevo estilo `.trace-step--agent_thought`).
+
+**Esfuerzo:** ~2 h.
+**Riesgo:** bajo. Si `tracing.emit` falla, el aprendiz sigue viendo todo lo demás.
+**Criterio de éxito:** correr `arkanum run 8 "Lee notes.txt y dime qué contiene"` muestra al menos una burbuja "🧠 El agente piensa…" antes de la primera tool call.
+
+---
+
+### Mejora #10 — Prompt del usuario + system prompt visibles arriba
+
+**Problema que resuelve:** hoy la página `/live-agent` no muestra ni el `user_prompt` que dispara la ejecución ni el `system_prompt` que condiciona al modelo. El aprendiz que abre la página después de lanzar el comando ve los pasos pero no el *origen* de los pasos. Reafirma que "el agente no es mágico": recibe reglas explícitas.
+
+**Alcance:**
+- `arkanum run` ya inyecta el quest al `session_start.payload`; ampliar el JSON para incluir `user_prompt: str` (el argumento que el aprendiz pasó).
+- Nuevo endpoint `GET /api/system-prompt` que devuelve el contenido de `common/prompts/system_prompt.py:system_prompt` (string, sin secrets — es un archivo del repo).
+- Panel desplegable en `/live-agent` con dos secciones: "Prompt del usuario" y "System prompt". Cerrado por defecto, con resumen del primer texto.
+- Si el system_prompt es el placeholder vacío ("Escribe tu prompt del sistema aquí..."), mostrar nota: "Quest 04 te pide escribir esto; está vacío".
+
+**Archivos a tocar:**
+- `common/cli/commands/run.py` (ampliar payload de `session_start`).
+- `common/dashboard/routes/api.py` (nuevo endpoint).
+- `common/dashboard/templates/live_agent.html` (panel `<details>`).
+- `common/dashboard/static/arcane.css` (estilos del panel).
+
+**Esfuerzo:** ~1.5 h.
+**Riesgo:** bajo. Solo lecturas.
+**Criterio de éxito:** al abrir `/live-agent` después de un `arkanum run`, se ve el prompt original y, al expandir, el system prompt íntegro.
+
+---
+
+### Mejora #11 — Vista de "contexto creciente" (memoria del loop)
+
+**Problema que resuelve:** en cada iteración el agente añade `candidate.content` y luego `Content(role="tool", parts=function_results)` a `messages`. El historial crece y crece, pero el aprendiz no lo ve. No siente el costo del contexto.
+
+**Alcance:**
+- Emitir `step_type=context_growth` al final de cada iteración con `payload={"messages": N, "tokens_in_context": ~estimación}`.
+- Render como mini-progress-bar bajo la banda de iteración: "Contexto: 12 messages · ~3.4k tokens".
+- Acumulado siempre creciente; comparable visualmente con el costo total.
+
+**Archivos a tocar:**
+- `quests/quest_08_manifesting_cycle/solution/solution.py` (introspección de `len(messages)` y tokens si `usage_metadata` disponible).
+- `common/dashboard/static/dashboard.js` (render dentro de la banda — depende de #3).
+- `common/dashboard/static/arcane.css`.
+
+**Esfuerzo:** ~2 h.
+**Riesgo:** bajo. Datos derivados.
+**Dependencia blanda:** #3 (sin bandas, se muestra al final del trace).
+**Criterio de éxito:** Q08 con 3 iteraciones muestra el contexto creciendo 1 → 3 → 5 messages (o similar) entre bandas.
+
+---
+
+### Mejora #12 — Latencia por llamada a Gemini
+
+**Problema que resuelve:** un agente loop con latencias de ~3 s por iteración tarda visiblemente. El aprendiz no ve esta dimensión hoy. Es operativa (relevante para producción) y pedagógica (justifica streaming, caching, etc.).
+
+**Alcance:**
+- Medir `t1 = time.perf_counter()` antes de `client.models.generate_content(...)` y `t2 = time.perf_counter()` después.
+- Emitir `step_type=latency` con `payload={"seconds": t2-t1, "iter": i}` justo después de cada llamada.
+- UI: chip en el header de la banda — "Iteración 2 · 2.4 s".
+- Total en el HUD (#13): "Latencia media: X s".
+
+**Archivos a tocar:**
+- `quests/quest_08_manifesting_cycle/solution/solution.py`.
+- `common/dashboard/static/dashboard.js`.
+
+**Esfuerzo:** ~1 h.
+**Riesgo:** mínimo.
+**Criterio de éxito:** cada banda de iteración lleva un tiempo en segundos.
+
+---
+
+### Mejora #13 — HUD sticky con KPIs en vivo
+
+**Problema que resuelve:** los datos importantes (iteraciones, tools llamadas, tokens, USD, latencia) están dispersos en la lista de steps. Es difícil tener una "lectura instantánea" del estado.
+
+**Alcance:**
+- Barra sticky bajo el toolbar con 5 KPIs:
+  - `Iteraciones: N / MAX_ITERS` (depende de #3)
+  - `Tools llamadas: N` (cuenta de `function_call`)
+  - `Tokens: ~Xk` (suma de `tokens`)
+  - `Costo: ~$Y` (de #6 / `services/cost.py`)
+  - `Latencia ⌀: Z s` (media de `latency` steps, de #12)
+- Estilo: similar a `.profile-stats` pero compacto y sticky.
+- Se calcula 100% en frontend con los steps que ya hay.
+
+**Archivos a tocar:**
+- `common/dashboard/templates/live_agent.html`.
+- `common/dashboard/static/dashboard.js` (función `computeKpis(steps)`).
+- `common/dashboard/static/arcane.css` (`.live-agent-hud`).
+
+**Esfuerzo:** ~2 h.
+**Riesgo:** bajo. Solo agregación de datos existentes.
+**Criterio de éxito:** durante Q08 los 5 KPIs cambian en vivo a medida que llegan steps.
+
+---
+
+### Mejora #14 — Replay de un trace histórico
+
+**Problema que resuelve:** un trace pasado se ve como un volcado estático. Para analizarlo (o presentarlo a otra persona) sería útil "reproducirlo" paso a paso a velocidad controlada.
+
+**Alcance:**
+- Botón ▶ Replay sobre un trace histórico (depende de #4).
+- Controles: 0.5× / 1× / 2× / 4× / instantáneo.
+- Renderiza steps con el mismo delta de `created_at` real (o un timing comprimido en modo rápido).
+- Modo "presentación": pantalla completa, sin chrome.
+
+**Archivos a tocar:**
+- `common/dashboard/static/dashboard.js`.
+- `common/dashboard/templates/live_agent.html`.
+
+**Esfuerzo:** ~3 h.
+**Riesgo:** medio (UX state machine).
+**Dependencia dura:** #4 (sin historial, no hay qué reproducir).
+**Criterio de éxito:** un trace de 18 steps se reanima en 18 s a 1×.
+
+---
+
+### Mejora #15 — Modo "explicador" para aprendices
+
+**Problema que resuelve:** un aprendiz que ve `function_call`, `function_result`, `agent_thought` por primera vez puede no saber qué significa cada uno. Hay un costo de entrada al vocabulario.
+
+**Alcance:**
+- Toggle "📖 Modo explicador" en el toolbar.
+- Al activarlo, cada step muestra un tooltip o pie de texto: "¿Qué es un function_call? Es cuando el modelo decide ejecutar una herramienta que le diste como tool…"
+- Textos en `common/dashboard/services/glossary.py` (dict step_type → explicación), reutilizables si en el futuro hay un endpoint `/api/glossary`.
+
+**Archivos a tocar:**
+- Crear `common/dashboard/services/glossary.py`.
+- `common/dashboard/routes/api.py`.
+- `common/dashboard/static/dashboard.js`.
+- `common/dashboard/static/arcane.css`.
+
+**Esfuerzo:** ~2 h.
+**Riesgo:** bajo. Documentación interactiva.
+**Criterio de éxito:** un aprendiz que abre por primera vez `/live-agent` puede entender el flujo sin abrir docs externos.
+
+---
+
+### Mejora #16 — Export / copiar el trace
+
+**Problema que resuelve:** un trace interesante es difícil de compartir. Hoy hay que tomar screenshots o copiar manualmente.
+
+**Alcance:**
+- Botón "📋 Copiar como markdown" — formatea el trace como markdown legible (encabezado, cada step como bullet con icono y payload en codeblock).
+- Botón "💾 Descargar JSON" — devuelve el contenido crudo de `/api/trace/current?trace_id=...`.
+- Opcional: ASCII art para Discord/Slack (sin colores).
+
+**Archivos a tocar:**
+- `common/dashboard/static/dashboard.js` (función `traceToMarkdown(data)`).
+- `common/dashboard/templates/live_agent.html`.
+
+**Esfuerzo:** ~1 h.
+**Riesgo:** mínimo.
+**Criterio de éxito:** el markdown copiado se pega en Discord y se ve como un poema técnico.
+
+---
+
+### Mejora #17 — Diff de contexto entre iteraciones
+
+**Problema que resuelve:** entre dos iteraciones el `messages` cambia (se añaden cosas), pero el aprendiz no ve qué. Es como ver una película saltando los frames pares.
+
+**Alcance:**
+- Depende de #11 (que ya emite `context_growth`).
+- En lugar de solo `count`, emitir `delta: [{"role": "tool", "preview": "..."}, ...]` con los nuevos items.
+- Render: entre dos bandas de iteración, un mini panel: "Iter 2 → 3 · +2 messages (tool_response, model)".
+- Click para expandir y ver el preview.
+
+**Archivos a tocar:**
+- `quests/quest_08_manifesting_cycle/solution/solution.py`.
+- `common/dashboard/static/dashboard.js`.
+
+**Esfuerzo:** ~3 h.
+**Riesgo:** medio (privacidad de payloads — truncar previews a ~200 chars).
+**Dependencia dura:** #11.
+**Criterio de éxito:** al pasar a iteración 2, se ve "+1 tool_call (get_files_info), +1 tool_response".
+
+---
+
+### Mejora #18 — Editor del system prompt en vivo
+
+**Problema que resuelve:** experimentar con prompts hoy requiere editar `common/prompts/system_prompt.py` en VS Code, guardar, volver a correr. Para iterar rápido conviene un editor en el dashboard.
+
+**Alcance:**
+- En el panel de #10, un botón "✏ Editar" que despliega un textarea con el contenido actual.
+- Botón "💾 Guardar" que hace `POST /api/system-prompt` con el nuevo contenido.
+- Backend escribe a `common/prompts/system_prompt.py` (con un diff confirmation y backup en `.system_prompt.py.bak`).
+- Aviso: "el cambio se aplica desde el próximo `arkanum run`".
+
+**Archivos a tocar:**
+- `common/dashboard/routes/api.py` (POST endpoint).
+- `common/dashboard/static/dashboard.js`.
+- `common/dashboard/templates/live_agent.html`.
+
+**Esfuerzo:** ~2.5 h.
+**Riesgo:** medio. Escribe a un archivo del repo — riesgo de corromper sintaxis. Mitigación: validar que el string sea seguro (no inyectar Python ejecutable), reemplazar solo el contenido entre los triple-quotes.
+**Criterio de éxito:** editar y guardar el system prompt desde la UI; correr `arkanum run` ve el cambio.
+
+---
+
+## 11. Plan de implementación recomendado (post-adenda)
+
+Orden propuesto manteniendo el principio de "valor pedagógico × costo":
+
+| Fase | Mejora | Esfuerzo acumulado | Justificación |
+|---|---|---|---|
+| 1 | #9 Pensamiento | 2 h | Cierra la opacidad central del loop. Es lo más quirúrgico. |
+| 2 | #10 Prompts visibles | 3.5 h | Reafirma "no hay magia": muestra entradas. |
+| 3 | #2 Agrupar call↔result | 6.5 h | Lista plana → unidades lógicas. |
+| 4 | #3 Bandas por iteración | 8.5 h | Cierra el círculo conceptual de Q08. |
+| 5 | #13 HUD sticky | 10.5 h | Lectura instantánea del estado. |
+| 6 | #12 Latencia | 11.5 h | Pequeño, alta utilidad. |
+| 7 | #11 Contexto creciente | 13.5 h | Aprovecha #3. |
+| 8 | #4 Historial | 17.5 h | Necesario para #14. |
+| 9 | #5 Stale detection | 19 h | Bug real, costo mínimo. |
+| 10 | #14 Replay | 22 h | Aprovecha #4. |
+| 11 | #15 Modo explicador | 24 h | Reduce curva de entrada. |
+| 12 | #16 Export | 25 h | Compartir. |
+| 13 | #6 Costo por iteración | 27.5 h | Conecta con dimensión económica. |
+| 14 | #17 Diff contexto | 30.5 h | Necesario para entender pensamiento del modelo entre iteraciones. |
+| 15 | #1 Emisor estructurado (full) | 33.5 h | Mejora estructural. Después del prototipo de #9. |
+| 16 | #8 Polling adaptativo | 35 h | Pulido. |
+| 17 | #18 Editor system prompt | 37.5 h | Última: tiene riesgo de tocar repo. |
+| 18 | #7 Lanzar desde dashboard | 41.5 h | UX grande, contrato nuevo. |
+
+**Ejecución del 2026-05-29:** se implementa el núcleo de la fase 1–5 (~10.5 h):
+- ✅ #9 Pensamiento
+- ✅ #10 Prompts visibles
+- ✅ #2 Agrupar call↔result
+- ✅ #3 Bandas por iteración
+- ✅ #13 HUD sticky
+
+Un commit por mejora. Sin coautor (regla persistente).
