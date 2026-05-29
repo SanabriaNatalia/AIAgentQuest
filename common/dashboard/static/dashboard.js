@@ -461,6 +461,85 @@
     // User prompt: placeholder hasta que llegue session_start.
     setUserPrompt(host, null);
 
+    // HUD (mejora #13): KPIs computados sobre la lista entera del trace.
+    var KPI_PRICE_INPUT_PER_1M = 0.075;   // alineado con services/cost.py
+    var KPI_PRICE_OUTPUT_PER_1M = 0.30;
+
+    function computeKpis(steps) {
+      var iter = 0;
+      var iterMax = null;
+      var tools = 0;
+      var promptTokens = 0;
+      var responseTokens = 0;
+      var latencies = [];
+
+      for (var i = 0; i < steps.length; i++) {
+        var s = steps[i];
+        if (!s) continue;
+        if (s.step_type === "iteration_start") {
+          var p = s.payload || {};
+          if (p.iter != null) iter = Math.max(iter, Number(p.iter) || iter);
+          if (p.max != null && iterMax == null) iterMax = Number(p.max);
+        } else if (s.step_type === "function_call") {
+          tools += 1;
+        } else if (s.step_type === "tokens") {
+          var n = parseInt(s.payload, 10);
+          if (!isNaN(n)) {
+            if (s.name === "prompt") promptTokens += n;
+            else if (s.name === "response") responseTokens += n;
+          }
+        } else if (s.step_type === "latency") {
+          var sec = (s.payload && typeof s.payload === "object") ? s.payload.seconds : null;
+          if (sec != null) latencies.push(Number(sec));
+        }
+      }
+
+      var totalTokens = promptTokens + responseTokens;
+      var costUsd =
+        promptTokens * KPI_PRICE_INPUT_PER_1M / 1e6 +
+        responseTokens * KPI_PRICE_OUTPUT_PER_1M / 1e6;
+      var avgLatency = latencies.length
+        ? latencies.reduce(function (a, b) { return a + b; }, 0) / latencies.length
+        : null;
+
+      return {
+        iter: iter,
+        iterMax: iterMax,
+        tools: tools,
+        tokens: totalTokens,
+        cost: costUsd,
+        latency: avgLatency,
+      };
+    }
+
+    function formatTokens(n) {
+      if (n < 1000) return String(n);
+      if (n < 1_000_000) return (n / 1000).toFixed(1).replace(/\.0$/, "") + "k";
+      return (n / 1_000_000).toFixed(2).replace(/\.00$/, "") + "M";
+    }
+
+    function renderHud(steps) {
+      var hudHost = host.querySelector("[data-trace-hud]");
+      if (!hudHost) return;
+      var kpis = computeKpis(steps);
+
+      var iterEl = hudHost.querySelector("[data-kpi-iter]");
+      var toolsEl = hudHost.querySelector("[data-kpi-tools]");
+      var tokensEl = hudHost.querySelector("[data-kpi-tokens]");
+      var costEl = hudHost.querySelector("[data-kpi-cost]");
+      var latEl = hudHost.querySelector("[data-kpi-latency]");
+
+      if (iterEl) {
+        iterEl.textContent = kpis.iterMax
+          ? kpis.iter + " / " + kpis.iterMax
+          : String(kpis.iter);
+      }
+      if (toolsEl) toolsEl.textContent = String(kpis.tools);
+      if (tokensEl) tokensEl.textContent = formatTokens(kpis.tokens);
+      if (costEl) costEl.textContent = "$" + kpis.cost.toFixed(4);
+      if (latEl) latEl.textContent = kpis.latency != null ? kpis.latency.toFixed(2) + " s" : "—";
+    }
+
     function appendStep(node) {
       // Si hay una banda activa, los steps van dentro de ella.
       // Si no, van al contenedor principal (steps "fuera de loop").
@@ -688,6 +767,7 @@
         if (emptyHost) emptyHost.style.display = "";
         if (statusHost) statusHost.textContent = "Esperando trace…";
         if (metaHost) metaHost.textContent = "";
+        renderHud([]);
         return;
       }
 
@@ -752,6 +832,9 @@
           block: "end",
         });
       }
+
+      // Mejora #13: recalcula KPIs sobre la lista completa, no incremental.
+      renderHud(data.steps);
     }
 
     function poll() {
