@@ -139,7 +139,11 @@ def run(
         starter_module(quest),
         extra_args=extra,
         on_line=on_line,
-        env_extra={"ARKANUM_TRACE_ID": trace_id, "ARKANUM_TRACE": "1"},
+        env_extra={
+            "ARKANUM_TRACE_ID": trace_id,
+            "ARKANUM_TRACE": "1",
+            "ARKANUM_QUEST_DB_ID": quest.db_id,
+        },
     )
 
     _emit_step(

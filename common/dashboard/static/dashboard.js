@@ -400,7 +400,21 @@
         case "tokens": return "🧪";
         case "session_start": return "🜂";
         case "session_end": return "🜄";
+        case "agent_thought": return "🧠";
+        case "agent_final": return "✦";
+        case "iteration_start": return "↻";
+        case "latency": return "⏱";
         default: return "•";
+      }
+    }
+
+    function labelFor(stepType) {
+      switch (stepType) {
+        case "agent_thought": return "pensamiento";
+        case "agent_final": return "respuesta final";
+        case "iteration_start": return "iteración";
+        case "latency": return "latencia";
+        default: return stepType;
       }
     }
 
@@ -411,20 +425,75 @@
       try { return JSON.stringify(p); } catch (_) { return String(p); }
     }
 
+    function payloadField(step, key) {
+      var p = step.payload;
+      if (p && typeof p === "object" && p[key] !== undefined) return p[key];
+      return null;
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     function renderStep(step) {
       var li = document.createElement("li");
       li.className = "trace-step trace-step--" + step.step_type;
       li.dataset.stepId = String(step.id);
 
+      // Header común (icono + tipo + nombre + hora)
       var head = document.createElement("div");
       head.className = "trace-step-head";
       head.innerHTML =
         '<span class="trace-step-icon" aria-hidden="true">' + iconFor(step.step_type) + '</span>' +
-        '<span class="trace-step-type">' + step.step_type + '</span>' +
-        (step.name ? '<span class="trace-step-name">' + step.name + '</span>' : '') +
-        '<span class="trace-step-time">' + step.created_at + '</span>';
+        '<span class="trace-step-type">' + labelFor(step.step_type) + '</span>' +
+        (step.name ? '<span class="trace-step-name">' + escapeHtml(step.name) + '</span>' : '') +
+        '<span class="trace-step-time">' + escapeHtml(step.created_at) + '</span>';
       li.appendChild(head);
 
+      // agent_thought / agent_final: body en prosa (no monoespacial)
+      if (step.step_type === "agent_thought" || step.step_type === "agent_final") {
+        var text = payloadField(step, "text");
+        if (text == null) text = payloadText(step);
+        if (text) {
+          var prose = document.createElement("p");
+          prose.className = "trace-step-prose";
+          prose.textContent = text;
+          li.appendChild(prose);
+        }
+        return li;
+      }
+
+      // latency: chip compacto, sin body
+      if (step.step_type === "latency") {
+        var seconds = payloadField(step, "seconds");
+        if (seconds != null) {
+          var chip = document.createElement("span");
+          chip.className = "trace-step-chip";
+          chip.textContent = seconds + " s";
+          head.appendChild(chip);
+        }
+        return li;
+      }
+
+      // iteration_start: separador con label
+      if (step.step_type === "iteration_start") {
+        var iter = payloadField(step, "iter");
+        var max = payloadField(step, "max");
+        if (iter != null) {
+          var counter = document.createElement("span");
+          counter.className = "trace-step-counter";
+          counter.textContent = "Iteración " + iter + (max ? " / " + max : "");
+          head.appendChild(counter);
+        }
+        return li;
+      }
+
+      // resto (function_call, function_result, tokens, session_*): payload en mono
       var payload = payloadText(step);
       if (payload) {
         var body = document.createElement("pre");

@@ -6,6 +6,7 @@ Archivo de Solución
 
 import argparse
 import os
+import time
 
 from dotenv import load_dotenv
 from google import genai
@@ -14,6 +15,7 @@ from google.genai import types
 from common.config import MAX_ITERS
 from common.functions.call_function import available_functions, call_function
 from common.prompts.system_prompt import system_prompt
+from common.tracing import emit as emit_trace
 from common.utils.ui import (
     show_quest_header,
     narrator,
@@ -74,7 +76,12 @@ def main():
     show_prompt(args.user_prompt)
 
     # TODO 8.4:
-    for _ in range(MAX_ITERS):
+    for i in range(MAX_ITERS):
+        emit_trace(
+            "iteration_start",
+            name=f"iter {i + 1}",
+            payload={"iter": i + 1, "max": MAX_ITERS},
+        )
         try:
             final_response = generate_content(
                 messages,
@@ -85,6 +92,10 @@ def main():
                 success("Respuesta final recibida.")
                 print("Final response:")
                 print(final_response)
+                emit_trace(
+                    "agent_final",
+                    payload={"text": final_response},
+                )
                 return
 
         except Exception as e:
@@ -95,6 +106,7 @@ def main():
 
 # TODO 8.2:
 def generate_content(messages, verbose):
+    t0 = time.perf_counter()
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=messages,
@@ -104,6 +116,8 @@ def generate_content(messages, verbose):
             temperature=0,
         ),
     )
+    latency_s = time.perf_counter() - t0
+    emit_trace("latency", payload={"seconds": round(latency_s, 3)})
 
     usage = response.usage_metadata
 
@@ -119,6 +133,17 @@ def generate_content(messages, verbose):
         for candidate in response.candidates:
             if candidate.content:
                 messages.append(candidate.content)
+                # El modelo a veces emite texto explicativo entre tool calls
+                # ("voy a leer X para entender Y"). Sin esto el aprendiz no ve
+                # POR QUÉ el modelo eligió la cadena de tools que eligió.
+                if candidate.content.parts and response.function_calls:
+                    for part in candidate.content.parts:
+                        text = getattr(part, "text", None)
+                        if text and text.strip():
+                            emit_trace(
+                                "agent_thought",
+                                payload={"text": text.strip()},
+                            )
 
     # TODO 8.6:
     if not response.function_calls:

@@ -2623,6 +2623,30 @@ code {
   border-left-color: var(--arkanum-gold);
 }
 
+.trace-step--agent_thought {
+  border-left-color: var(--arkanum-glow);
+  background:
+    linear-gradient(165deg, rgba(139, 92, 246, 0.18) 0%, rgba(26, 21, 53, 0.95) 100%);
+}
+
+.trace-step--agent_final {
+  border-left-color: var(--arkanum-gold);
+  background:
+    linear-gradient(165deg, rgba(201, 169, 97, 0.18) 0%, rgba(26, 21, 53, 0.95) 100%);
+}
+
+.trace-step--iteration_start {
+  border-left-color: var(--arkanum-purple);
+  background: rgba(13, 10, 31, 0.55);
+  padding: 0.5rem 0.85rem;
+}
+
+.trace-step--latency {
+  border-left-color: var(--arkanum-warn);
+  background: rgba(13, 10, 31, 0.45);
+  padding: 0.45rem 0.85rem;
+}
+
 .trace-step-head {
   display: flex;
   align-items: baseline;
@@ -2666,4 +2690,49 @@ code {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-x: auto;
+}
+
+/* Pensamiento del agente / respuesta final: prosa en serif para enfatizar
+   que es lenguaje natural del modelo, no payload técnico. */
+.trace-step-prose {
+  margin-top: 0.6rem;
+  padding: 0.65rem 0.95rem;
+  color: var(--arkanum-text);
+  font-family: var(--font-sans);
+  font-size: 0.96rem;
+  line-height: 1.55;
+  background: rgba(0, 0, 0, 0.22);
+  border-left: 2px solid rgba(192, 132, 252, 0.45);
+  border-radius: 0 8px 8px 0;
+  white-space: pre-wrap;
+  font-style: italic;
+}
+
+.trace-step--agent_final .trace-step-prose {
+  border-left-color: var(--arkanum-gold);
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* Chip (latencia, etc.) — pequeño bloque a la derecha del header. */
+.trace-step-chip {
+  margin-left: auto;
+  background: rgba(232, 185, 77, 0.15);
+  border: 1px solid rgba(232, 185, 77, 0.45);
+  color: var(--arkanum-warn);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 9px;
+  letter-spacing: 0.04em;
+}
+
+/* Contador de iteración — visual de separador. */
+.trace-step-counter {
+  margin-left: auto;
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  color: var(--arkanum-glow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
