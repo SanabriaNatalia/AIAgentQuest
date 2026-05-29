@@ -691,6 +691,33 @@
       }
     }
 
+    function explainerFor(stepType) {
+      switch (stepType) {
+        case "function_call":
+          return "El modelo decidió ejecutar una herramienta que le diste como tool. Aún no se ha ejecutado en Python.";
+        case "function_result":
+          return "El sandbox ejecutó la herramienta y devolvió este resultado al modelo en la siguiente vuelta.";
+        case "agent_thought":
+          return "Texto que el modelo generó entre tool calls — su razonamiento explícito. Aquí ves POR QUÉ elige cada paso.";
+        case "agent_final":
+          return "Respuesta final tras N iteraciones del loop. Aquí termina la cadena: el agente decidió no llamar más tools.";
+        case "iteration_start":
+          return "Una vuelta más del for principal del agent loop. El agente puede hacer hasta MAX_ITERS vueltas.";
+        case "latency":
+          return "Tiempo real que tardó Gemini en responder esta llamada. En producción esto se siente.";
+        case "tokens":
+          return "Cuántos tokens consumió esta invocación. Multiplica por el precio para el costo en USD.";
+        case "context_growth":
+          return "Cuánto creció `messages` tras esta iteración. Es la memoria del loop: el modelo la lee en la siguiente vuelta.";
+        case "session_start":
+          return "Marca el inicio del trace. El payload trae el prompt original del aprendiz.";
+        case "session_end":
+          return "El proceso del agente terminó (con su exit code). El trace queda sellado.";
+        default:
+          return "";
+      }
+    }
+
     function payloadText(step) {
       var p = step.payload;
       if (p === null || p === undefined) return "";
@@ -750,6 +777,8 @@
       var li = document.createElement("li");
       li.className = "trace-step trace-step--" + step.step_type;
       li.dataset.stepId = String(step.id);
+      var hint = explainerFor(step.step_type);
+      if (hint) li.dataset.explainer = hint;
 
       // Header común (icono + tipo + nombre + hora)
       var head = document.createElement("div");
@@ -1047,6 +1076,235 @@
 
     loadHistory();
     setInterval(loadHistory, 5000);
+
+    // ----- Mejora #16: Export (markdown + JSON). ------------------------
+    function stepToMarkdown(step) {
+      var icon = iconFor(step.step_type);
+      var label = labelFor(step.step_type);
+      var head = "- " + icon + " **" + label + "**";
+      if (step.name) head += " · `" + step.name + "`";
+      var body = "";
+      if (step.step_type === "agent_thought" || step.step_type === "agent_final") {
+        var text = payloadField(step, "text") || payloadText(step);
+        if (text) body = "\n\n  > " + String(text).split("\n").join("\n  > ");
+      } else if (step.step_type === "context_growth") {
+        var msgs = payloadField(step, "messages");
+        var delta = payloadField(step, "delta_count");
+        body = "\n\n  Contexto: " + msgs + " messages (+ " + delta + ")";
+      } else {
+        var payload = payloadText(step);
+        if (payload) {
+          body = "\n\n  ```\n  " + payload.split("\n").join("\n  ") + "\n  ```";
+        }
+      }
+      return head + body;
+    }
+
+    function traceToMarkdown(data) {
+      var lines = [];
+      var s = data.summary || {};
+      lines.push("# Trace `" + (s.trace_id || data.trace_id || "?") + "`");
+      lines.push("");
+      if (s.quest_title) lines.push("- **Quest:** " + s.quest_title);
+      if (s.started_at) lines.push("- **Iniciado:** " + s.started_at);
+      if (s.last_step_at) lines.push("- **Último paso:** " + s.last_step_at);
+      if (s.steps != null) lines.push("- **Pasos:** " + s.steps);
+      lines.push("");
+
+      var currentIter = null;
+      for (var i = 0; i < data.steps.length; i++) {
+        var step = data.steps[i];
+        if (step.step_type === "iteration_start") {
+          var p = step.payload || {};
+          currentIter = p.iter;
+          lines.push("");
+          lines.push("## Iteración " + (p.iter || "?") +
+            (p.max ? " / " + p.max : ""));
+          lines.push("");
+          continue;
+        }
+        lines.push(stepToMarkdown(step));
+      }
+      return lines.join("\n");
+    }
+
+    function copyToClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      return new Promise(function (resolve, reject) {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "absolute";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+          resolve();
+        } catch (e) {
+          reject(e);
+        } finally {
+          document.body.removeChild(ta);
+        }
+      });
+    }
+
+    function withLatestTraceData(cb) {
+      fetch(buildPollUrl(), { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) { if (data) cb(data); })
+        .catch(function () { /* best-effort */ });
+    }
+
+    function flashAction(btn, label) {
+      var prev = btn.textContent;
+      btn.textContent = label;
+      btn.classList.add("live-agent-action--flash");
+      setTimeout(function () {
+        btn.textContent = prev;
+        btn.classList.remove("live-agent-action--flash");
+      }, 1500);
+    }
+
+    var copyBtn = host.querySelector("[data-trace-copy-md]");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", function () {
+        withLatestTraceData(function (data) {
+          var md = traceToMarkdown(data);
+          copyToClipboard(md)
+            .then(function () { flashAction(copyBtn, "✓ Copiado"); })
+            .catch(function () { flashAction(copyBtn, "✗ Error"); });
+        });
+      });
+    }
+
+    var jsonBtn = host.querySelector("[data-trace-download-json]");
+    if (jsonBtn) {
+      jsonBtn.addEventListener("click", function () {
+        withLatestTraceData(function (data) {
+          var blob = new Blob(
+            [JSON.stringify(data, null, 2)],
+            { type: "application/json" }
+          );
+          var url2 = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          a.href = url2;
+          a.download = "trace_" + (data.trace_id || "unknown") + ".json";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url2);
+          flashAction(jsonBtn, "✓ Descargado");
+        });
+      });
+    }
+
+    // ----- Mejora #14: Replay. -----------------------------------------
+    var replayBtn = host.querySelector("[data-trace-replay]");
+    var replayState = { running: false, timer: null };
+    function stopReplay() {
+      replayState.running = false;
+      if (replayState.timer) clearTimeout(replayState.timer);
+      replayState.timer = null;
+    }
+    function startReplay(data, speed) {
+      if (!stepsHost) return;
+      stopReplay();
+      stepsHost.innerHTML = "";
+      seenIds = new Set();
+      resetBands();
+      replayState.running = true;
+
+      var steps = data.steps || [];
+      if (!steps.length) return;
+      var firstT = new Date(steps[0].created_at).getTime();
+
+      function scheduleStep(i) {
+        if (!replayState.running || i >= steps.length) {
+          replayState.running = false;
+          return;
+        }
+        var step = steps[i];
+        // Renderizado: reusa la misma máquina de applyData (subset).
+        renderSingleStep(step);
+        seenIds.add(step.id);
+
+        var nextStep = steps[i + 1];
+        var delayMs = 0;
+        if (nextStep) {
+          var t1 = new Date(step.created_at).getTime();
+          var t2 = new Date(nextStep.created_at).getTime();
+          if (!isNaN(t1) && !isNaN(t2)) {
+            delayMs = Math.max(0, (t2 - t1) / speed);
+            if (delayMs > 3000) delayMs = 3000;  // cap a 3s
+          }
+        }
+        replayState.timer = setTimeout(function () { scheduleStep(i + 1); }, delayMs);
+      }
+      scheduleStep(0);
+    }
+
+    function renderSingleStep(step) {
+      if (step.step_type === "iteration_start") { openBand(step); return; }
+      if (step.step_type === "function_result") {
+        var container = currentBand || stepsHost;
+        if (!container || !attachResultToPendingCall(container, step)) {
+          appendStep(renderStep(step));
+        }
+        return;
+      }
+      if (step.step_type === "latency") {
+        var sec = payloadField(step, "seconds");
+        if (sec != null) updateBandMeta(sec);
+        appendStep(renderStep(step));
+        return;
+      }
+      if (step.step_type === "tokens") {
+        addBandTokens(step);
+        appendStep(renderStep(step));
+        return;
+      }
+      if (step.step_type === "context_growth") {
+        appendContextGrowth(step);
+        return;
+      }
+      appendStep(renderStep(step));
+    }
+
+    if (replayBtn) {
+      replayBtn.addEventListener("click", function () {
+        var speed = parseFloat(window.prompt(
+          "Velocidad del replay (0.5, 1, 2, 4, o 999 para instantáneo):",
+          "1"
+        ));
+        if (isNaN(speed) || speed <= 0) return;
+        withLatestTraceData(function (data) {
+          startReplay(data, speed);
+          flashAction(replayBtn, "▶ Reproduciendo");
+        });
+      });
+    }
+
+    // ----- Mejora #15: Modo explicador. --------------------------------
+    var explainerToggle = host.querySelector("[data-trace-explainer-toggle]");
+    if (explainerToggle) {
+      var stored = null;
+      try { stored = localStorage.getItem("live-agent-explainer"); } catch (e) {}
+      if (stored === "1") {
+        explainerToggle.checked = true;
+        host.classList.add("live-agent--explainer");
+      }
+      explainerToggle.addEventListener("change", function () {
+        if (explainerToggle.checked) {
+          host.classList.add("live-agent--explainer");
+          try { localStorage.setItem("live-agent-explainer", "1"); } catch (e) {}
+        } else {
+          host.classList.remove("live-agent--explainer");
+          try { localStorage.setItem("live-agent-explainer", "0"); } catch (e) {}
+        }
+      });
+    }
 
     poll();
     setInterval(poll, 1000);

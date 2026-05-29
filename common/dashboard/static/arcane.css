@@ -2587,6 +2587,97 @@ code {
   font-size: 0.9rem;
 }
 
+/* Acciones del toolbar: export, replay, explainer (mejoras #14, #15, #16). */
+.live-agent-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.live-agent-action {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding: 0.32rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  background: rgba(13, 10, 31, 0.6);
+  color: var(--arkanum-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.live-agent-action:hover {
+  color: var(--arkanum-glow);
+  border-color: var(--arkanum-glow);
+}
+
+.live-agent-action--flash {
+  color: var(--arkanum-success);
+  border-color: var(--arkanum-success);
+  background: rgba(101, 209, 150, 0.08);
+}
+
+.live-agent-action--toggle {
+  cursor: pointer;
+}
+
+.live-agent-action--toggle input {
+  appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 3px;
+  margin: 0;
+  position: relative;
+  cursor: pointer;
+}
+
+.live-agent-action--toggle input:checked {
+  background: var(--arkanum-glow);
+  border-color: var(--arkanum-glow);
+}
+
+.live-agent-action--toggle input:checked::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--arkanum-bg);
+}
+
+/* Modo explicador: tooltips pedagógicos por step (mejora #15). */
+.live-agent--explainer .trace-step[data-explainer]::after,
+.live-agent--explainer .trace-band[data-iter]::after {
+  display: block;
+  margin-top: 0.45rem;
+  padding-top: 0.35rem;
+  border-top: 1px dotted rgba(168, 159, 196, 0.3);
+  color: var(--arkanum-muted);
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-style: italic;
+  line-height: 1.45;
+}
+
+.live-agent--explainer .trace-step[data-explainer]::after {
+  content: attr(data-explainer);
+}
+
+.live-agent--explainer .trace-band[data-iter]::after {
+  content: "Una banda agrupa los pasos de UNA vuelta del agent loop. El meta del header muestra latencia y costo de la iteración.";
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  background: rgba(13, 10, 31, 0.5);
+}
+
 /* Historial de traces (mejora #4): franja horizontal con cards clickeables. */
 .live-agent-history {
   margin-bottom: 1rem;

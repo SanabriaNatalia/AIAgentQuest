@@ -21,6 +21,25 @@
       <span data-trace-status>Esperando trace…</span>
     </div>
     <div class="live-agent-meta" data-trace-meta></div>
+    <div class="live-agent-actions">
+      <button type="button"
+              class="live-agent-action"
+              data-trace-copy-md
+              title="Copiar el trace como markdown">📋 Markdown</button>
+      <button type="button"
+              class="live-agent-action"
+              data-trace-download-json
+              title="Descargar el trace como JSON">💾 JSON</button>
+      <button type="button"
+              class="live-agent-action"
+              data-trace-replay
+              title="Reproducir paso a paso (Replay)">▶ Replay</button>
+      <label class="live-agent-action live-agent-action--toggle"
+             title="Modo explicador: tooltips pedagógicos">
+        <input type="checkbox" data-trace-explainer-toggle>
+        <span>📖 Explicador</span>
+      </label>
+    </div>
   </header>
 
   <nav class="live-agent-history" data-trace-history aria-label="Historial de ejecuciones">
