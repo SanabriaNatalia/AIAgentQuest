@@ -1428,6 +1428,63 @@
       });
     }
 
+    // ----- Mejora #7: Lanzar trace desde el dashboard. -----------------
+    var launcherForm = host.querySelector("[data-trace-launcher-form]");
+    if (launcherForm) {
+      var launcherStatus = launcherForm.querySelector("[data-launcher-status]");
+      launcherForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var questSel = launcherForm.querySelector("[data-launcher-quest]");
+        var promptIn = launcherForm.querySelector("[data-launcher-prompt]");
+        var submitBtn = launcherForm.querySelector("button[type=submit]");
+        if (!questSel || !promptIn) return;
+        var questOrder = parseInt(questSel.value, 10);
+        var prompt = (promptIn.value || "").trim();
+        if (!prompt) {
+          if (launcherStatus) launcherStatus.textContent = "Prompt vacío.";
+          return;
+        }
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Lanzando…";
+        }
+        if (launcherStatus) launcherStatus.textContent = "";
+        fetch("/api/trace/run", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ quest_order: questOrder, prompt: prompt }),
+        })
+          .then(function (r) {
+            if (!r.ok) {
+              return r.json().catch(function () { return { detail: "Error" }; })
+                .then(function (e) { throw new Error(e.detail || "Error"); });
+            }
+            return r.json();
+          })
+          .then(function () {
+            if (launcherStatus) launcherStatus.textContent = "✓ Subprocess lanzado. Pasos llegando…";
+            // Volver al modo live (no histórico) para ver el trace nuevo.
+            selectedTraceId = null;
+            traceSealed = false;
+            idleCount = 0;
+            schedulePoll();
+            loadHistory();
+          })
+          .catch(function (err) {
+            if (launcherStatus) launcherStatus.textContent = "✗ " + (err && err.message ? err.message : "error");
+          })
+          .finally(function () {
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = "▶ Ejecutar";
+            }
+          });
+      });
+    }
+
     // Polling adaptativo: la primera llamada arranca el ciclo recursivo.
     poll();
   }

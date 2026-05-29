@@ -1,6 +1,9 @@
 """Endpoints JSON / fragmentos HTML consumidos por el cliente (polling)."""
 import json
+import os
 import re
+import subprocess
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -261,6 +264,83 @@ def recent_traces(limit: int = Query(10, ge=1, le=50)) -> JSONResponse:
             "user_prompt": trace_first_user_prompt(s.trace_id),
         })
     return JSONResponse({"traces": items})
+
+
+class TraceRunRequest(BaseModel):
+    quest_order: int
+    prompt: str
+
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+
+
+@router.post("/api/trace/run")
+def trace_run(payload: TraceRunRequest) -> JSONResponse:
+    """Spawnea `python -m common.cli.main run N "prompt"` en background.
+
+    El proceso queda desligado: devolvemos inmediatamente y el polling
+    normal de /live-agent se encarga de mostrar los steps a medida que
+    el wrapper los emite.
+
+    Mitigaciones (mejora #7):
+    - Validamos el quest_order contra el catálogo (400 si no existe).
+    - Validamos que el prompt no esté vacío (400).
+    - Sandbox al cwd del repo y env UTF-8.
+    - stdout/stderr a DEVNULL: el subprocess se ve solo en `/live-agent`,
+      no llena el log del dashboard.
+    """
+    from common.dashboard.services.quest_catalog import QUESTS
+
+    matches = [q for q in QUESTS if q.order == payload.quest_order]
+    if not matches:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Quest #{payload.quest_order} no existe.",
+        )
+    prompt = (payload.prompt or "").strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="El prompt no puede estar vacío.")
+
+    quest = matches[0]
+    cmd = [
+        sys.executable,
+        "-m",
+        "common.cli.main",
+        "run",
+        str(quest.order),
+        prompt,
+    ]
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
+
+    popen_kwargs: dict = {
+        "cwd": str(_REPO_ROOT),
+        "env": env,
+        "stdout": subprocess.DEVNULL,
+        "stderr": subprocess.DEVNULL,
+        "stdin": subprocess.DEVNULL,
+    }
+    if sys.platform == "win32":
+        popen_kwargs["creationflags"] = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+        )
+    else:
+        popen_kwargs["start_new_session"] = True
+
+    try:
+        subprocess.Popen(cmd, **popen_kwargs)
+    except OSError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=f"No se pudo lanzar el subprocess: {exc}",
+        ) from exc
+
+    return JSONResponse({
+        "status": "started",
+        "quest_order": quest.order,
+        "quest_slug": quest.slug,
+    })
 
 
 @router.get("/api/trace/current")

@@ -2678,6 +2678,95 @@ code {
   background: rgba(13, 10, 31, 0.5);
 }
 
+/* Launcher de traces desde el dashboard (mejora #7). */
+.live-agent-launcher {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.live-agent-launcher summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--arkanum-glow);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.live-agent-launcher summary::-webkit-details-marker { display: none; }
+
+.live-agent-launcher summary::after {
+  content: "▸";
+  margin-left: auto;
+  color: var(--arkanum-muted);
+  transition: transform 0.18s ease;
+}
+
+.live-agent-launcher[open] summary::after { transform: rotate(90deg); }
+
+.live-agent-launcher-label {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  letter-spacing: 0.06em;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.live-agent-launcher-hint {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--arkanum-muted);
+  font-style: italic;
+}
+
+.live-agent-launcher-form {
+  display: flex;
+  gap: 0.55rem;
+  align-items: end;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.live-agent-launcher-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--arkanum-muted);
+}
+
+.live-agent-launcher-field--grow { flex: 1 1 18rem; }
+
+.live-agent-launcher-field input,
+.live-agent-launcher-field select {
+  background: rgba(13, 10, 31, 0.7);
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  color: var(--arkanum-text);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.live-agent-launcher-field input:focus,
+.live-agent-launcher-field select:focus {
+  outline: none;
+  border-color: var(--arkanum-glow);
+}
+
+.live-agent-launcher-status {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--arkanum-muted);
+  flex-basis: 100%;
+}
+
 /* Historial de traces (mejora #4): franja horizontal con cards clickeables. */
 .live-agent-history {
   margin-bottom: 1rem;

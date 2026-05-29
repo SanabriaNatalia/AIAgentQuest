@@ -42,6 +42,34 @@
     </div>
   </header>
 
+  <details class="live-agent-launcher" data-trace-launcher>
+    <summary>
+      <span aria-hidden="true">▶</span>
+      <span class="live-agent-launcher-label">Lanzar nuevo prompt</span>
+      <span class="live-agent-launcher-hint">arkanum run desde el dashboard</span>
+    </summary>
+    <form class="live-agent-launcher-form" data-trace-launcher-form>
+      <label class="live-agent-launcher-field">
+        <span>Quest</span>
+        <select name="quest_order" data-launcher-quest>
+          <option value="6">6 — Tool Chest</option>
+          <option value="7">7 — Agent Incarnation</option>
+          <option value="8" selected>8 — Manifesting Cycle</option>
+        </select>
+      </label>
+      <label class="live-agent-launcher-field live-agent-launcher-field--grow">
+        <span>Prompt</span>
+        <input type="text"
+               name="prompt"
+               data-launcher-prompt
+               placeholder='Ej: Lee notes.txt y dime qué contiene'
+               required>
+      </label>
+      <button type="submit" class="live-agent-action">▶ Ejecutar</button>
+      <span class="live-agent-launcher-status" data-launcher-status></span>
+    </form>
+  </details>
+
   <nav class="live-agent-history" data-trace-history aria-label="Historial de ejecuciones">
     <header class="live-agent-history-head">
       <span class="live-agent-history-label">Historial</span>
