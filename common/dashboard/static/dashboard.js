@@ -869,7 +869,11 @@
         lastUserPrompt = null;
         resetBands();
         setUserPrompt(host, null);
+        // Reset del control de polling adaptativo.
+        idleCount = 0;
+        traceSealed = false;
       }
+      if (data.summary && data.summary.has_session_end) traceSealed = true;
 
       if (data.steps.length === 0) {
         if (emptyHost) emptyHost.style.display = "";
@@ -968,6 +972,10 @@
 
       // Mejora #13: recalcula KPIs sobre la lista completa, no incremental.
       renderHud(data.steps);
+
+      // Mejora #8: registra cuántos steps llegaron en este poll para decidir
+      // el siguiente intervalo.
+      lastPollAddedSteps = added;
     }
 
     function buildPollUrl() {
@@ -976,11 +984,41 @@
       return url + sep + "trace_id=" + encodeURIComponent(selectedTraceId);
     }
 
+    // Polling adaptativo (mejora #8): el intervalo varía según actividad.
+    var POLL_FAST_MS = 250;
+    var POLL_NORMAL_MS = 1000;
+    var POLL_IDLE_MS = 3000;
+    var POLL_IDLE_THRESHOLD = 5;
+    var idleCount = 0;
+    var traceSealed = false;
+    var lastPollAddedSteps = 0;
+    var pollTimer = null;
+
+    function nextPollDelay() {
+      if (traceSealed) return 0;  // 0 = stop
+      if (lastPollAddedSteps > 0) return POLL_FAST_MS;
+      if (idleCount >= POLL_IDLE_THRESHOLD) return POLL_IDLE_MS;
+      return POLL_NORMAL_MS;
+    }
+
+    function schedulePoll() {
+      if (pollTimer) clearTimeout(pollTimer);
+      var delay = nextPollDelay();
+      if (delay === 0) return;  // session_end llegó: parar.
+      pollTimer = setTimeout(poll, delay);
+    }
+
     function poll() {
+      lastPollAddedSteps = 0;
       fetch(buildPollUrl(), { headers: { Accept: "application/json" } })
         .then(function (r) { return r.ok ? r.json() : null; })
-        .then(applyData)
-        .catch(function () { /* best-effort */ });
+        .then(function (data) {
+          applyData(data);
+          if (lastPollAddedSteps > 0) idleCount = 0;
+          else idleCount += 1;
+          schedulePoll();
+        })
+        .catch(function () { schedulePoll(); });
     }
 
     function formatRelative(iso) {
@@ -1306,8 +1344,8 @@
       });
     }
 
+    // Polling adaptativo: la primera llamada arranca el ciclo recursivo.
     poll();
-    setInterval(poll, 1000);
   }
 
   function init() {
