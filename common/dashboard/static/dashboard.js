@@ -552,9 +552,34 @@
       if (target) target.appendChild(node);
     }
 
+    // Stats acumulados por la banda activa (mejora #6: costo por iteración).
+    var bandStats = null;
+
+    function refreshBandMeta() {
+      if (!currentBand || !bandStats) return;
+      var meta = currentBand.parentElement
+        ? currentBand.parentElement.querySelector("[data-band-meta]")
+        : null;
+      if (!meta) return;
+      var parts = [];
+      if (bandStats.latency != null) {
+        parts.push(bandStats.latency.toFixed(2) + " s");
+      }
+      var totalTok = bandStats.promptTokens + bandStats.responseTokens;
+      if (totalTok > 0) {
+        var cost =
+          bandStats.promptTokens * KPI_PRICE_INPUT_PER_1M / 1e6 +
+          bandStats.responseTokens * KPI_PRICE_OUTPUT_PER_1M / 1e6;
+        parts.push(formatTokens(totalTok) + " tokens");
+        parts.push("$" + cost.toFixed(4));
+      }
+      meta.textContent = parts.join(" · ");
+    }
+
     function openBand(step) {
       var payload = step.payload || {};
       lastIterPayload = payload;
+      bandStats = { latency: null, promptTokens: 0, responseTokens: 0 };
       var band = document.createElement("li");
       band.className = "trace-band";
       band.dataset.iter = String(payload.iter || "?");
@@ -578,18 +603,24 @@
     }
 
     function updateBandMeta(latencySeconds) {
-      if (!currentBand) return;
-      var meta = currentBand.parentElement
-        ? currentBand.parentElement.querySelector("[data-band-meta]")
-        : null;
-      if (!meta) return;
-      var prev = meta.textContent || "";
-      meta.textContent = prev ? prev + " · " + latencySeconds + " s" : latencySeconds + " s";
+      if (!bandStats) return;
+      bandStats.latency = Number(latencySeconds);
+      refreshBandMeta();
+    }
+
+    function addBandTokens(step) {
+      if (!bandStats) return;
+      var n = parseInt(step.payload, 10);
+      if (isNaN(n)) return;
+      if (step.name === "prompt") bandStats.promptTokens += n;
+      else if (step.name === "response") bandStats.responseTokens += n;
+      refreshBandMeta();
     }
 
     function resetBands() {
       currentBand = null;
       lastIterPayload = null;
+      bandStats = null;
     }
 
     function iconFor(stepType) {
@@ -800,6 +831,10 @@
           // También se muestra como step individual (chip) por compatibilidad.
           var seconds = payloadField(step, "seconds");
           if (seconds != null) updateBandMeta(seconds);
+          appendStep(renderStep(step));
+        } else if (step.step_type === "tokens") {
+          // Suma a la banda activa para mostrar costo en su header.
+          addBandTokens(step);
           appendStep(renderStep(step));
         } else {
           appendStep(renderStep(step));
