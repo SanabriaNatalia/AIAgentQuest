@@ -100,6 +100,70 @@ def recent_steps(limit: int = 200, trace_id: str | None = None) -> list[TraceSte
     ]
 
 
+def recent_trace_summaries(limit: int = 10) -> list[TraceSummary]:
+    """Devuelve los N últimos traces como summaries, sin sus steps.
+
+    Útil para el historial de `/live-agent` (mejora #4): permite mostrar
+    una lista clickable de ejecuciones previas sin cargar todos los
+    payloads. La consulta agrupa por `trace_id` y ordena por el step
+    más reciente de cada uno.
+    """
+    init_db()
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT trace_id, "
+            "       MIN(created_at) AS started_at, "
+            "       MAX(created_at) AS last_step_at, "
+            "       COUNT(*)        AS steps, "
+            "       MIN(quest_id)   AS quest_id, "
+            "       MAX(id)         AS last_step_id "
+            "FROM agent_traces "
+            "GROUP BY trace_id "
+            "ORDER BY last_step_id DESC "
+            "LIMIT ?",
+            (limit,),
+        ).fetchall()
+
+    return [
+        TraceSummary(
+            trace_id=r[0],
+            quest=quest_by_db_id(r[4]) if r[4] else None,
+            started_at=r[1] or "",
+            last_step_at=r[2] or "",
+            steps=int(r[3] or 0),
+        )
+        for r in rows
+    ]
+
+
+def trace_first_user_prompt(trace_id: str) -> str | None:
+    """Extrae el `user_prompt` del primer session_start de un trace.
+
+    Devuelve None si no hay session_start, si su payload no es JSON o
+    si no contiene `user_prompt`. Usado por el historial para mostrar
+    una preview del prompt original.
+    """
+    init_db()
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT payload FROM agent_traces "
+            "WHERE trace_id = ? AND step_type = 'session_start' "
+            "ORDER BY id ASC LIMIT 1",
+            (trace_id,),
+        ).fetchone()
+    if row is None or not row[0]:
+        return None
+    try:
+        data = json.loads(row[0])
+    except (TypeError, ValueError):
+        return None
+    if isinstance(data, dict):
+        prompt = data.get("user_prompt")
+        if isinstance(prompt, str):
+            return prompt
+    return None
+
+
 def latest_trace_summary() -> TraceSummary | None:
     """Resumen del trace más reciente, para mostrar al tope de /live-agent."""
     init_db()

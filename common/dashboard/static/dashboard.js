@@ -445,16 +445,21 @@
     if (!host) return;
 
     var url = host.dataset.tracePollUrl;
+    var historyUrl = host.dataset.tracesHistoryUrl;
     var stepsHost = host.querySelector("[data-trace-steps]");
     var emptyHost = host.querySelector("[data-trace-empty]");
     var statusHost = host.querySelector("[data-trace-status]");
     var metaHost = host.querySelector("[data-trace-meta]");
+    var historyListHost = host.querySelector("[data-history-list]");
+    var historyStatusHost = host.querySelector("[data-history-status]");
 
     var seenIds = new Set();
     var lastTraceId = null;
     var lastUserPrompt = null;
     var currentBand = null;       // <ol> activo donde se anexan steps de la iter actual
     var lastIterPayload = null;   // {iter, max} de la iteración activa
+    var selectedTraceId = null;   // trace explícitamente fijado por click en historial
+    var topTraceId = null;        // trace_id del más reciente conocido
 
     // System prompt: cargar una vez al inicio.
     loadSystemPrompt(host);
@@ -837,12 +842,112 @@
       renderHud(data.steps);
     }
 
+    function buildPollUrl() {
+      if (!selectedTraceId) return url;
+      var sep = url.indexOf("?") === -1 ? "?" : "&";
+      return url + sep + "trace_id=" + encodeURIComponent(selectedTraceId);
+    }
+
     function poll() {
-      fetch(url, { headers: { Accept: "application/json" } })
+      fetch(buildPollUrl(), { headers: { Accept: "application/json" } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(applyData)
         .catch(function () { /* best-effort */ });
     }
+
+    function formatRelative(iso) {
+      if (!iso) return "—";
+      var t = new Date(iso).getTime();
+      if (isNaN(t)) return iso;
+      var delta = (Date.now() - t) / 1000;
+      if (delta < 60) return Math.max(0, Math.round(delta)) + " s atrás";
+      if (delta < 3600) return Math.round(delta / 60) + " min atrás";
+      if (delta < 86400) return Math.round(delta / 3600) + " h atrás";
+      return Math.round(delta / 86400) + " d atrás";
+    }
+
+    function renderHistory(traces) {
+      if (!historyListHost) return;
+      historyListHost.innerHTML = "";
+      topTraceId = traces.length ? traces[0].trace_id : null;
+      if (!traces.length) {
+        if (historyStatusHost) historyStatusHost.textContent = "(sin ejecuciones)";
+        return;
+      }
+      if (historyStatusHost) {
+        historyStatusHost.textContent = traces.length + " ejecuciones";
+      }
+      traces.forEach(function (t, idx) {
+        var li = document.createElement("li");
+        li.className = "live-agent-history-item";
+        var isLive = idx === 0;
+        var isActive = (selectedTraceId
+          ? t.trace_id === selectedTraceId
+          : isLive);
+        if (isLive) li.classList.add("live-agent-history-item--live");
+        if (isActive) li.classList.add("live-agent-history-item--active");
+
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "live-agent-history-button";
+        btn.dataset.traceId = t.trace_id;
+
+        var head = document.createElement("div");
+        head.className = "live-agent-history-button-head";
+        var label = isLive ? "● en vivo" : "○ histórico";
+        head.innerHTML =
+          '<span class="live-agent-history-status-pill' +
+          (isLive ? ' live-agent-history-status-pill--live' : '') + '">' +
+          escapeHtml(label) + '</span>' +
+          '<span class="live-agent-history-time">' +
+          escapeHtml(formatRelative(t.last_step_at)) + '</span>';
+        btn.appendChild(head);
+
+        var title = document.createElement("div");
+        title.className = "live-agent-history-title";
+        title.textContent = t.quest_title || t.trace_id;
+        btn.appendChild(title);
+
+        var prompt = document.createElement("div");
+        prompt.className = "live-agent-history-prompt";
+        prompt.textContent = truncate(t.user_prompt || "(sin prompt)", 80);
+        btn.appendChild(prompt);
+
+        var meta = document.createElement("div");
+        meta.className = "live-agent-history-meta";
+        meta.textContent = t.steps + " pasos · " + (t.trace_id || "");
+        btn.appendChild(meta);
+
+        btn.addEventListener("click", function () {
+          // El más reciente vuelve a polling "vivo" (sin filtro).
+          selectedTraceId = isLive ? null : t.trace_id;
+          // Vacía render para forzar repintado limpio.
+          if (stepsHost) stepsHost.innerHTML = "";
+          seenIds = new Set();
+          lastTraceId = null;
+          resetBands();
+          renderHistory(traces);  // re-render para refrescar el highlight
+          poll();
+        });
+
+        li.appendChild(btn);
+        historyListHost.appendChild(li);
+      });
+    }
+
+    function loadHistory() {
+      if (!historyUrl) return;
+      fetch(historyUrl, { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !Array.isArray(data.traces)) return;
+          renderHistory(data.traces);
+        })
+        .catch(function () { /* best-effort */ });
+    }
+
+    loadHistory();
+    setInterval(loadHistory, 5000);
 
     poll();
     setInterval(poll, 1000);

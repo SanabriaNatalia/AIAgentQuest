@@ -12,6 +12,7 @@
 
 <section class="live-agent"
          data-trace-poll-url="/api/trace/current"
+         data-traces-history-url="/api/traces/recent?limit=10"
          data-system-prompt-url="/api/system-prompt"
          aria-label="Agente en directo">
   <header class="live-agent-toolbar">
@@ -21,6 +22,14 @@
     </div>
     <div class="live-agent-meta" data-trace-meta></div>
   </header>
+
+  <nav class="live-agent-history" data-trace-history aria-label="Historial de ejecuciones">
+    <header class="live-agent-history-head">
+      <span class="live-agent-history-label">Historial</span>
+      <span class="live-agent-history-status" data-history-status>—</span>
+    </header>
+    <ol class="live-agent-history-list" data-history-list></ol>
+  </nav>
 
   <aside class="live-agent-hud" data-trace-hud aria-label="Métricas del agente">
     <div class="live-agent-kpi">

@@ -188,6 +188,29 @@ def system_prompt_endpoint() -> JSONResponse:
     })
 
 
+@router.get("/api/traces/recent")
+def recent_traces(limit: int = Query(10, ge=1, le=50)) -> JSONResponse:
+    """Lista de los N últimos traces (sin steps) para el historial."""
+    from common.dashboard.services.trace import (
+        recent_trace_summaries,
+        trace_first_user_prompt,
+    )
+
+    summaries = recent_trace_summaries(limit=limit)
+    items = []
+    for s in summaries:
+        items.append({
+            "trace_id": s.trace_id,
+            "quest_slug": s.quest.slug if s.quest else None,
+            "quest_title": s.quest.title if s.quest else None,
+            "started_at": s.started_at,
+            "last_step_at": s.last_step_at,
+            "steps": s.steps,
+            "user_prompt": trace_first_user_prompt(s.trace_id),
+        })
+    return JSONResponse({"traces": items})
+
+
 @router.get("/api/trace/current")
 def current_trace(
     trace_id: str | None = Query(None),
