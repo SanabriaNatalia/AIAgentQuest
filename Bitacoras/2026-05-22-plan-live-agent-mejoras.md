@@ -558,11 +558,30 @@ Orden propuesto manteniendo el principio de "valor pedagógico × costo":
 | 17 | #18 Editor system prompt | 37.5 h | Última: tiene riesgo de tocar repo. |
 | 18 | #7 Lanzar desde dashboard | 41.5 h | UX grande, contrato nuevo. |
 
-**Ejecución del 2026-05-29:** se implementa el núcleo de la fase 1–5 (~10.5 h):
-- ✅ #9 Pensamiento
-- ✅ #10 Prompts visibles
-- ✅ #2 Agrupar call↔result
-- ✅ #3 Bandas por iteración
-- ✅ #13 HUD sticky
+**Ejecución del 2026-05-29:** las 18 mejoras del plan v2 + adenda quedaron implementadas en `feat/dashboard-arcano` (commits `6745925..d459f86`).
 
-Un commit por mejora. Sin coautor (regla persistente).
+| # | Mejora | Commit | Estado |
+|---|---|---|---|
+| #9  | Pensamiento del agente              | `a861d71` | ✅ |
+| #10 | Prompts visibles                    | `70560df` | ✅ |
+| #2  | Agrupar call↔result                 | `5cb8ab3` | ✅ |
+| #3  | Bandas por iteración                | `5007dea` | ✅ |
+| #13 | HUD sticky                          | `ae04f07` | ✅ |
+| #4  | Historial de traces                 | `0e27f7e` | ✅ |
+| #5  | Stale detection                     | `a500559` | ✅ |
+| #6  | Costo por iteración                 | `15238c7` | ✅ |
+| #11 + #17 | Contexto creciente + diff     | `5ef6e0b` | ✅ |
+| #14 + #15 + #16 | Replay + explicador + export | `9653dd3` | ✅ |
+| #1  | Emisor estructurado (helpers + doc) | `81957b5` | ✅ |
+| #8  | Polling adaptativo                  | `718139f` | ✅ |
+| #18 | Editor del system prompt            | `752e132` | ✅ |
+| #7  | Lanzar desde dashboard              | `d459f86` | ✅ |
+| #12 | Latencia                            | (incluida en #9 — emite `latency` step, mostrado en banda y HUD) | ✅ |
+
+**Compactaciones de scope respecto al plan original:**
+- #11 y #17 se entregan como un único panel `<details>` por banda (resumen + delta al expandir).
+- #14, #15 y #16 comparten el toolbar de acciones; su CSS y handlers viajaron en un solo commit.
+- #1 (instrumentación automática en `call_function.py`) no toca el shared code del aprendiz — se entrega como helpers + doc en `docs/agents/tracing.md`. La instrumentación queda como ejercicio del aprendiz o cambio futuro que no rompe TODOs.
+- #12 no tiene chip dedicado en la lista; los datos viajan en el meta de la banda y el promedio en el HUD.
+
+Un commit por mejora (o por pareja cuando comparten archivo y semántica). Sin coautor (regla persistente).
