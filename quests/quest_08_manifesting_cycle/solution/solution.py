@@ -76,6 +76,7 @@ def main():
     show_prompt(args.user_prompt)
 
     # TODO 8.4:
+    prev_msgs_count = len(messages)
     for i in range(MAX_ITERS):
         emit_trace(
             "iteration_start",
@@ -87,6 +88,10 @@ def main():
                 messages,
                 args.verbose,
             )
+
+            # Mejora #11/#17: emitir contexto creciente + diff.
+            _emit_context_growth(messages, prev_msgs_count, i + 1)
+            prev_msgs_count = len(messages)
 
             if final_response:
                 success("Respuesta final recibida.")
@@ -103,6 +108,50 @@ def main():
 
     # TODO 8.8:
     print(f"Maximum iterations ({MAX_ITERS}) reached.")
+
+
+def _emit_context_growth(messages, prev_count, iter_num):
+    """Emite context_growth con N messages, delta count y preview del delta.
+
+    El preview de cada item nuevo se trunca a ~200 chars para no inflar
+    el payload. Si una part no es texto (function_call/response), se
+    reporta su nombre o un placeholder.
+    """
+    new_items = messages[prev_count:]
+    delta_preview = []
+    for item in new_items:
+        role = getattr(item, "role", None) or "unknown"
+        parts = getattr(item, "parts", None) or []
+        kind = "text"
+        preview = ""
+        for part in parts:
+            text = getattr(part, "text", None)
+            fcall = getattr(part, "function_call", None)
+            fresp = getattr(part, "function_response", None)
+            if fcall is not None:
+                kind = "function_call"
+                preview = getattr(fcall, "name", "?") + "(...)"
+                break
+            if fresp is not None:
+                kind = "function_response"
+                preview = getattr(fresp, "name", "?") + " → …"
+                break
+            if text:
+                preview = text
+                break
+        if isinstance(preview, str) and len(preview) > 200:
+            preview = preview[:199] + "…"
+        delta_preview.append({"role": role, "kind": kind, "preview": preview})
+
+    emit_trace(
+        "context_growth",
+        payload={
+            "iter": iter_num,
+            "messages": len(messages),
+            "delta_count": len(new_items),
+            "delta_preview": delta_preview,
+        },
+    )
 
 # TODO 8.2:
 def generate_content(messages, verbose):

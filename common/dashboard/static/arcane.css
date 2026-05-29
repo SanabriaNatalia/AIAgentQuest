@@ -2964,6 +2964,83 @@ code {
   padding: 0;
 }
 
+/* Panel de contexto creciente / diff (mejoras #11 + #17). */
+.trace-context-growth {
+  margin-top: 0.45rem;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px dashed rgba(201, 169, 97, 0.22);
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.84rem;
+}
+
+.trace-context-growth summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.trace-context-growth summary::-webkit-details-marker { display: none; }
+
+.trace-context-growth[open] summary {
+  color: var(--arkanum-glow);
+}
+
+.trace-context-summary-text {
+  letter-spacing: 0.03em;
+}
+
+.trace-context-delta-pill {
+  margin-left: 0.4rem;
+  background: rgba(101, 209, 150, 0.15);
+  border: 1px solid rgba(101, 209, 150, 0.45);
+  color: var(--arkanum-success);
+  padding: 0.05rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+
+.trace-context-delta-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.trace-context-delta-item {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--arkanum-text);
+  padding: 0.3rem 0.5rem;
+  background: rgba(13, 10, 31, 0.55);
+  border-radius: 6px;
+}
+
+.trace-context-delta-role {
+  color: var(--arkanum-gold);
+  letter-spacing: 0.04em;
+}
+
+.trace-context-delta-kind {
+  color: var(--arkanum-glow);
+}
+
+.trace-context-delta-preview {
+  flex: 1 1 18rem;
+  color: var(--arkanum-muted);
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
 .trace-step {
   background: linear-gradient(165deg, var(--arkanum-bg-soft) 0%, var(--arkanum-bg-soft-2) 100%);
   border-left: 3px solid rgba(192, 132, 252, 0.55);

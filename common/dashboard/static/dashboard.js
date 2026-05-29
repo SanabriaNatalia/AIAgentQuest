@@ -617,6 +617,49 @@
       refreshBandMeta();
     }
 
+    function appendContextGrowth(step) {
+      // Si no hay banda activa, lo añadimos al raíz (caso patológico).
+      var bandLi = currentBand ? currentBand.parentElement : stepsHost;
+      if (!bandLi) return;
+
+      var payload = step.payload || {};
+      var totalMessages = payload.messages != null ? payload.messages : "?";
+      var deltaCount = payload.delta_count != null ? payload.delta_count : 0;
+
+      var details = document.createElement("details");
+      details.className = "trace-context-growth";
+
+      var summary = document.createElement("summary");
+      summary.innerHTML =
+        '<span aria-hidden="true">🗂</span> ' +
+        '<span class="trace-context-summary-text">Contexto: ' +
+        escapeHtml(totalMessages) + ' messages' +
+        (deltaCount > 0 ? ' <span class="trace-context-delta-pill">+' + deltaCount + '</span>' : '') +
+        '</span>';
+      details.appendChild(summary);
+
+      var delta = Array.isArray(payload.delta_preview) ? payload.delta_preview : [];
+      if (delta.length) {
+        var ul = document.createElement("ul");
+        ul.className = "trace-context-delta-list";
+        for (var i = 0; i < delta.length; i++) {
+          var it = delta[i] || {};
+          var li = document.createElement("li");
+          li.className = "trace-context-delta-item";
+          li.innerHTML =
+            '<span class="trace-context-delta-role">' + escapeHtml(it.role || "?") + '</span> ' +
+            '<span class="trace-context-delta-kind">' + escapeHtml(it.kind || "?") + '</span>' +
+            (it.preview
+              ? '<span class="trace-context-delta-preview">' + escapeHtml(it.preview) + '</span>'
+              : '');
+          ul.appendChild(li);
+        }
+        details.appendChild(ul);
+      }
+
+      bandLi.appendChild(details);
+    }
+
     function resetBands() {
       currentBand = null;
       lastIterPayload = null;
@@ -836,6 +879,9 @@
           // Suma a la banda activa para mostrar costo en su header.
           addBandTokens(step);
           appendStep(renderStep(step));
+        } else if (step.step_type === "context_growth") {
+          // Renderiza dentro de la banda como panel desplegable (mejora #11/#17).
+          appendContextGrowth(step);
         } else {
           appendStep(renderStep(step));
         }
