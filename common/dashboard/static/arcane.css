@@ -2702,6 +2702,71 @@ code {
   padding: 0;
 }
 
+/* Banda por iteración del loop (mejora #3). */
+.trace-band {
+  list-style: none;
+  background: rgba(13, 10, 31, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 12px;
+  padding: 0.85rem 0.95rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  position: relative;
+}
+
+.trace-band::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    rgba(192, 132, 252, 0.6),
+    rgba(201, 169, 97, 0.3)
+  );
+  border-radius: 3px 0 0 3px;
+}
+
+.trace-band-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0 0 0.45rem;
+  border-bottom: 1px dashed rgba(201, 169, 97, 0.18);
+}
+
+.trace-band-icon {
+  font-size: 1rem;
+  color: var(--arkanum-glow);
+}
+
+.trace-band-label {
+  font-family: var(--font-serif);
+  letter-spacing: 0.08em;
+  color: var(--arkanum-gold);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.trace-band-meta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--arkanum-muted);
+}
+
+.trace-band-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+}
+
 .trace-step {
   background: linear-gradient(165deg, var(--arkanum-bg-soft) 0%, var(--arkanum-bg-soft-2) 100%);
   border-left: 3px solid rgba(192, 132, 252, 0.55);

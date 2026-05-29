@@ -453,11 +453,60 @@
     var seenIds = new Set();
     var lastTraceId = null;
     var lastUserPrompt = null;
+    var currentBand = null;       // <ol> activo donde se anexan steps de la iter actual
+    var lastIterPayload = null;   // {iter, max} de la iteración activa
 
     // System prompt: cargar una vez al inicio.
     loadSystemPrompt(host);
     // User prompt: placeholder hasta que llegue session_start.
     setUserPrompt(host, null);
+
+    function appendStep(node) {
+      // Si hay una banda activa, los steps van dentro de ella.
+      // Si no, van al contenedor principal (steps "fuera de loop").
+      var target = currentBand || stepsHost;
+      if (target) target.appendChild(node);
+    }
+
+    function openBand(step) {
+      var payload = step.payload || {};
+      lastIterPayload = payload;
+      var band = document.createElement("li");
+      band.className = "trace-band";
+      band.dataset.iter = String(payload.iter || "?");
+
+      var head = document.createElement("header");
+      head.className = "trace-band-head";
+      var iter = payload.iter != null ? payload.iter : "?";
+      var max = payload.max != null ? " / " + payload.max : "";
+      head.innerHTML =
+        '<span class="trace-band-icon" aria-hidden="true">↻</span>' +
+        '<span class="trace-band-label">Iteración ' + escapeHtml(iter) + escapeHtml(max) + '</span>' +
+        '<span class="trace-band-meta" data-band-meta></span>';
+      band.appendChild(head);
+
+      var ol = document.createElement("ol");
+      ol.className = "trace-band-steps";
+      band.appendChild(ol);
+
+      if (stepsHost) stepsHost.appendChild(band);
+      currentBand = ol;
+    }
+
+    function updateBandMeta(latencySeconds) {
+      if (!currentBand) return;
+      var meta = currentBand.parentElement
+        ? currentBand.parentElement.querySelector("[data-band-meta]")
+        : null;
+      if (!meta) return;
+      var prev = meta.textContent || "";
+      meta.textContent = prev ? prev + " · " + latencySeconds + " s" : latencySeconds + " s";
+    }
+
+    function resetBands() {
+      currentBand = null;
+      lastIterPayload = null;
+    }
 
     function iconFor(stepType) {
       switch (stepType) {
@@ -631,6 +680,7 @@
         seenIds = new Set();
         lastTraceId = data.trace_id;
         lastUserPrompt = null;
+        resetBands();
         setUserPrompt(host, null);
       }
 
@@ -649,15 +699,25 @@
         if (seenIds.has(step.id)) continue;
         seenIds.add(step.id);
 
-        if (step.step_type === "function_result" && stepsHost) {
+        if (step.step_type === "iteration_start") {
+          // Abre una banda nueva como contenedor para los siguientes steps.
+          openBand(step);
+        } else if (step.step_type === "function_result") {
           // Ancla el resultado dentro de la última function_call pendiente.
-          // Si no hay (caso patológico), cae al render normal como card.
-          var anchored = attachResultToPendingCall(stepsHost, step);
-          if (!anchored) {
-            stepsHost.appendChild(renderStep(step));
-          }
-        } else if (stepsHost) {
-          stepsHost.appendChild(renderStep(step));
+          // Búsqueda restringida al contenedor actual (banda activa o raíz).
+          var container = currentBand || stepsHost;
+          var anchored = container
+            ? attachResultToPendingCall(container, step)
+            : false;
+          if (!anchored) appendStep(renderStep(step));
+        } else if (step.step_type === "latency") {
+          // En la banda actual, suma la latencia al meta del header.
+          // También se muestra como step individual (chip) por compatibilidad.
+          var seconds = payloadField(step, "seconds");
+          if (seconds != null) updateBandMeta(seconds);
+          appendStep(renderStep(step));
+        } else {
+          appendStep(renderStep(step));
         }
         added += 1;
 
