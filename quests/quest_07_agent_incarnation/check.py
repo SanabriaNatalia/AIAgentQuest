@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -59,33 +60,14 @@ def success() -> None:
     )
 
 
-def main() -> None:
-    result = subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "quests.quest_07_agent_incarnation.starter.main",
-            "¿Qué archivos hay en la raíz?",
-            "--verbose",
-        ],
-        cwd=ROOT_DIR,
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
+def validate_output(output: str, returncode: int = 0, error: str = "") -> None:
+    """Valida el stdout del starter. Llama a fail() si algo no cumple.
 
-    output = result.stdout
-    error = result.stderr
-
-    # Reemite la salida del starter en la terminal del aprendiz, para que
-    # la respuesta del agente quede visible durante `arkanum check`.
-    if output:
-        sys.stdout.write(output)
-        if not output.endswith("\n"):
-            sys.stdout.write("\n")
-        sys.stdout.flush()
-
-    if result.returncode != 0:
+    Reusable desde el wrapper CLI cuando se ejecuta el starter con tracing
+    en vivo: el wrapper captura el output y delega la validación aquí en
+    lugar de re-invocar Gemini desde un subprocess separado.
+    """
+    if returncode != 0:
         fail(
             "El programa terminó con errores.\n\n"
             f"{error or output}"
@@ -111,6 +93,45 @@ def main() -> None:
             f"Salida completa:\n{output}"
         )
 
+
+def main() -> None:
+    # H-13: el aprendiz puede pasar `arkanum check 7 "..."` y llega aquí
+    # vía ARKANUM_CHECK_PROMPT. Fallback al prompt canónico si no.
+    prompt = (
+        os.environ.get("ARKANUM_CHECK_PROMPT")
+        or "¿Qué archivos hay en la raíz?"
+    )
+    # H-08: forzar COLUMNS=1000 para evitar que rich.Console envuelva
+    # líneas largas y rompa el `expected in output` de más abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "quests.quest_07_agent_incarnation.starter.main",
+            prompt,
+            "--verbose",
+        ],
+        cwd=ROOT_DIR,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=env,
+    )
+
+    output = result.stdout
+    error = result.stderr
+
+    # Reemite la salida del starter en la terminal del aprendiz, para que
+    # la respuesta del agente quede visible durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
+
+    validate_output(output, result.returncode, error)
     success()
 
 

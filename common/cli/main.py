@@ -41,7 +41,10 @@ app.command(
     name="run",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
 )(run)
-app.command(name="check")(check)
+app.command(
+    name="check",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)(check)
 app.command(name="cost")(cost)
 
 

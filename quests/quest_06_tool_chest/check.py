@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -59,12 +60,18 @@ def success() -> None:
 
 
 def main() -> None:
+    # Si el aprendiz pasó un prompt vía `arkanum check 6 "..."`, llega aquí
+    # como ARKANUM_CHECK_PROMPT. Si no, fallback al prompt canónico.
+    prompt = (
+        os.environ.get("ARKANUM_CHECK_PROMPT")
+        or "¿Qué archivos hay en la raíz?"
+    )
     result = subprocess.run(
         [
             sys.executable,
             "-m",
             "quests.quest_06_tool_chest.starter.main",
-            "¿Qué archivos hay en la raíz?",
+            prompt,
         ],
         cwd=ROOT_DIR,
         capture_output=True,

@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -50,6 +51,11 @@ def success() -> None:
 
 
 def main() -> None:
+    # Forzamos COLUMNS=1000 para que rich.Console no envuelva líneas largas
+    # en el subprocess; sin esto, el wrap rompe el `expected in output` de
+    # más abajo cuando la terminal del aprendiz es estrecha. Ver H-08.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
             sys.executable,
@@ -60,6 +66,7 @@ def main() -> None:
         capture_output=True,
         text=True,
         timeout=20,
+        env=env,
     )
 
     output = result.stdout

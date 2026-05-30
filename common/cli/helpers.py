@@ -62,12 +62,16 @@ def check_path(quest: QuestMeta) -> Path:
     return REPO_ROOT / "quests" / quest.slug / "check.py"
 
 
-def run_module(module_path: str, extra_args: list[str] | None = None) -> int:
+def run_module(
+    module_path: str,
+    extra_args: list[str] | None = None,
+    env_extra: dict[str, str] | None = None,
+) -> int:
     cmd = [sys.executable, "-m", module_path]
     if extra_args:
         cmd.extend(extra_args)
     try:
-        result = subprocess.run(cmd, cwd=str(REPO_ROOT), env=_utf8_env())
+        result = subprocess.run(cmd, cwd=str(REPO_ROOT), env=_utf8_env(env_extra))
         return result.returncode
     except KeyboardInterrupt:
         return 130
