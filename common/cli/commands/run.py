@@ -20,7 +20,6 @@ from rich.console import Console
 
 from common.cli.helpers import resolve_quest_by_number, run_module_capturing, starter_module, starter_path
 from common.dashboard.services.trace import record_step, start_trace
-from common.progress.notify import emit_event
 
 console = Console()
 
@@ -31,10 +30,11 @@ _RESPONSE_TOK_RE = re.compile(r"Response tokens:\s*(\d+)")
 
 
 def _emit_step(trace_id: str, quest_db_id: str, step_type: str, name: str | None, payload: str | None) -> None:
-    """Persiste localmente y, si el dashboard responde, también via HTTP.
+    """Persiste el step en `agent_traces`.
 
-    La persistencia local es la fuente de verdad — el POST sólo acelera
-    el polling de /live-agent (que también recoge la tabla directamente).
+    No hacemos POST adicional a /events/trace porque ese endpoint también
+    llama record_step → duplicación. El polling del dashboard lee directo
+    de la tabla; el efecto es el mismo sin filas duplicadas.
     """
     record_step(
         trace_id=trace_id,
@@ -43,22 +43,6 @@ def _emit_step(trace_id: str, quest_db_id: str, step_type: str, name: str | None
         payload=payload,
         quest_db_id=quest_db_id,
     )
-    # Mejor esfuerzo: si el dashboard está activo, el polling encontrará
-    # los rows sin que hagamos un POST extra. Lo emitimos por simetría con
-    # otros eventos, no es crítico.
-    try:
-        emit_event(
-            "trace",
-            {
-                "trace_id": trace_id,
-                "step_type": step_type,
-                "name": name,
-                "payload": payload,
-                "quest_db_id": quest_db_id,
-            },
-        )
-    except Exception:  # noqa: BLE001
-        pass
 
 
 def _parse_line(
@@ -124,6 +108,12 @@ def run(
         (a for a in extra_args if a and not a.startswith("-")),
         None,
     )
+    # El parser de stdout depende del formato verbose del starter: sin
+    # --verbose, `Calling function: name` se imprime SIN paréntesis y el
+    # regex no matchea, así que /live-agent quedaría con solo
+    # session_start y session_end. Forzamos el flag aquí para Q07/Q08.
+    if "--verbose" not in extra_args and "-v" not in extra_args:
+        extra_args.append("--verbose")
 
     # Marca el inicio del trace con un step "session_start" para que
     # /live-agent muestre algo aunque el starter no imprima nada en seguida.
@@ -156,6 +146,7 @@ def run(
             "ARKANUM_TRACE_ID": trace_id,
             "ARKANUM_TRACE": "1",
             "ARKANUM_QUEST_DB_ID": quest.db_id,
+            "ARKANUM_WORKSPACE": f"quests/{quest.slug}/workspace",
         },
     )
 

@@ -83,6 +83,10 @@ def start(
         f"[dim]· Quest {quest.order} — {quest.title}[/]"
     )
     console.print()
-    rc = run_module(module, extra_args=extra)
+    rc = run_module(
+        module,
+        extra_args=extra,
+        env_extra={"ARKANUM_WORKSPACE": f"quests/{quest.slug}/workspace"},
+    )
     if rc != 0:
         raise typer.Exit(rc)
