@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -39,6 +40,10 @@ def success() -> None:
 
 
 def main() -> None:
+    # H-08: COLUMNS=1000 evita que rich.Console envuelva líneas largas
+    # del subprocess y rompa la búsqueda `in output` de abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
             sys.executable,
@@ -51,6 +56,7 @@ def main() -> None:
         encoding="utf-8",
         errors="replace",
         timeout=20,
+        env=env,
     )
 
     output = result.stdout

@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -41,6 +42,10 @@ def success() -> None:
 def main() -> None:
     prompt = "¿Qué es un agente IA? Responde en un párrafo corto."
 
+    # H-08: COLUMNS=1000 evita que rich.Console envuelva líneas largas
+    # del subprocess y rompa la búsqueda `prompt in output` de abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
             sys.executable,
@@ -52,6 +57,7 @@ def main() -> None:
         capture_output=True,
         text=True,
         timeout=30,
+        env=env,
     )
 
     output = result.stdout

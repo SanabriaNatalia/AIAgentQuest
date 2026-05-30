@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -45,10 +46,14 @@ def main() -> None:
     if not STARTER_FILE.exists():
         fail(f"No se encontró el archivo:\n{STARTER_FILE}")
 
+    # H-08: forzar COLUMNS=1000 para que rich.Console no envuelva líneas
+    # largas en el subprocess y rompa el `expected in output` de abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
-            sys.executable, 
-            "-m", 
+            sys.executable,
+            "-m",
             "quests.quest_01_first_invocation.starter.main"
         ],
         cwd=ROOT_DIR,
@@ -56,6 +61,7 @@ def main() -> None:
         text=True,
         encoding="utf-8",
         errors="replace",
+        env=env,
     )
 
     output = result.stdout.strip()
