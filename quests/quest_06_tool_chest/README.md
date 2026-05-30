@@ -270,14 +270,13 @@ Solo queremos comprobar que:
 Prompt:
 
 ```text
-what files are in the root?
+¿Qué archivos hay en la raíz?
 ```
 
-Resultado esperado:
+Resultado esperado (una sola línea):
 
 ```text
-Calling function:
-get_files_info({'directory': '.'})
+Calling function: get_files_info({'directory': '.'})
 ```
 
 ---

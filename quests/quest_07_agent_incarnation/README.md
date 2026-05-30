@@ -274,8 +274,8 @@ Prompt:
 Resultado aproximado:
 
 ```text
-- Calling function: get_files_info
--> {'result': 'Result for current directory: ...'}
+Calling function: get_files_info({'directory': '.'})
+-> {'result': 'Result for current directory:\n- notes.txt: file_size=77, is_dir=False\n- ...'}
 ```
 
 ---

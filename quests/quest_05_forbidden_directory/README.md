@@ -212,7 +212,7 @@ get_files_info("./workspace", "../")
 Resultado:
 
 ```text
-Error: Cannot list '../' as it is outside the permitted working directory
+Error: '../' is outside the permitted working directory
 ```
 
 ---

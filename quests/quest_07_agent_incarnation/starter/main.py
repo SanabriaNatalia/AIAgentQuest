@@ -5,6 +5,14 @@ Objetivo:
 Ejecutar las herramientas solicitadas por el modelo
 y convertir sus resultados en respuestas estructuradas.
 
+⚠️ En este Quest todavía NO devolvemos los resultados de las tools al
+modelo (eso lo harás en Q08, el agent loop). Aquí solo capturas los
+resultados y los imprimes; el agente nunca llega a "responder la
+pregunta" final. Por ejemplo, si preguntas "¿qué archivos hay?",
+verás `Calling function: get_files_info(...)` y su resultado, pero NO
+una respuesta en lenguaje natural como "hay 3 archivos: ...". Eso es
+intencional. Q08 cierra el loop.
+
 Ejecutar desde la raíz del proyecto:
 
     arkanum start 7 "¿Qué archivos hay en la raíz?"
