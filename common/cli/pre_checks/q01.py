@@ -8,15 +8,39 @@ Validamos el camino mínimo de una invocación a Gemini:
 """
 from __future__ import annotations
 
+import ast
+
 from common.cli.helpers import starter_path
 from common.cli.pre_checks._ast_helpers import (
     has_call,
     has_import,
     parse_source,
-    read_source,
 )
 from common.cli.pre_checks.runner import PreCheckResult
 from common.dashboard.services.quest_catalog import QuestMeta
+
+
+def _prompt_assignment_is_nonempty(tree: ast.Module) -> bool:
+    """True si alguna asignación top-level a `prompt` tiene un string no vacío
+    o un valor no-constante (fstring, variable, expresión).
+
+    Mira solo el `tree.body` (top-level del módulo) para no confundirse con
+    cadenas que mencionen `prompt = ""` dentro de mensajes de error, docstrings
+    o expresiones anidadas.
+    """
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        if not any(isinstance(t, ast.Name) and t.id == "prompt" for t in node.targets):
+            continue
+        value = node.value
+        if isinstance(value, ast.Constant):
+            if isinstance(value.value, str) and value.value.strip():
+                return True
+        else:
+            # fstring, llamada, atributo, variable, etc. — asumimos válido.
+            return True
+    return False
 
 
 def checks(quest: QuestMeta) -> list[PreCheckResult]:
@@ -27,8 +51,6 @@ def checks(quest: QuestMeta) -> list[PreCheckResult]:
     tree = parse_source(path)
     if tree is None:
         return [PreCheckResult("Parsea como Python válido", False, "El starter tiene un SyntaxError.")]
-
-    source = read_source(path) or ""
 
     results = [
         PreCheckResult("starter/main.py existe", True),
@@ -59,7 +81,7 @@ def checks(quest: QuestMeta) -> list[PreCheckResult]:
         ),
         PreCheckResult(
             "Define un prompt no vacío",
-            'prompt = ""' not in source and "prompt = ''" not in source,
+            _prompt_assignment_is_nonempty(tree),
             "El placeholder `prompt = \"\"` debe reemplazarse por tu prompt.",
         ),
     ]
