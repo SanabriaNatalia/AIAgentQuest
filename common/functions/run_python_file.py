@@ -9,7 +9,7 @@ from common.functions.get_valid_target_path import get_valid_target_path
 # similar a schema_get_files_info
 # Puedes revisar esta entrada si tienes dudas:
 # docs/agents/tool_schemas.md
-schema_get_file_content = None
+schema_run_python_file = None
 
 def run_python_file(working_directory, file_path, args=None):
     try:
