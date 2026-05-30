@@ -645,19 +645,36 @@
         ? currentBand.parentElement.querySelector("[data-band-meta]")
         : null;
       if (!meta) return;
-      var parts = [];
+
+      // Render como chips visuales en vez de texto plano. Más compacto y
+      // permite distinguir prompt vs response tokens de un vistazo.
+      meta.innerHTML = "";
+
       if (bandStats.latency != null) {
-        parts.push(bandStats.latency.toFixed(2) + " s");
+        meta.appendChild(_makeMetaChip("⏱", bandStats.latency.toFixed(2) + " s"));
+      }
+      if (bandStats.promptTokens > 0) {
+        meta.appendChild(_makeMetaChip("↑", bandStats.promptTokens + " p"));
+      }
+      if (bandStats.responseTokens > 0) {
+        meta.appendChild(_makeMetaChip("↓", bandStats.responseTokens + " r"));
       }
       var totalTok = bandStats.promptTokens + bandStats.responseTokens;
       if (totalTok > 0) {
         var cost =
           bandStats.promptTokens * KPI_PRICE_INPUT_PER_1M / 1e6 +
           bandStats.responseTokens * KPI_PRICE_OUTPUT_PER_1M / 1e6;
-        parts.push(formatTokens(totalTok) + " tokens");
-        parts.push("$" + cost.toFixed(4));
+        meta.appendChild(_makeMetaChip("$", cost.toFixed(4)));
       }
-      meta.textContent = parts.join(" · ");
+    }
+
+    function _makeMetaChip(icon, value) {
+      var chip = document.createElement("span");
+      chip.className = "trace-band-meta-chip";
+      chip.innerHTML =
+        '<span class="trace-band-meta-icon" aria-hidden="true">' + icon + '</span>' +
+        '<span class="trace-band-meta-value">' + escapeHtml(value) + '</span>';
+      return chip;
     }
 
     function openBand(step) {
@@ -767,10 +784,15 @@
 
     function labelFor(stepType) {
       switch (stepType) {
-        case "agent_thought": return "pensamiento";
-        case "agent_final": return "respuesta final";
-        case "iteration_start": return "iteración";
+        case "function_call": return "herramienta solicitada";
+        case "function_result": return "resultado de la herramienta";
+        case "agent_thought": return "razonamiento del agente";
+        case "agent_final": return "respuesta del agente";
+        case "iteration_start": return "iteración del loop";
         case "latency": return "latencia";
+        case "tokens": return "tokens";
+        case "session_start": return "inicio de sesión";
+        case "session_end": return "fin de sesión";
         default: return stepType;
       }
     }
@@ -848,13 +870,46 @@
 
       var payload = payloadText(step);
       if (payload) {
-        var pre = document.createElement("pre");
-        pre.className = "trace-step-result-payload";
-        pre.textContent = payload;
-        resBlock.appendChild(pre);
+        resBlock.appendChild(_makeExpandablePayload(payload, "trace-step-result-payload"));
       }
       call.appendChild(resBlock);
       return true;
+    }
+
+    function _makeExpandablePayload(text, baseClass, threshold) {
+      // Crea un <pre> con el payload. Si supera `threshold` (default 200),
+      // muestra una versión truncada + botón "ver más" / "ver menos".
+      var limit = threshold || 200;
+      var pre = document.createElement("pre");
+      pre.className = baseClass;
+
+      if (text.length <= limit) {
+        pre.textContent = text;
+        return pre;
+      }
+
+      var shortText = text.slice(0, limit) + "…";
+      var expanded = false;
+
+      pre.textContent = shortText;
+
+      var toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "trace-step-payload-toggle";
+      toggle.textContent = "ver más (" + text.length + " chars)";
+      toggle.addEventListener("click", function () {
+        expanded = !expanded;
+        pre.textContent = expanded ? text : shortText;
+        toggle.textContent = expanded
+          ? "ver menos"
+          : "ver más (" + text.length + " chars)";
+      });
+
+      var wrap = document.createElement("div");
+      wrap.className = "trace-step-payload-wrap";
+      wrap.appendChild(pre);
+      wrap.appendChild(toggle);
+      return wrap;
     }
 
     function renderStep(step) {
@@ -881,10 +936,7 @@
         li.dataset.pairName = step.name || "";
         var payload = payloadText(step);
         if (payload) {
-          var body = document.createElement("pre");
-          body.className = "trace-step-payload";
-          body.textContent = payload;
-          li.appendChild(body);
+          li.appendChild(_makeExpandablePayload(payload, "trace-step-payload"));
         }
         var pending = document.createElement("p");
         pending.className = "trace-step-pending";
@@ -987,18 +1039,24 @@
             : false;
           if (!anchored) appendStep(renderStep(step));
         } else if (step.step_type === "latency") {
-          // En la banda actual, suma la latencia al meta del header.
-          // También se muestra como step individual (chip) por compatibilidad.
+          // Latencia va al meta del header de la banda; no la renderizamos
+          // como tarjeta separada para evitar ruido visual (mejora #5 UX).
           var seconds = payloadField(step, "seconds");
           if (seconds != null) updateBandMeta(seconds);
-          appendStep(renderStep(step));
         } else if (step.step_type === "tokens") {
-          // Suma a la banda activa para mostrar costo en su header.
+          // Mejora #5 de UX: NO renderizamos tokens como tarjeta — se ven
+          // muy grandes y desbalancean el flujo. Los acumulamos como
+          // metadata del header de la banda activa.
           addBandTokens(step);
-          appendStep(renderStep(step));
         } else if (step.step_type === "context_growth") {
           // Renderiza dentro de la banda como panel desplegable (mejora #11/#17).
           appendContextGrowth(step);
+        } else if (step.step_type === "session_start" || step.step_type === "session_end") {
+          // Problema A de UX: estos steps son técnicos y ya están
+          // reflejados en el toolbar (sealed badge) y en los paneles de
+          // prompt arriba. No los renderizamos como tarjetas para evitar
+          // ruido. El polling sigue procesándolos para detectar fin de
+          // trace y user_prompt.
         } else {
           appendStep(renderStep(step));
         }
@@ -1062,9 +1120,127 @@
       // modelo; Q08 cierra el loop). Sin esto el aprendiz cree que se rompió.
       maybeAppendQ07Banner(data);
 
+      // Problema E de UX: card TL;DR al final cuando el trace termina.
+      maybeAppendSummaryCard(data);
+
       // Mejora #8: registra cuántos steps llegaron en este poll para decidir
       // el siguiente intervalo.
       lastPollAddedSteps = added;
+    }
+
+    function maybeAppendSummaryCard(data) {
+      if (!stepsHost || !data || !data.summary) return;
+      if (!data.summary.has_session_end) return;
+      // Evita duplicar.
+      if (stepsHost.querySelector(".trace-summary-card")) return;
+
+      var steps = data.steps || [];
+      var prompt = null;
+      var finalText = null;
+      var iterCount = 0;
+      var iterMax = null;
+      var toolUses = {};  // {name: count}
+      var promptTokens = 0;
+      var responseTokens = 0;
+      var firstTs = null;
+      var lastTs = null;
+
+      for (var i = 0; i < steps.length; i++) {
+        var s = steps[i];
+        if (!s) continue;
+        if (firstTs === null) firstTs = s.created_at;
+        lastTs = s.created_at;
+        if (s.step_type === "session_start" && s.payload && s.payload.user_prompt) {
+          prompt = s.payload.user_prompt;
+        }
+        if (s.step_type === "iteration_start") {
+          iterCount += 1;
+          var p = s.payload || {};
+          if (p.max != null && iterMax == null) iterMax = p.max;
+        }
+        if (s.step_type === "function_call" && s.name) {
+          toolUses[s.name] = (toolUses[s.name] || 0) + 1;
+        }
+        if (s.step_type === "agent_final") {
+          finalText = (s.payload && s.payload.text) || payloadText(s);
+        }
+        if (s.step_type === "tokens") {
+          var n = parseInt(s.payload, 10);
+          if (!isNaN(n)) {
+            if (s.name === "prompt") promptTokens += n;
+            else if (s.name === "response") responseTokens += n;
+          }
+        }
+      }
+
+      var totalTok = promptTokens + responseTokens;
+      var cost =
+        promptTokens * KPI_PRICE_INPUT_PER_1M / 1e6 +
+        responseTokens * KPI_PRICE_OUTPUT_PER_1M / 1e6;
+      var duration = "—";
+      if (firstTs && lastTs) {
+        var d = (new Date(lastTs).getTime() - new Date(firstTs).getTime()) / 1000;
+        if (!isNaN(d) && d >= 0) duration = d.toFixed(1) + " s";
+      }
+
+      var toolsList = Object.keys(toolUses)
+        .map(function (k) { return k + " (×" + toolUses[k] + ")"; })
+        .join(", ") || "—";
+
+      var li = document.createElement("li");
+      li.className = "trace-summary-card";
+      li.innerHTML =
+        '<div class="trace-summary-head">' +
+          '<span class="trace-summary-eyebrow">RESUMEN</span>' +
+          '<span class="trace-summary-trace-id">' + escapeHtml(data.trace_id || "") + '</span>' +
+        '</div>' +
+        '<div class="trace-summary-grid">' +
+          '<div class="trace-summary-row">' +
+            '<span class="trace-summary-label">🜂 entró</span>' +
+            '<span class="trace-summary-value">' + escapeHtml(prompt || "(sin prompt)") + '</span>' +
+          '</div>' +
+          '<div class="trace-summary-row">' +
+            '<span class="trace-summary-label">🔄 iteraciones</span>' +
+            '<span class="trace-summary-value">' +
+              iterCount + (iterMax ? " / " + iterMax : "") +
+            '</span>' +
+          '</div>' +
+          '<div class="trace-summary-row">' +
+            '<span class="trace-summary-label">🛠 herramientas</span>' +
+            '<span class="trace-summary-value">' + escapeHtml(toolsList) + '</span>' +
+          '</div>' +
+          '<div class="trace-summary-row">' +
+            '<span class="trace-summary-label">⏱ duración</span>' +
+            '<span class="trace-summary-value">' + duration + '</span>' +
+          '</div>' +
+          '<div class="trace-summary-row">' +
+            '<span class="trace-summary-label">💸 costo</span>' +
+            '<span class="trace-summary-value">' +
+              totalTok + ' tokens (' + promptTokens + 'p + ' + responseTokens + 'r) · $' +
+              cost.toFixed(4) +
+            '</span>' +
+          '</div>' +
+          (finalText
+            ? '<div class="trace-summary-row trace-summary-row--final">' +
+                '<span class="trace-summary-label">✦ respuesta</span>' +
+                '<span class="trace-summary-value trace-summary-value--prose">' +
+                  escapeHtml(_truncatePreview(finalText, 400)) +
+                '</span>' +
+              '</div>'
+            : '<div class="trace-summary-row">' +
+                '<span class="trace-summary-label">✦ respuesta</span>' +
+                '<span class="trace-summary-value trace-summary-value--muted">' +
+                  '(el trace cerró sin respuesta final)' +
+                '</span>' +
+              '</div>') +
+        '</div>';
+      stepsHost.appendChild(li);
+    }
+
+    function _truncatePreview(text, max) {
+      var t = String(text || "");
+      if (t.length <= max) return t;
+      return t.slice(0, max - 1) + "…";
     }
 
     function maybeAppendQ07Banner(data) {
@@ -1190,7 +1366,11 @@
 
         var title = document.createElement("div");
         title.className = "live-agent-history-title";
-        title.textContent = t.quest_title || t.trace_id;
+        // Mostrar Q{N} antes del título para identificar rápido.
+        var questBadge = t.quest_order != null
+          ? '<span class="live-agent-history-q-badge">Q' + t.quest_order + '</span> '
+          : '';
+        title.innerHTML = questBadge + escapeHtml(t.quest_title || t.trace_id);
         btn.appendChild(title);
 
         var prompt = document.createElement("div");
@@ -1216,6 +1396,46 @@
         });
 
         li.appendChild(btn);
+
+        // Botón ✕ para borrar el trace (H-22 fix #3 de UX).
+        var closeBtn = document.createElement("button");
+        closeBtn.type = "button";
+        closeBtn.className = "live-agent-history-close";
+        closeBtn.title = "Borrar este trace del historial";
+        closeBtn.setAttribute("aria-label", "Borrar trace " + t.trace_id);
+        closeBtn.textContent = "✕";
+        closeBtn.addEventListener("click", function (evt) {
+          evt.stopPropagation();
+          if (!window.confirm("¿Borrar este trace del historial?")) return;
+          var deleteUrl = host.dataset.traceDeleteUrl;
+          if (!deleteUrl) return;
+          var endpoint = deleteUrl.replace(
+            "{trace_id}",
+            encodeURIComponent(t.trace_id)
+          );
+          closeBtn.disabled = true;
+          fetch(endpoint, { method: "DELETE" })
+            .then(function (r) {
+              if (!r.ok && r.status !== 404) throw new Error("DELETE falló");
+              // Si era el trace activo, vuelvo al modo live y refresco.
+              if (selectedTraceId === t.trace_id) {
+                selectedTraceId = null;
+                if (stepsHost) stepsHost.innerHTML = "";
+                seenIds = new Set();
+                lastTraceId = null;
+                resetBands();
+                setUserPrompt(host, null);
+                poll();
+              }
+              loadHistory();
+            })
+            .catch(function () {
+              closeBtn.disabled = false;
+              window.alert("No se pudo borrar el trace.");
+            });
+        });
+        li.appendChild(closeBtn);
+
         historyListHost.appendChild(li);
       });
     }
@@ -1464,6 +1684,46 @@
     }
 
     // ----- Mejora #7: Lanzar trace desde el dashboard. -----------------
+    // Pobla el <select> dinámicamente con las quests live_agent del catálogo.
+    function loadLauncherQuests() {
+      var questsUrl = host.dataset.launcherQuestsUrl;
+      if (!questsUrl) return;
+      var sel = host.querySelector("[data-launcher-quest]");
+      var promptIn = host.querySelector("[data-launcher-prompt]");
+      if (!sel) return;
+      fetch(questsUrl, { headers: { Accept: "application/json" } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !Array.isArray(data.quests)) return;
+          sel.innerHTML = "";
+          data.quests.forEach(function (q, idx) {
+            var opt = document.createElement("option");
+            opt.value = String(q.order);
+            opt.textContent = "Q" + q.order + " — " + q.title;
+            opt.dataset.defaultPrompt = q.default_prompt || "";
+            if (idx === data.quests.length - 1) opt.selected = true;
+            sel.appendChild(opt);
+          });
+          // Si el aprendiz cambia quest y el input está vacío, sugerir el default.
+          sel.addEventListener("change", function () {
+            if (!promptIn || promptIn.value.trim()) return;
+            var picked = sel.options[sel.selectedIndex];
+            if (picked && picked.dataset.defaultPrompt) {
+              promptIn.placeholder = picked.dataset.defaultPrompt;
+            }
+          });
+          // Trigger inicial para el placeholder.
+          if (promptIn && !promptIn.value.trim()) {
+            var picked = sel.options[sel.selectedIndex];
+            if (picked && picked.dataset.defaultPrompt) {
+              promptIn.placeholder = picked.dataset.defaultPrompt;
+            }
+          }
+        })
+        .catch(function () { /* best-effort */ });
+    }
+    loadLauncherQuests();
+
     var launcherForm = host.querySelector("[data-trace-launcher-form]");
     if (launcherForm) {
       var launcherStatus = launcherForm.querySelector("[data-launcher-status]");
@@ -1501,6 +1761,17 @@
           })
           .then(function () {
             if (launcherStatus) launcherStatus.textContent = "✓ Subprocess lanzado. Pasos llegando…";
+            // Sincroniza el panel "Prompt del usuario" inmediatamente con el
+            // prompt que el aprendiz acaba de escribir. Sin esto, el panel
+            // mantiene el prompt del trace anterior hasta que llega
+            // session_start del nuevo trace, lo cual confunde al aprendiz.
+            lastUserPrompt = prompt;
+            setUserPrompt(host, prompt);
+            // Vaciar el render para no mezclar steps del trace anterior.
+            if (stepsHost) stepsHost.innerHTML = "";
+            seenIds = new Set();
+            lastTraceId = null;
+            resetBands();
             // Volver al modo live (no histórico) para ver el trace nuevo.
             selectedTraceId = null;
             traceSealed = false;

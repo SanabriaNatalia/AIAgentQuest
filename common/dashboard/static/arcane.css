@@ -2810,6 +2810,7 @@ code {
 .live-agent-history-item {
   flex: 0 0 auto;
   scroll-snap-align: start;
+  position: relative;
 }
 
 .live-agent-history-button {
@@ -2819,7 +2820,7 @@ code {
   background: rgba(26, 21, 53, 0.6);
   border: 1px solid rgba(201, 169, 97, 0.18);
   border-radius: 9px;
-  padding: 0.55rem 0.7rem;
+  padding: 0.55rem 0.7rem 0.55rem 0.7rem;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -2827,6 +2828,55 @@ code {
   font-family: inherit;
   color: var(--arkanum-text);
   transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+/* Botón ✕ para borrar trace (esquina superior derecha de la card). */
+.live-agent-history-close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.3rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(13, 10, 31, 0.6);
+  color: var(--arkanum-muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  z-index: 2;
+}
+
+.live-agent-history-item:hover .live-agent-history-close {
+  opacity: 1;
+}
+
+.live-agent-history-close:hover {
+  background: rgba(232, 122, 122, 0.2);
+  color: var(--arkanum-fail);
+}
+
+.live-agent-history-close:disabled {
+  opacity: 0.4;
+  cursor: progress;
+}
+
+/* Badge Q{N} antes del título de la card. */
+.live-agent-history-q-badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  margin-right: 0.35rem;
+  background: rgba(192, 132, 252, 0.18);
+  color: var(--arkanum-glow);
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
 }
 
 .live-agent-history-button:hover {
@@ -3162,6 +3212,33 @@ code {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--arkanum-muted);
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.trace-band-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.08rem 0.45rem;
+  background: rgba(13, 10, 31, 0.55);
+  border: 1px solid rgba(201, 169, 97, 0.22);
+  border-radius: 9px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.trace-band-meta-icon {
+  color: var(--arkanum-gold);
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.trace-band-meta-value {
+  color: var(--arkanum-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .trace-band-steps {
@@ -3171,6 +3248,122 @@ code {
   gap: 0.55rem;
   margin: 0;
   padding: 0;
+}
+
+/* Card TL;DR al final del trace (mejora UX problema E). */
+.trace-summary-card {
+  list-style: none;
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  background: linear-gradient(165deg, rgba(201, 169, 97, 0.12), rgba(26, 21, 53, 0.85));
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 14px;
+  box-shadow: 0 14px 28px -22px rgba(201, 169, 97, 0.6);
+}
+
+.trace-summary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px dashed rgba(201, 169, 97, 0.3);
+}
+
+.trace-summary-eyebrow {
+  font-family: var(--font-serif);
+  letter-spacing: 0.18em;
+  color: var(--arkanum-gold);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.trace-summary-trace-id {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--arkanum-muted);
+}
+
+.trace-summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.trace-summary-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.85rem;
+  align-items: baseline;
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
+.trace-summary-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  color: var(--arkanum-muted);
+  text-transform: lowercase;
+}
+
+.trace-summary-value {
+  color: var(--arkanum-text);
+  font-family: var(--font-sans);
+}
+
+.trace-summary-value--muted {
+  color: var(--arkanum-muted);
+  font-style: italic;
+}
+
+.trace-summary-value--prose {
+  font-family: var(--font-sans);
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.trace-summary-row--final {
+  margin-top: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(192, 132, 252, 0.25);
+}
+
+.trace-summary-row--final .trace-summary-label {
+  color: var(--arkanum-glow);
+}
+
+/* Toggle "ver más" para payloads largos (mejora UX problema F). */
+.trace-step-payload-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.trace-step-payload-wrap .trace-step-payload,
+.trace-step-payload-wrap .trace-step-result-payload {
+  margin-top: 0;
+}
+
+.trace-step-payload-toggle {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed rgba(192, 132, 252, 0.4);
+  color: var(--arkanum-glow);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.trace-step-payload-toggle:hover {
+  background: rgba(192, 132, 252, 0.12);
+  color: var(--arkanum-gold);
+  border-color: var(--arkanum-gold);
 }
 
 /* Banner aclaratorio cuando un trace de Q07 termina sin agent_final (H-22). */
