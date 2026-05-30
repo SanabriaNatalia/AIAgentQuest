@@ -258,12 +258,57 @@ def recent_traces(limit: int = Query(10, ge=1, le=50)) -> JSONResponse:
             "trace_id": s.trace_id,
             "quest_slug": s.quest.slug if s.quest else None,
             "quest_title": s.quest.title if s.quest else None,
+            "quest_order": s.quest.order if s.quest else None,
             "started_at": s.started_at,
             "last_step_at": s.last_step_at,
             "steps": s.steps,
             "user_prompt": trace_first_user_prompt(s.trace_id),
         })
     return JSONResponse({"traces": items})
+
+
+@router.delete("/api/traces/{trace_id}")
+def delete_trace(trace_id: str) -> JSONResponse:
+    """Borra todos los steps de un trace específico de `agent_traces`.
+
+    Devuelve 404 si no existía. La operación es idempotente: borrar
+    dos veces el mismo trace devuelve 404 la segunda vez.
+    """
+    from common.progress.db import get_connection, init_db
+
+    init_db()
+    with get_connection() as conn:
+        cur = conn.execute(
+            "DELETE FROM agent_traces WHERE trace_id = ?",
+            (trace_id,),
+        )
+        deleted = cur.rowcount
+    if deleted == 0:
+        raise HTTPException(status_code=404, detail=f"Trace {trace_id} no encontrado.")
+    return JSONResponse({"ok": True, "deleted_steps": deleted, "trace_id": trace_id})
+
+
+@router.get("/api/quests/live-agent")
+def live_agent_quests() -> JSONResponse:
+    """Catálogo de quests que el launcher de /live-agent puede ejecutar.
+
+    Solo incluye quests marcadas con `live_agent=True` en QuestMeta
+    (hoy Q07 y Q08). Frontend lo usa para poblar el `<select>` del
+    launcher sin hardcodear las opciones.
+    """
+    from common.dashboard.services.quest_catalog import QUESTS
+
+    items = [
+        {
+            "order": q.order,
+            "slug": q.slug,
+            "title": q.title,
+            "default_prompt": q.live_agent_default_prompt,
+        }
+        for q in QUESTS
+        if q.live_agent
+    ]
+    return JSONResponse({"quests": items})
 
 
 class TraceRunRequest(BaseModel):
@@ -297,11 +342,18 @@ def trace_run(payload: TraceRunRequest) -> JSONResponse:
             status_code=400,
             detail=f"Quest #{payload.quest_order} no existe.",
         )
+    quest = matches[0]
+    if not quest.live_agent:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Quest #{quest.order} no soporta el visualizador en vivo. "
+                "Solo Q07 y Q08 emiten traces que /live-agent pueda mostrar."
+            ),
+        )
     prompt = (payload.prompt or "").strip()
     if not prompt:
         raise HTTPException(status_code=400, detail="El prompt no puede estar vacío.")
-
-    quest = matches[0]
     cmd = [
         sys.executable,
         "-m",
