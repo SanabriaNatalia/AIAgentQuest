@@ -1057,9 +1057,44 @@
       // Mejora #13: recalcula KPIs sobre la lista completa, no incremental.
       renderHud(data.steps);
 
+      // H-22: si el trace es de Q07 y terminó sin agent_final, añade un
+      // banner que aclara que es esperado (Q07 no devuelve resultado al
+      // modelo; Q08 cierra el loop). Sin esto el aprendiz cree que se rompió.
+      maybeAppendQ07Banner(data);
+
       // Mejora #8: registra cuántos steps llegaron en este poll para decidir
       // el siguiente intervalo.
       lastPollAddedSteps = added;
+    }
+
+    function maybeAppendQ07Banner(data) {
+      if (!stepsHost || !data || !data.summary) return;
+      var isQ07 = data.summary.quest_slug === "quest_07_agent_incarnation";
+      var hasEnd = data.summary.has_session_end;
+      if (!isQ07 || !hasEnd) return;
+
+      // ¿El trace tuvo agent_final? Entonces no aplica.
+      var hasAgentFinal = (data.steps || []).some(function (s) {
+        return s.step_type === "agent_final";
+      });
+      if (hasAgentFinal) return;
+
+      // No duplicar el banner si ya está renderizado.
+      if (stepsHost.querySelector(".trace-q07-banner")) return;
+
+      var banner = document.createElement("li");
+      banner.className = "trace-q07-banner";
+      banner.innerHTML =
+        '<span class="trace-q07-banner-icon" aria-hidden="true">ℹ️</span>' +
+        '<div class="trace-q07-banner-body">' +
+          '<strong>Q07 termina aquí — esto es esperado.</strong> ' +
+          'En esta quest las tools se ejecutan, pero sus resultados ' +
+          '<em>no</em> vuelven al modelo, así que no hay respuesta final ' +
+          'en lenguaje natural. ' +
+          '<strong>Q08</strong> cierra el loop ' +
+          '(observar → reaccionar → responder).' +
+        '</div>';
+      stepsHost.appendChild(banner);
     }
 
     function buildPollUrl() {
