@@ -7,13 +7,11 @@ un system prompt.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 4 \
-    "¿Cuál es la capital de Francia?"
+    arkanum start 4 "¿Cuál es la capital de Francia?"
 
 Una vez hayas terminado, valida tu solución ejecutando:
 
-    akranum check 4
-    
+    arkanum check 4
 """
 
 import argparse

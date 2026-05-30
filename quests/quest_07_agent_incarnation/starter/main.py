@@ -15,7 +15,7 @@ También puedes usar modo verbose:
 
 Una vez hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_07_agent_embodiment.check
+    arkanum check 7
 """
 
 import argparse

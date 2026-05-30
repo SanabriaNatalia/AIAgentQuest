@@ -150,4 +150,4 @@ show_quest_header(
 # Cuando hayas validado que las tools se están llamando correctamente,
 # ejecuta el check para completar la quest:
 #
-# uv run python -m quests.quest_06_tool_chest.check
+# arkanum check 6

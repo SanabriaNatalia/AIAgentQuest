@@ -26,6 +26,7 @@ from common.utils.ui import (
     narrator,
     agent,
     success,
+    show_prompt,
 )
 
 show_quest_header(
