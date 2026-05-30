@@ -6,6 +6,10 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
+from common.cli.check_runner import (
+    render_any_of_table,
+    render_required_outputs_table,
+)
 from common.progress.db import record_quest_completion
 from common.utils.ui import warning
 
@@ -96,24 +100,29 @@ def main() -> None:
             f"{error or output}"
         )
 
-    for expected in REQUIRED_OUTPUTS:
-        if expected not in output:
-            fail(
-                "No encontré una salida esperada.\n\n"
-                f"Faltó:\n{expected}\n\n"
-                f"Salida completa:\n{output}"
-            )
-
-    found_valid_function = any(
-        function_name in output
-        for function_name in VALID_FUNCTIONS
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 6",
+        output,
+        REQUIRED_OUTPUTS,
     )
-
-    if not found_valid_function:
+    console.print(table)
+    if missing:
         fail(
-            "No encontré ninguna tool válida en los function calls.\n\n"
-            f"Tools esperadas:\n{VALID_FUNCTIONS}\n\n"
-            f"Salida completa:\n{output}"
+            f"Faltaron {len(missing)} salida(s). El starter debe imprimir "
+            "'Calling function: ...' cuando el modelo planea una tool."
+        )
+
+    tools_table, found_any = render_any_of_table(
+        "Tools válidas detectadas",
+        output,
+        VALID_FUNCTIONS,
+        item_label="Tool",
+    )
+    console.print(tools_table)
+    if not found_any:
+        fail(
+            "Ninguna de las tools válidas apareció en los function calls. "
+            "Revisa que tu agente esté planeando alguna de las 4 tools registradas."
         )
 
     success()

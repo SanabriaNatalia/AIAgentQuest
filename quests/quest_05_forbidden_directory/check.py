@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
@@ -92,13 +93,17 @@ def main() -> None:
             f"Salida:\n{output}"
         )
 
-    for expected in REQUIRED_OUTPUTS:
-        if expected not in output:
-            fail(
-                "No encontré una salida esperada.\n\n"
-                f"Faltó:\n{expected}\n\n"
-                f"Salida completa:\n{output}"
-            )
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 5",
+        output,
+        REQUIRED_OUTPUTS,
+    )
+    console.print(table)
+    if missing:
+        fail(
+            f"Faltaron {len(missing)} salida(s) esperada(s) en los tests. "
+            "Revisa los try/except del starter y la función validador."
+        )
 
     success()
 

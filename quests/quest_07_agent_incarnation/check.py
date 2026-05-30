@@ -6,6 +6,10 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
+from common.cli.check_runner import (
+    render_any_of_table,
+    render_required_outputs_table,
+)
 from common.progress.db import record_quest_completion
 from common.utils.ui import warning
 
@@ -73,24 +77,31 @@ def validate_output(output: str, returncode: int = 0, error: str = "") -> None:
             f"{error or output}"
         )
 
-    for expected in EXPECTED_OUTPUTS:
-        if expected not in output:
-            fail(
-                "No encontré una salida esperada.\n\n"
-                f"Faltó:\n{expected}\n\n"
-                f"Salida completa:\n{output}"
-            )
-
-    found_valid_function = any(
-        function_name in output
-        for function_name in VALID_FUNCTIONS
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 7",
+        output,
+        EXPECTED_OUTPUTS,
     )
-
-    if not found_valid_function:
+    console.print(table)
+    if missing:
         fail(
-            "No encontré ninguna tool válida ejecutándose.\n\n"
-            f"Tools esperadas:\n{VALID_FUNCTIONS}\n\n"
-            f"Salida completa:\n{output}"
+            f"Faltaron {len(missing)} salida(s) esperada(s). "
+            "El starter debe imprimir 'Calling function:' y un 'result' "
+            "del subprocess de cada tool."
+        )
+
+    tools_table, found_any = render_any_of_table(
+        "Tools válidas ejecutadas",
+        output,
+        VALID_FUNCTIONS,
+        item_label="Tool",
+    )
+    console.print(tools_table)
+    if not found_any:
+        fail(
+            "Ninguna de las tools válidas se ejecutó. "
+            "Revisa que tu agente esté llamando a get_files_info, "
+            "get_file_content, write_file o run_python_file."
         )
 
 

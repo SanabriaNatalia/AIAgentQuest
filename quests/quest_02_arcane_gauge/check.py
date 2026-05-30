@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
@@ -76,20 +77,14 @@ def main() -> None:
             f"{error}"
         )
 
-    if "Prompt tokens:" not in output:
-        fail(
-            "No encontré 'Prompt tokens:' en la salida."
-        )
-
-    if "Response tokens:" not in output:
-        fail(
-            "No encontré 'Response tokens:' en la salida."
-        )
-
-    if "Agente:" not in output:
-        fail(
-            "No encontré la respuesta del agente."
-        )
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 2",
+        output,
+        ["Prompt tokens:", "Response tokens:", "Agente:"],
+    )
+    console.print(table)
+    if missing:
+        fail(f"Faltaron {len(missing)} salida(s) esperada(s) en la consola.")
 
     success()
 

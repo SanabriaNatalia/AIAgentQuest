@@ -3,6 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
@@ -87,7 +88,13 @@ def main() -> None:
             "Asegúrate de imprimir la respuesta de Gemini con response.text."
         )
 
-    if "Agente:" not in output:
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 1",
+        output,
+        ["Agente:"],
+    )
+    console.print(table)
+    if missing:
         fail(
             "No encontré la sección de respuesta de Gemini.\n"
             "Asegúrate de usar agent(response.text) o imprimir la respuesta claramente."
