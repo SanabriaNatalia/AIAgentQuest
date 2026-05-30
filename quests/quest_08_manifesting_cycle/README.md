@@ -298,6 +298,38 @@ Y eso cambia todo.
 
 ---
 
+## 🧭 Tres comandos, tres propósitos
+
+| Comando | Para qué | Toca Live Agent |
+|---|---|---|
+| `arkanum start 8 "..."` | Correr tu solución una vez en la terminal | No |
+| `arkanum check 8` | Validar que `calculator.py` quedó arreglado y sellar la quest | No |
+| `arkanum run 8 "..."` | Correr + ver el agent loop iterativo en el dashboard | **Sí** |
+
+`arkanum check 8` aquí es especial: **no ejecuta el agente**, solo verifica que `workspace/calculator.py` tenga `return a + b` y que `python tests.py` pase. Para ver al agente arreglar el bug en vivo necesitas `arkanum run 8 "..."`.
+
+## 🪞 Ver el ciclo en vivo (este es el momento)
+
+Q08 es la quest donde el agent loop importa más visualmente. Con el dashboard arrancado:
+
+```bash
+arkanum dashboard start
+arkanum run 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
+```
+
+Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent). Verás:
+
+- una **banda por iteración** del loop (Iteración 1, 2, 3…),
+- el **pensamiento** del modelo en italic antes de cada tool call,
+- las tool calls agrupadas con su resultado anidado,
+- la **latencia, tokens y costo** por iteración en el header de cada banda,
+- el **contexto creciente** (cuántos `messages` tiene el historial tras cada vuelta),
+- la **respuesta final** dorada cuando el agente sale del loop.
+
+> ℹ️ Si abres `/live-agent` y solo ves la celebración tras `arkanum check 8`, eso es esperado: `check` no emite traces. Solo `run` lo hace.
+
+---
+
 ## ✅ Resultado esperado
 
 El agente identifica y corrige autónomamente el bug en `calculator.py`, ejecutando múltiples tool calls hasta validar que los tests pasen.

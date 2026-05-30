@@ -231,6 +231,38 @@ Por ahora solo queremos:
 
 ---
 
+## 🧭 Tres comandos, tres propósitos
+
+A partir de Q07 vale la pena entender bien cuándo usar cada uno:
+
+| Comando | Para qué | Toca Live Agent |
+|---|---|---|
+| `arkanum start 7 "..."` | Correr tu solución una vez en la terminal | No |
+| `arkanum check 7` | Validar y sellar la quest | No |
+| `arkanum run 7 "..."` | Correr + ver al agente paso a paso en el dashboard | **Sí** |
+
+Los tres consumen cuota de Gemini. `start` es para iterar sin presión, `check` es lo que te da el rango y el XP, y `run` es el único que activa el visualizador.
+
+## 🪞 Ver al agente en vivo
+
+Para ver paso a paso cómo el modelo decide qué tool usar, asegúrate de tener el dashboard arrancado:
+
+```bash
+arkanum dashboard start
+```
+
+Luego ejecuta el agente con `run` (no con `start` ni `check`):
+
+```bash
+arkanum run 7 "lee notes.txt y resume su contenido"
+```
+
+Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent) en el navegador. El panel muestra cada `function_call` con su argumento, el resultado de cada tool y los tokens consumidos — sin que tengas que leer el output en la terminal.
+
+> ℹ️ `arkanum check 7` **no** alimenta `/live-agent`. Si terminas la quest y el panel está vacío, eso es esperado: corre `arkanum run 7 "..."` para verlo.
+
+---
+
 ## ✅ Resultado esperado
 
 Prompt:
