@@ -11,14 +11,24 @@ Para el resto de quests reenvía el output crudo del starter.
 Opt-out: con `ARKANUM_NO_DASHBOARD=1` nunca se traza (útil en CI),
 igual que el resto de integraciones con el dashboard.
 
-Patrones reconocidos en modo live:
-- `Calling function: NAME(ARGS)` → function_call
-- `-> {...}` o `-> ...`         → function_result
-- `Prompt tokens: N`            → tokens (prompt)
+Patrones reconocidos en modo live (todos derivados del stdout que el
+starter del aprendiz ya imprime — sin pedirle que escriba `emit`):
+- `Calling function: NAME(ARGS)` → function_call (args limpiados a dict)
+- `-> {...}` o `-> ...`         → function_result (valor desenvuelto + flag de error)
+- `Prompt tokens: N`            → tokens (prompt) + abre iteración del loop (Q08)
 - `Response tokens: N`          → tokens (response)
+- `Final response:` + texto     → agent_final (respuesta en lenguaje natural)
+- `Error in generate_content: …`→ error (excepción del loop)
+- `Maximum iterations (N) …`    → error (el agente no cerró la tarea)
+
+Las emisiones ricas que el stdout NO puede expresar (latencia,
+`agent_thought`, `context_growth`) las sigue mandando la solución vía
+`common.tracing.emit`; conviven sin duplicar porque usan otros
+`step_type`.
 """
 from __future__ import annotations
 
+import ast
 import json
 import os
 import re
@@ -33,6 +43,7 @@ from common.cli.helpers import (
     starter_module,
     starter_path,
 )
+from common.config import MAX_ITERS
 from common.dashboard.services.trace import record_step, start_trace
 
 console = Console()
@@ -65,6 +76,61 @@ _CALL_RE = re.compile(r"Calling function:\s*([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)\
 _RESULT_RE = re.compile(r"^\s*->\s*(.+?)\s*$")
 _PROMPT_TOK_RE = re.compile(r"Prompt tokens:\s*(\d+)")
 _RESPONSE_TOK_RE = re.compile(r"Response tokens:\s*(\d+)")
+_FINAL_HDR_RE = re.compile(r"^\s*Final response:\s*$")
+_ERROR_RE = re.compile(r"Error in generate_content:\s*(.+)$")
+_MAX_ITERS_RE = re.compile(r"Maximum iterations\s*\((\d+)\)\s*reached")
+
+
+def _clean_call_args(raw: str) -> str:
+    """Convierte la repr de los args de Gemini en un payload JSON legible.
+
+    El starter imprime `Calling function: name({'directory': '.'})`; aquí
+    `raw` es `{'directory': '.'}` (repr de Python). Lo parseamos a dict y lo
+    serializamos como `{"args": {...}}` para que el visualizador lo muestre
+    como lista clave/valor en vez de un repr crudo. Si no parsea (args raros),
+    devolvemos el string tal cual como fallback — nunca rompe el trace.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return json.dumps({"args": {}}, ensure_ascii=False)
+    try:
+        parsed = ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        return raw
+    if isinstance(parsed, dict):
+        return json.dumps({"args": parsed}, ensure_ascii=False, default=str)
+    return raw
+
+
+def _clean_result(raw: str) -> str:
+    """Desenvuelve `{'result': X}` / `{'error': X}` y marca si es un error.
+
+    El starter imprime `-> {'result': '...'}` (la response de la tool). El
+    aprendiz solo quiere ver `X`, no el envoltorio. Devolvemos
+    `{"value": X, "is_error": bool}`. Detecta error por la clave `error` o
+    por un valor string que empiece con "Error" (nuestras tools devuelven
+    mensajes así). Fallback: el string crudo si no parsea.
+    """
+    raw = (raw or "").strip()
+    value: object = raw
+    is_error = False
+    try:
+        parsed = ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        parsed = None
+        value = raw
+    if isinstance(parsed, dict):
+        if "error" in parsed:
+            value, is_error = parsed["error"], True
+        elif "result" in parsed:
+            value = parsed["result"]
+        else:
+            value = parsed
+    elif parsed is not None:
+        value = parsed
+    if isinstance(value, str) and value.strip().lower().startswith("error"):
+        is_error = True
+    return json.dumps({"value": value, "is_error": is_error}, ensure_ascii=False, default=str)
 
 
 def _print_missing_prompt(order: int, examples: tuple[str, ...]) -> None:
@@ -103,29 +169,111 @@ def _emit_step(
     )
 
 
-def _parse_line(line: str, *, trace_id: str, quest_db_id: str) -> None:
-    """Inspecciona una línea del stdout del starter y emite los steps que correspondan."""
-    stripped = line.rstrip("\r\n").strip()
-    if not stripped:
-        return
+class _LiveTracer:
+    """Parser con estado del stdout del starter → steps del Live Agent.
 
-    call_match = _CALL_RE.search(stripped)
-    if call_match:
-        name, args = call_match.group(1), call_match.group(2).strip()
-        _emit_step(trace_id, quest_db_id, "function_call", name, args)
-        return
+    Es stateful (a diferencia de un `_parse_line` por línea) por dos motivos:
+    1. Cuenta iteraciones para abrir una "banda" por vuelta del loop (Q08).
+    2. La respuesta final del agente es multilínea (`Final response:` y luego
+       el texto), así que hay que acumular líneas hasta el siguiente marcador.
 
-    result_match = _RESULT_RE.match(stripped)
-    if result_match:
-        _emit_step(trace_id, quest_db_id, "function_result", None, result_match.group(1))
-        return
+    `loop_quest=True` solo para los quests con agent loop (Q08): Q07 hace una
+    sola pasada sin loop, así que no abrimos bandas de iteración para no
+    sugerir un ciclo que no existe.
+    """
 
-    pt = _PROMPT_TOK_RE.search(stripped)
-    rt = _RESPONSE_TOK_RE.search(stripped)
-    if pt is not None:
-        _emit_step(trace_id, quest_db_id, "tokens", "prompt", pt.group(1))
-    if rt is not None:
-        _emit_step(trace_id, quest_db_id, "tokens", "response", rt.group(1))
+    def __init__(self, trace_id: str, quest_db_id: str, *, loop_quest: bool) -> None:
+        self.trace_id = trace_id
+        self.quest_db_id = quest_db_id
+        self.loop_quest = loop_quest
+        self.iter = 0
+        self._capturing_final = False
+        self._final_lines: list[str] = []
+
+    def _emit(self, step_type: str, name: str | None, payload: str | None) -> None:
+        _emit_step(self.trace_id, self.quest_db_id, step_type, name, payload)
+
+    def feed(self, line: str) -> None:
+        raw = line.rstrip("\r\n")
+        stripped = raw.strip()
+
+        # Captura multilínea de la respuesta final: acumulamos hasta toparnos
+        # con una línea en blanco o un marcador reconocible de otra sección.
+        if self._capturing_final:
+            if (
+                not stripped
+                or _CALL_RE.search(stripped)
+                or _RESULT_RE.match(stripped)
+                or _PROMPT_TOK_RE.search(stripped)
+                or _RESPONSE_TOK_RE.search(stripped)
+            ):
+                self._flush_final()
+                # …y dejamos caer la línea al procesamiento normal de abajo.
+            else:
+                self._final_lines.append(raw)
+                return
+
+        if not stripped:
+            return
+
+        if _FINAL_HDR_RE.match(stripped):
+            self._capturing_final = True
+            self._final_lines = []
+            return
+
+        err = _ERROR_RE.search(stripped)
+        if err:
+            self._emit("error", "generate_content",
+                       json.dumps({"text": err.group(1)}, ensure_ascii=False))
+            return
+
+        maxed = _MAX_ITERS_RE.search(stripped)
+        if maxed:
+            self._emit("error", "max_iters", json.dumps({
+                "text": (
+                    f"El agente alcanzó el máximo de iteraciones ({maxed.group(1)}) "
+                    "sin dar una respuesta final."
+                ),
+            }, ensure_ascii=False))
+            return
+
+        call_match = _CALL_RE.search(stripped)
+        if call_match:
+            name, args = call_match.group(1), call_match.group(2).strip()
+            self._emit("function_call", name, _clean_call_args(args))
+            return
+
+        result_match = _RESULT_RE.match(stripped)
+        if result_match:
+            self._emit("function_result", None, _clean_result(result_match.group(1)))
+            return
+
+        pt = _PROMPT_TOK_RE.search(stripped)
+        rt = _RESPONSE_TOK_RE.search(stripped)
+        if pt is not None:
+            # "Prompt tokens:" marca el inicio de una llamada a Gemini → una
+            # vuelta del loop. Abrimos la banda antes de emitir los tokens.
+            if self.loop_quest:
+                self.iter += 1
+                self._emit("iteration_start", f"iter {self.iter}",
+                           json.dumps({"iter": self.iter, "max": MAX_ITERS}))
+            self._emit("tokens", "prompt", pt.group(1))
+        if rt is not None:
+            self._emit("tokens", "response", rt.group(1))
+
+    def _flush_final(self) -> None:
+        if not self._capturing_final:
+            return
+        self._capturing_final = False
+        text = "\n".join(self._final_lines).strip()
+        self._final_lines = []
+        if text:
+            self._emit("agent_final", None,
+                       json.dumps({"text": text}, ensure_ascii=False))
+
+    def finish(self) -> None:
+        """Cierra cualquier respuesta final pendiente al terminar el proceso."""
+        self._flush_final()
 
 
 def _run_plain(module: str, quest_slug: str, extra: list[str]) -> int:
@@ -172,13 +320,16 @@ def _run_live(quest, module: str, extra: list[str]) -> int:
     )
     console.print()
 
-    def on_line(line: str) -> None:
-        _parse_line(line, trace_id=trace_id, quest_db_id=quest.db_id)
+    tracer = _LiveTracer(
+        trace_id,
+        quest.db_id,
+        loop_quest=quest.order >= 8,
+    )
 
     rc, _captured = run_module_capturing(
         module,
         extra_args=extra,
-        on_line=on_line,
+        on_line=tracer.feed,
         env_extra={
             "ARKANUM_TRACE_ID": trace_id,
             "ARKANUM_TRACE": "1",
@@ -186,6 +337,9 @@ def _run_live(quest, module: str, extra: list[str]) -> int:
             "ARKANUM_WORKSPACE": f"quests/{quest.slug}/workspace",
         },
     )
+
+    # Vacía la respuesta final pendiente (multilínea) antes de sellar el trace.
+    tracer.finish()
 
     _emit_step(
         trace_id,

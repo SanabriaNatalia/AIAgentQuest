@@ -78,11 +78,12 @@ def main():
     # TODO 8.4:
     prev_msgs_count = len(messages)
     for i in range(MAX_ITERS):
-        emit_trace(
-            "iteration_start",
-            name=f"iter {i + 1}",
-            payload={"iter": i + 1, "max": MAX_ITERS},
-        )
+        # Nota: `iteration_start` y `agent_final` NO se emiten aquí. El
+        # wrapper de `arkanum start` los deriva del stdout ("Prompt tokens:"
+        # abre la iteración; "Final response:" + texto es la respuesta final).
+        # Emitirlos también desde aquí duplicaría bandas y respuestas. Lo que
+        # el stdout no puede expresar (latencia, pensamiento, contexto) sí se
+        # emite con `emit_trace`.
         try:
             final_response = generate_content(
                 messages,
@@ -97,10 +98,6 @@ def main():
                 success("Respuesta final recibida.")
                 print("Final response:")
                 print(final_response)
-                emit_trace(
-                    "agent_final",
-                    payload={"text": final_response},
-                )
                 return
 
         except Exception as e:

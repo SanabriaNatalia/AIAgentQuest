@@ -692,6 +692,7 @@
       head.innerHTML =
         '<span class="trace-band-icon" aria-hidden="true">↻</span>' +
         '<span class="trace-band-label">Iteración ' + escapeHtml(iter) + escapeHtml(max) + '</span>' +
+        '<span class="trace-band-tools" data-band-tools></span>' +
         '<span class="trace-band-meta" data-band-meta></span>';
       band.appendChild(head);
 
@@ -701,6 +702,31 @@
 
       if (stepsHost) stepsHost.appendChild(band);
       currentBand = ol;
+      bandToolNames = [];
+    }
+
+    // Resumen de herramientas en el header de la banda: "leyó qué pasó en la
+    // iteración sin abrir las tarjetas". Acumula nombres y los pinta como chips.
+    var bandToolNames = [];
+
+    function addBandTool(name) {
+      if (!currentBand || !name) return;
+      bandToolNames.push(name);
+      var bandLi = currentBand.parentElement;
+      var host = bandLi ? bandLi.querySelector("[data-band-tools]") : null;
+      if (!host) return;
+      host.innerHTML = "";
+      // Cuenta por nombre para "get_files_info ×2".
+      var counts = {};
+      for (var i = 0; i < bandToolNames.length; i++) {
+        counts[bandToolNames[i]] = (counts[bandToolNames[i]] || 0) + 1;
+      }
+      Object.keys(counts).forEach(function (k) {
+        var chip = document.createElement("span");
+        chip.className = "trace-band-tool-chip";
+        chip.textContent = counts[k] > 1 ? k + " ×" + counts[k] : k;
+        host.appendChild(chip);
+      });
     }
 
     function updateBandMeta(latencySeconds) {
@@ -765,6 +791,7 @@
       currentBand = null;
       lastIterPayload = null;
       bandStats = null;
+      bandToolNames = [];
     }
 
     function iconFor(stepType) {
@@ -778,6 +805,7 @@
         case "agent_final": return "✦";
         case "iteration_start": return "↻";
         case "latency": return "⏱";
+        case "error": return "⚠️";
         default: return "•";
       }
     }
@@ -793,8 +821,45 @@
         case "tokens": return "tokens";
         case "session_start": return "inicio de sesión";
         case "session_end": return "fin de sesión";
+        case "error": return "error del agente";
         default: return stepType;
       }
+    }
+
+    // Frase corta en lenguaje llano que se muestra SIEMPRE bajo la tarjeta
+    // (a diferencia de explainerFor, que es el texto largo del modo
+    // "Explicador"). Objetivo: que un aprendiz entienda cada paso sin
+    // activar nada ni conocer la jerga.
+    function shortWhyFor(stepType, opts) {
+      var o = opts || {};
+      switch (stepType) {
+        case "function_call":
+          return o.inLoop
+            ? "El modelo eligió una herramienta para actuar. Aún no tiene la respuesta, por eso el loop seguirá."
+            : "El modelo eligió una herramienta. Mira con qué parámetros la llamó.";
+        case "function_result":
+          return o.isError
+            ? "La herramienta falló. El agente recibe este error y decide qué hacer."
+            : "Lo que la herramienta devolvió. Esto vuelve al modelo como observación.";
+        case "agent_thought":
+          return "El modelo pensó en voz alta antes de actuar — el porqué de su elección.";
+        case "agent_final":
+          return "El agente decidió no llamar más herramientas: esta es su respuesta en lenguaje natural.";
+        case "error":
+          return "Algo salió mal en esta vuelta del loop. Revisa el detalle para depurarlo.";
+        default:
+          return "";
+      }
+    }
+
+    // Hora corta HH:MM:SS a partir del created_at ISO; si no parsea, deja el
+    // valor crudo. Evita el ruido del timestamp completo en cada header.
+    function formatClock(iso) {
+      if (!iso) return "";
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return String(iso);
+      var pad = function (n) { return n < 10 ? "0" + n : String(n); };
+      return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
     }
 
     function explainerFor(stepType) {
@@ -819,6 +884,8 @@
           return "Marca el inicio del trace. El payload trae el prompt original del aprendiz.";
         case "session_end":
           return "El proceso del agente terminó (con su exit code). El trace queda sellado.";
+        case "error":
+          return "El agent loop lanzó una excepción o agotó sus iteraciones. En producción aquí harías retry, fallback o alerta.";
         default:
           return "";
       }
@@ -846,6 +913,63 @@
         .replace(/'/g, "&#39;");
     }
 
+    // Args de una function_call → lista clave/valor legible (no repr crudo).
+    // Devuelve null si no hay args o no es un objeto.
+    function renderArgsList(args) {
+      if (!args || typeof args !== "object" || Array.isArray(args)) return null;
+      var keys = Object.keys(args);
+      if (!keys.length) return null;
+      var dl = document.createElement("dl");
+      dl.className = "trace-step-args";
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var v = args[k];
+        var dt = document.createElement("dt");
+        dt.textContent = k;
+        var dd = document.createElement("dd");
+        dd.textContent = (typeof v === "string") ? v : (function () {
+          try { return JSON.stringify(v); } catch (_) { return String(v); }
+        })();
+        dl.appendChild(dt);
+        dl.appendChild(dd);
+      }
+      return dl;
+    }
+
+    // Extrae {text, isError} de un function_result. Soporta el shape nuevo
+    // {value, is_error} (limpiado por el parser) y, por compat, el string
+    // crudo `{'result': '...'}` / `{'error': '...'}` de traces viejos.
+    function extractResult(step) {
+      var p = step.payload;
+      if (p && typeof p === "object" && !Array.isArray(p) &&
+          ("value" in p || "is_error" in p)) {
+        var v = p.value;
+        var text = (typeof v === "string") ? v : (function () {
+          try { return JSON.stringify(v, null, 2); } catch (_) { return String(v); }
+        })();
+        return { text: text, isError: !!p.is_error };
+      }
+      var raw = payloadText(step);
+      var isError = /^\s*\{?\s*['"]?error['"]?\s*['"]?\s*:/i.test(raw);
+      var text = raw;
+      var mr = raw.match(/^\{\s*['"]result['"]\s*:\s*([\s\S]*)\}\s*$/);
+      if (mr) text = mr[1].trim().replace(/^['"]|['"]$/g, "");
+      var me = raw.match(/^\{\s*['"]error['"]\s*:\s*([\s\S]*)\}\s*$/);
+      if (me) { text = me[1].trim().replace(/^['"]|['"]$/g, ""); isError = true; }
+      if (/^\s*error\b/i.test(text)) isError = true;
+      return { text: text, isError: isError };
+    }
+
+    // Línea corta en lenguaje llano bajo una tarjeta (siempre visible).
+    function makeWhyLine(stepType, opts) {
+      var txt = shortWhyFor(stepType, opts);
+      if (!txt) return null;
+      var p = document.createElement("p");
+      p.className = "trace-step-why";
+      p.textContent = txt;
+      return p;
+    }
+
     function attachResultToPendingCall(stepsHost, step) {
       // Busca la última function_call pendiente y le ancla el resultado.
       // Devuelve true si emparejó, false si no había candidata.
@@ -855,23 +979,28 @@
       if (!pending.length) return false;
       var call = pending[pending.length - 1];
 
+      var res = extractResult(step);
+
       call.dataset.pairStatus = "resolved";
       call.classList.add("trace-step--paired");
+      if (res.isError) call.classList.add("trace-step--errored");
 
       var spinner = call.querySelector(".trace-step-pending");
       if (spinner) spinner.remove();
 
       var resBlock = document.createElement("div");
-      resBlock.className = "trace-step-result";
+      resBlock.className = "trace-step-result" + (res.isError ? " trace-step-result--error" : "");
       resBlock.innerHTML =
         '<span class="trace-step-result-label">' +
-        '<span aria-hidden="true">📦</span> Resultado' +
+        '<span aria-hidden="true">' + (res.isError ? "⚠️" : "📦") + '</span> ' +
+        (res.isError ? "La herramienta devolvió un error" : "La herramienta devolvió") +
         '</span>';
 
-      var payload = payloadText(step);
-      if (payload) {
-        resBlock.appendChild(_makeExpandablePayload(payload, "trace-step-result-payload"));
+      if (res.text) {
+        resBlock.appendChild(_makeExpandablePayload(res.text, "trace-step-result-payload"));
       }
+      var why = makeWhyLine("function_result", { isError: res.isError });
+      if (why) resBlock.appendChild(why);
       call.appendChild(resBlock);
       return true;
     }
@@ -926,7 +1055,8 @@
         '<span class="trace-step-icon" aria-hidden="true">' + iconFor(step.step_type) + '</span>' +
         '<span class="trace-step-type">' + labelFor(step.step_type) + '</span>' +
         (step.name ? '<span class="trace-step-name">' + escapeHtml(step.name) + '</span>' : '') +
-        '<span class="trace-step-time">' + escapeHtml(step.created_at) + '</span>';
+        '<span class="trace-step-time" title="' + escapeHtml(step.created_at) + '">' +
+          escapeHtml(formatClock(step.created_at)) + '</span>';
       li.appendChild(head);
 
       // function_call: marcamos como "pending" para que su function_result
@@ -934,10 +1064,17 @@
       if (step.step_type === "function_call") {
         li.dataset.pairStatus = "pending";
         li.dataset.pairName = step.name || "";
-        var payload = payloadText(step);
-        if (payload) {
-          li.appendChild(_makeExpandablePayload(payload, "trace-step-payload"));
+        // payload nuevo: {args: {...}} → lista clave/valor. Fallback: mono.
+        var argsObj = payloadField(step, "args");
+        var argsList = renderArgsList(argsObj);
+        if (argsList) {
+          li.appendChild(argsList);
+        } else {
+          var payload = payloadText(step);
+          if (payload) li.appendChild(_makeExpandablePayload(payload, "trace-step-payload"));
         }
+        var whyCall = makeWhyLine("function_call", { inLoop: !!currentBand });
+        if (whyCall) li.appendChild(whyCall);
         var pending = document.createElement("p");
         pending.className = "trace-step-pending";
         pending.innerHTML = '<span class="trace-step-pending-spinner" aria-hidden="true"></span>ejecutando…';
@@ -955,6 +1092,23 @@
           prose.textContent = text;
           li.appendChild(prose);
         }
+        var whyProse = makeWhyLine(step.step_type, {});
+        if (whyProse) li.appendChild(whyProse);
+        return li;
+      }
+
+      // error: excepción del loop o tope de iteraciones. Prosa en rojo.
+      if (step.step_type === "error") {
+        var errText = payloadField(step, "text");
+        if (errText == null) errText = payloadText(step);
+        if (errText) {
+          var errBody = document.createElement("p");
+          errBody.className = "trace-step-prose trace-step-error-text";
+          errBody.textContent = errText;
+          li.appendChild(errBody);
+        }
+        var whyErr = makeWhyLine("error", {});
+        if (whyErr) li.appendChild(whyErr);
         return li;
       }
 
@@ -1057,6 +1211,10 @@
           // prompt arriba. No los renderizamos como tarjetas para evitar
           // ruido. El polling sigue procesándolos para detectar fin de
           // trace y user_prompt.
+        } else if (step.step_type === "function_call") {
+          appendStep(renderStep(step));
+          // Resume el nombre de la tool en el header de la banda.
+          addBandTool(step.name);
         } else {
           appendStep(renderStep(step));
         }

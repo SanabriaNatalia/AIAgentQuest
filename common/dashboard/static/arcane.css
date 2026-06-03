@@ -3679,3 +3679,100 @@ code {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* ── Mejoras de claridad de pasos (ronda 2026-06) ───────────────────── */
+
+/* Args de una function_call como lista clave/valor (en vez de repr crudo). */
+.trace-step-args {
+  margin: 0.5rem 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.7rem;
+  padding: 0.55rem 0.85rem;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 8px;
+  font-size: 0.86rem;
+}
+.trace-step-args dt {
+  font-family: var(--font-mono);
+  color: var(--arkanum-glow);
+  white-space: nowrap;
+}
+.trace-step-args dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  color: var(--arkanum-text);
+  word-break: break-word;
+}
+
+/* Línea corta en lenguaje llano bajo cada tarjeta — siempre visible, para
+   que el aprendiz entienda el paso sin activar el modo Explicador. */
+.trace-step-why {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--arkanum-muted);
+  font-style: italic;
+}
+
+/* Resultado de tool que fue un error. */
+.trace-step-result--error {
+  border-top-color: rgba(232, 122, 122, 0.55);
+}
+.trace-step-result--error .trace-step-result-label {
+  color: var(--arkanum-fail);
+}
+.trace-step--errored {
+  border-left-color: var(--arkanum-fail) !important;
+}
+
+/* Step de error (excepción del loop / tope de iteraciones). */
+.trace-step--error {
+  border-left-color: var(--arkanum-fail);
+  background:
+    linear-gradient(165deg, rgba(232, 122, 122, 0.16) 0%, rgba(26, 21, 53, 0.95) 100%);
+}
+.trace-step-error-text {
+  border-left-color: var(--arkanum-fail);
+  color: var(--arkanum-fail);
+  font-style: normal;
+}
+
+/* Resumen de herramientas en el header de la banda de iteración. */
+.trace-band-tools {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.trace-band-tool-chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 8px;
+  background: rgba(192, 132, 252, 0.14);
+  border: 1px solid rgba(192, 132, 252, 0.3);
+  color: var(--arkanum-glow);
+}
+
+/* Hilo vertical que conecta los pasos de una iteración como una cadena
+   (pensó → llamó → observó), reforzando que es un solo flujo causal. */
+.trace-band-steps {
+  position: relative;
+}
+.trace-band-steps > .trace-step::before {
+  content: "";
+  position: absolute;
+  left: -0.62rem;
+  top: 0.4rem;
+  bottom: -0.55rem;
+  width: 2px;
+  background: rgba(192, 132, 252, 0.22);
+}
+.trace-band-steps > .trace-step:last-child::before {
+  display: none;
+}
+.trace-band-steps > .trace-step {
+  position: relative;
+}

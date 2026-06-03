@@ -65,28 +65,32 @@ Lista mantenida en [`dashboard.js`](../../common/dashboard/static/dashboard.js):
 |---|---|---|
 | `session_start`     | `arkanum start` (Q07/Q08)           | Marca el inicio del trace; payload incluye `user_prompt`. |
 | `session_end`       | `arkanum start` (Q07/Q08)           | Marca el final con exit code; toolbar pasa a sealed. |
-| `function_call`     | regex de `start.py` **o** `emit`    | Tarjeta agrupada con pending spinner hasta que llega su result. |
-| `function_result`   | regex de `start.py` **o** `emit`    | Se ancla dentro de su `function_call` (FIFO). |
-| `tokens`            | regex de `start.py` **o** `emit`    | Chip de uso (prompt/response). Suma al costo de la banda. |
-| `agent_thought`     | `emit` solo                         | Burbuja de prosa serif italic — el razonamiento del modelo. |
-| `agent_final`       | `emit` solo                         | Burbuja final dorada — respuesta sin más tool calls. |
-| `iteration_start`   | `emit` solo                         | Abre una banda visual ("Iteración N / MAX"). |
-| `latency`           | `emit` solo                         | Chip de tiempo; suma al meta de la banda. |
-| `context_growth`    | `emit` solo                         | Panel desplegable con el delta de `messages` tras la iteración. |
+| `function_call`     | parser de `start.py` **o** `emit`   | Tarjeta agrupada con pending spinner hasta que llega su result. Los args se muestran como lista clave/valor. |
+| `function_result`   | parser de `start.py` **o** `emit`   | Se ancla dentro de su `function_call` (FIFO). El valor se desenvuelve de `{'result': …}` y un error se pinta en rojo. |
+| `tokens`            | parser de `start.py` **o** `emit`   | Chip de uso (prompt/response). Suma al costo de la banda. |
+| `iteration_start`   | parser de `start.py` (Q08) **o** `emit` | Abre una banda visual ("Iteración N / MAX"). Lo deriva del `Prompt tokens:` de cada llamada a Gemini. |
+| `agent_final`       | parser de `start.py` **o** `emit`   | Burbuja final dorada — respuesta sin más tool calls. Lo deriva del `Final response:` + texto. |
+| `error`             | parser de `start.py` **o** `emit`   | Tarjeta roja: excepción del loop (`Error in generate_content:`) o tope de iteraciones. |
+| `agent_thought`     | `emit` solo                         | Burbuja de prosa serif italic — el razonamiento del modelo (el stdout no lo expresa). |
+| `latency`           | `emit` solo                         | Chip de tiempo; suma al meta de la banda (el stdout no lo expresa). |
+| `context_growth`    | `emit` solo                         | Panel desplegable con el delta de `messages` tras la iteración (el stdout no lo expresa). |
 
 ## El regex como fallback
 
 `common/cli/commands/start.py` (en Q07/Q08) parsea el `stdout` del
-starter línea por línea y emite los step_types "clásicos" (`function_call`,
-`function_result`, `tokens`). Esto significa que:
+starter línea por línea y, sin pedirle al aprendiz que escriba `emit`,
+deriva: `function_call`, `function_result` (con args/valor limpios),
+`tokens`, `iteration_start` (de cada `Prompt tokens:`), `agent_final`
+(de `Final response:` + texto) y `error`. Esto significa que:
 
-- Starters que no usan `tracing.emit` siguen mostrando algo en
-  `/live-agent`.
+- El starter del aprendiz, una vez completado, muestra el loop **rico**
+  en `/live-agent` aunque no use `tracing.emit`.
 - Si el aprendiz reformatea el `print(f"Calling function: ...")`, el
-  regex falla en silencio — pero `tracing.emit` no se ve afectado.
-- **No es necesario** elegir entre regex y `tracing.emit`: pueden
-  coexistir. Si emites lo mismo dos veces, verás duplicados en la UI
-  (un escenario poco habitual).
+  parser falla en silencio — pero `tracing.emit` no se ve afectado.
+- Para evitar duplicados, la solución de Q08 **no** emite
+  `iteration_start` ni `agent_final` por `emit` (los deriva el parser);
+  reserva `emit` para lo que el stdout no puede expresar: `agent_thought`,
+  `latency` y `context_growth`.
 
 ## Patrón recomendado para Q07
 

@@ -321,7 +321,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 @router.post("/api/trace/run")
 def trace_run(payload: TraceRunRequest) -> JSONResponse:
-    """Spawnea `python -m common.cli.main run N "prompt"` en background.
+    """Spawnea `python -m common.cli.main start N "prompt" --live` en background.
 
     El proceso queda desligado: devolvemos inmediatamente y el polling
     normal de /live-agent se encarga de mostrar los steps a medida que
@@ -358,9 +358,10 @@ def trace_run(payload: TraceRunRequest) -> JSONResponse:
         sys.executable,
         "-m",
         "common.cli.main",
-        "run",
+        "start",
         str(quest.order),
         prompt,
+        "--live",
     ]
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
