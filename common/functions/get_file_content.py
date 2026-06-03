@@ -7,7 +7,20 @@ import os
 # similar a schema_get_files_info
 # Puedes revisar esta entrada si tienes dudas:
 # docs/agents/tool_schemas.md
-schema_get_file_content = None
+schema_get_file_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Reads and returns the text content of a file relative to the working directory",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the file relative to the working directory",
+            ),
+        },
+        required=["file_path"],
+    ),
+)
 
 def get_file_content(working_directory, file_path):
     try:

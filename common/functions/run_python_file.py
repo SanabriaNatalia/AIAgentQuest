@@ -9,7 +9,20 @@ from common.functions.get_valid_target_path import get_valid_target_path
 # similar a schema_get_files_info
 # Puedes revisar esta entrada si tienes dudas:
 # docs/agents/tool_schemas.md
-schema_run_python_file = None
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Executes a Python file relative to the working directory and returns its stdout/stderr",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="Path to the .py file relative to the working directory",
+            ),
+        },
+        required=["file_path"],
+    ),
+)
 
 def run_python_file(working_directory, file_path, args=None):
     try:
