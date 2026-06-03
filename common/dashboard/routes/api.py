@@ -389,8 +389,13 @@ def trace_run(payload: TraceRunRequest) -> JSONResponse:
         "stdin": subprocess.DEVNULL,
     }
     if sys.platform == "win32":
+        # CREATE_NO_WINDOW evita que se abra una ventana de terminal al lanzar
+        # el agente desde el dashboard (antes se usaba DETACHED_PROCESS, que en
+        # algunos entornos sí mostraba consola). CREATE_NEW_PROCESS_GROUP lo
+        # independiza para que siga corriendo en background; el polling lee sus
+        # traces desde la misma BD.
         popen_kwargs["creationflags"] = (
-            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS
+            subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
         )
     else:
         popen_kwargs["start_new_session"] = True

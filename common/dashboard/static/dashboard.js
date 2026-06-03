@@ -860,15 +860,17 @@
     // activar nada ni conocer la jerga.
     function shortWhyFor(stepType, opts) {
       var o = opts || {};
+      var tool = o.name ? "`" + o.name + "`" : "una herramienta";
+      var toolRef = o.name ? "`" + o.name + "`" : "la herramienta";
       switch (stepType) {
         case "function_call":
           return o.inLoop
-            ? "El modelo eligió una herramienta para actuar. Aún no tiene la respuesta, por eso el loop seguirá."
-            : "El modelo eligió una herramienta. Mira con qué parámetros la llamó.";
+            ? "El modelo eligió " + tool + " para actuar. Aún no tiene la respuesta, por eso el loop seguirá."
+            : "El modelo eligió " + tool + ". Mira con qué parámetros la llamó.";
         case "function_result":
           return o.isError
-            ? "La herramienta falló. El agente recibe este error y decide qué hacer."
-            : "Lo que la herramienta devolvió. Esto vuelve al modelo como observación.";
+            ? toolRef + " falló. El agente recibe este error y decide qué hacer."
+            : "Lo que " + toolRef + " devolvió. Esto vuelve al modelo como observación.";
         case "agent_thought":
           return "El modelo pensó en voz alta antes de actuar — el porqué de su elección.";
         case "agent_final":
@@ -890,26 +892,75 @@
       return pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
     }
 
-    function explainerFor(stepType) {
-      switch (stepType) {
-        case "function_call":
-          return "El modelo decidió ejecutar una herramienta que le diste como tool. Aún no se ha ejecutado en Python.";
-        case "function_result":
-          return "El sandbox ejecutó la herramienta y devolvió este resultado al modelo en la siguiente vuelta.";
+    // Resumen corto y legible de los args de una tool (k=v, k=v…).
+    function summarizeArgs(args) {
+      if (!args || typeof args !== "object" || Array.isArray(args)) return "";
+      var keys = Object.keys(args);
+      if (!keys.length) return "";
+      var parts = keys.slice(0, 3).map(function (k) {
+        var v = args[k];
+        var vs = (typeof v === "string") ? v : (function () {
+          try { return JSON.stringify(v); } catch (_e) { return String(v); }
+        })();
+        if (vs.length > 40) vs = vs.slice(0, 39) + "…";
+        return k + "=" + vs;
+      });
+      return parts.join(", ") + (keys.length > 3 ? " (+" + (keys.length - 3) + " más)" : "");
+    }
+
+    // Explicación pedagógica del paso, PARAMETRIZADA con sus propios datos
+    // (qué herramienta, con qué argumentos, qué iteración, etc.). Recibe el
+    // step completo; tolera recibir solo el step_type por compatibilidad.
+    function explainerFor(step) {
+      var type = (step && step.step_type) || step;
+      switch (type) {
+        case "function_call": {
+          var fname = step && step.name;
+          var argsStr = summarizeArgs(step ? payloadField(step, "args") : null);
+          return "El modelo decidió ejecutar " +
+            (fname ? "la herramienta `" + fname + "`" : "una herramienta") +
+            (argsStr ? " con " + argsStr : "") +
+            ". Todavía no se ejecuta en Python: el modelo solo la solicitó.";
+        }
+        case "function_result": {
+          var rname = step && (step.name || payloadField(step, "name"));
+          var isErr = step ? !!payloadField(step, "is_error") : false;
+          return isErr
+            ? "La herramienta " + (rname ? "`" + rname + "` " : "") +
+              "devolvió un error. El agente lo recibe como observación y decide cómo seguir."
+            : "El sandbox ejecutó " + (rname ? "`" + rname + "`" : "la herramienta") +
+              " y devolvió este resultado, que vuelve al modelo como observación en la siguiente vuelta.";
+        }
         case "agent_thought":
-          return "Texto que el modelo generó entre tool calls — su razonamiento explícito. Aquí ves POR QUÉ elige cada paso.";
-        case "agent_final":
-          return "Respuesta final tras N iteraciones del loop. Aquí termina la cadena: el agente decidió no llamar más tools.";
-        case "iteration_start":
-          return "Una vuelta más del for principal del agent loop. El agente puede hacer hasta MAX_ITERS vueltas.";
-        case "latency":
-          return "Tiempo real que tardó Gemini en responder esta llamada. En producción esto se siente.";
-        case "tokens":
-          return "Cuántos tokens consumió esta invocación. Multiplica por el precio para el costo en USD.";
+          return "Texto que el modelo generó junto a sus tool calls — su razonamiento. Aquí ves POR QUÉ eligió este paso.";
+        case "agent_final": {
+          var t = step ? payloadField(step, "text") : null;
+          var len = (typeof t === "string") ? t.length : 0;
+          return "El agente decidió no llamar más herramientas: esta es su respuesta final en lenguaje natural" +
+            (len ? " (" + len + " caracteres)" : "") + ".";
+        }
+        case "iteration_start": {
+          var it = step ? payloadField(step, "iter") : null;
+          var mx = step ? payloadField(step, "max") : null;
+          return "Vuelta " + (it != null ? it : "N") + (mx ? " de " + mx : "") +
+            " del agent loop: el modelo relee el contexto y decide el siguiente paso.";
+        }
+        case "latency": {
+          var sec = step ? payloadField(step, "seconds") : null;
+          return "Tiempo que tardó Gemini en responder" +
+            (sec != null ? " (" + sec + " s)" : "") + ". En producción esta latencia se siente.";
+        }
+        case "tokens": {
+          var kind = step && step.name;  // 'prompt' | 'response'
+          var label = kind === "prompt" ? "de entrada (lo que el modelo leyó)"
+            : kind === "response" ? "de salida (lo que el modelo generó)"
+            : "consumidos";
+          return "Tokens " + label + " en esta llamada. Multiplica por el precio por millón para el costo en USD.";
+        }
         case "context_growth":
-          return "Cuánto creció `messages` tras esta iteración. Es la memoria del loop: el modelo la lee en la siguiente vuelta.";
+          return "Cuánto creció `messages` tras esta iteración: la memoria del loop que el modelo relee en la próxima vuelta.";
         case "session_start":
-          return "Marca el inicio del trace. El payload trae el prompt original del aprendiz.";
+          return "Inicio del trace: el prompt del aprendiz que abre la secuencia.";
         case "session_end":
           return "El proceso del agente terminó (con su exit code). El trace queda sellado.";
         case "error":
@@ -1027,7 +1078,8 @@
       if (res.text) {
         resBlock.appendChild(_makeExpandablePayload(res.text, "trace-step-result-payload"));
       }
-      var why = makeWhyLine("function_result", { isError: res.isError });
+      var resToolName = step.name || (call.dataset ? call.dataset.pairName : "");
+      var why = makeWhyLine("function_result", { isError: res.isError, name: resToolName });
       if (why) resBlock.appendChild(why);
       call.appendChild(resBlock);
       return true;
@@ -1073,6 +1125,9 @@
     function renderUserPromptCard(prompt) {
       var li = document.createElement("li");
       li.className = "trace-step trace-prompt-card";
+      li.dataset.explainer =
+        "Este es el prompt que el aprendiz envió. Es la entrada que el agente lee " +
+        "para decidir qué herramientas usar; abre toda la secuencia.";
       li.innerHTML =
         '<div class="trace-step-head">' +
           '<span class="trace-step-icon" aria-hidden="true">🜂</span>' +
@@ -1090,7 +1145,7 @@
       var li = document.createElement("li");
       li.className = "trace-step trace-step--" + step.step_type;
       li.dataset.stepId = String(step.id);
-      var hint = explainerFor(step.step_type);
+      var hint = explainerFor(step);
       if (hint) li.dataset.explainer = hint;
 
       // Header común (icono + tipo + nombre + hora)
@@ -1118,7 +1173,7 @@
           var payload = payloadText(step);
           if (payload) li.appendChild(_makeExpandablePayload(payload, "trace-step-payload"));
         }
-        var whyCall = makeWhyLine("function_call", { inLoop: !!currentBand });
+        var whyCall = makeWhyLine("function_call", { inLoop: !!currentBand, name: step.name });
         if (whyCall) li.appendChild(whyCall);
         var pending = document.createElement("p");
         pending.className = "trace-step-pending";
@@ -1198,6 +1253,20 @@
       return li;
     }
 
+    // Lleva la vista al grafo del agente (arriba). Se usa al ejecutar un
+    // prompt, al iniciar un replay y al elegir un trace del historial, para
+    // que el aprendiz vea el agente "trabajando" sin buscar dónde mirar.
+    function scrollToGraph() {
+      var graphHost = host.querySelector("[data-trace-graph]");
+      var target = graphHost || host;
+      var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      try {
+        target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+      } catch (_e) {
+        target.scrollIntoView();
+      }
+    }
+
     // Puente hacia la vista de grafo (live_agent_graph.js). Aditivo y
     // best-effort: si nadie escucha el evento, es un no-op. El timeline no
     // depende de esto en absoluto.
@@ -1222,8 +1291,26 @@
         // Reset del control de polling adaptativo.
         idleCount = 0;
         traceSealed = false;
+        // Si veníamos esperando un run nuevo y ya cambió el trace_id, listo.
+        if (awaitingNewTrace && data.trace_id !== traceIdBeforeRun) {
+          awaitingNewTrace = false;
+        }
       }
-      if (data.summary && data.summary.has_session_end) traceSealed = true;
+      // Sella el trace cuando termina… salvo que estemos esperando que
+      // arranque un run recién lanzado: en ese caso el trace "más reciente"
+      // sigue siendo el anterior (ya sellado) y no debemos detener el polling,
+      // o nunca veríamos arrancar la nueva ejecución.
+      if (data.summary && data.summary.has_session_end) {
+        var stillOldTrace = awaitingNewTrace && data.trace_id === traceIdBeforeRun;
+        var awaitTimedOut = awaitingNewTrace &&
+          (Date.now() - awaitingSince) > AWAIT_NEW_TRACE_MS;
+        if (stillOldTrace && !awaitTimedOut) {
+          // No sellar: seguimos esperando el primer step del run nuevo.
+        } else {
+          traceSealed = true;
+          if (awaitTimedOut) awaitingNewTrace = false;
+        }
+      }
 
       if (data.steps.length === 0) {
         if (emptyHost) emptyHost.style.display = "";
@@ -1325,12 +1412,19 @@
         metaHost.textContent = meta.join(" · ");
       }
 
+      // Auto-scroll "sticky": solo seguimos el timeline si el aprendiz ya está
+      // cerca del fondo de la página. Si está arriba mirando el grafo, no lo
+      // arrastramos hacia abajo en cada poll.
       if (added > 0 && stepsHost && stepsHost.lastElementChild) {
-        var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        stepsHost.lastElementChild.scrollIntoView({
-          behavior: reducedMotion ? "auto" : "smooth",
-          block: "end",
-        });
+        var nearBottom =
+          (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 220);
+        if (nearBottom) {
+          var reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          stepsHost.lastElementChild.scrollIntoView({
+            behavior: reducedMotion ? "auto" : "smooth",
+            block: "end",
+          });
+        }
       }
 
       // Mejora #13: recalcula KPIs sobre la lista completa, no incremental.
@@ -1514,7 +1608,15 @@
     var lastPollAddedSteps = 0;
     var pollTimer = null;
 
+    // Espera de un run recién lanzado desde el dashboard: mientras esté activa,
+    // el polling no se sella sobre el trace anterior (ver applyData).
+    var awaitingNewTrace = false;
+    var traceIdBeforeRun = null;
+    var awaitingSince = 0;
+    var AWAIT_NEW_TRACE_MS = 30000;  // si en 30s no arrancó, deja de esperar
+
     function nextPollDelay() {
+      if (awaitingNewTrace) return POLL_NORMAL_MS;  // esperando run nuevo: poll constante
       if (traceSealed) return 0;  // 0 = stop
       if (lastPollAddedSteps > 0) return POLL_FAST_MS;
       if (idleCount >= POLL_IDLE_THRESHOLD) return POLL_IDLE_MS;
@@ -1615,9 +1717,12 @@
           if (stepsHost) stepsHost.innerHTML = "";
           seenIds = new Set();
           lastTraceId = null;
+          awaitingNewTrace = false;  // cambiar de trace cancela la espera de un run
           resetBands();
           renderHistory(traces);  // re-render para refrescar el highlight
           poll();
+          // Llevar al grafo (no a la mitad del timeline) para revisar la corrida.
+          scrollToGraph();
         });
 
         li.appendChild(btn);
@@ -1817,6 +1922,8 @@
       seenIds = new Set();
       resetBands();
       replayState.running = true;
+      // El replay re-muestra el trace ya grabado; lleva al grafo para verlo.
+      scrollToGraph();
 
       var steps = data.steps || [];
       if (!steps.length) return;
@@ -2026,7 +2133,13 @@
             return r.json();
           })
           .then(function () {
-            if (launcherStatus) launcherStatus.textContent = "✓ Subprocess lanzado. Pasos llegando…";
+            if (launcherStatus) launcherStatus.textContent = "✓ Agente lanzado. Pasos llegando…";
+            // Recordamos el trace anterior para distinguir cuándo arranca el
+            // nuevo. Mientras tanto, awaitingNewTrace evita que el polling se
+            // selle sobre el trace viejo y congele la vista (bug del run repetido).
+            traceIdBeforeRun = lastTraceId || topTraceId || null;
+            awaitingNewTrace = true;
+            awaitingSince = Date.now();
             // Sincroniza el panel "Prompt del usuario" inmediatamente con el
             // prompt que el aprendiz acaba de escribir. Sin esto, el panel
             // mantiene el prompt del trace anterior hasta que llega
@@ -2044,6 +2157,8 @@
             idleCount = 0;
             schedulePoll();
             loadHistory();
+            // Lleva al aprendiz al grafo para que vea el agente trabajando.
+            scrollToGraph();
           })
           .catch(function (err) {
             if (launcherStatus) launcherStatus.textContent = "✗ " + (err && err.message ? err.message : "error");

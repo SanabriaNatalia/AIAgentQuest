@@ -46,6 +46,8 @@
   var agentRing = null;
   var agentEl = null;      // grupo del nodo agente (mago)
   var userEl = null;       // grupo del nodo aprendiz
+  var userSpark = null;    // chispa que viaja por la arista aprendiz↔mago
+  var userSparkTimer = null;
   var systemPrompt = "";   // cargado de /api/system-prompt para el detalle del agente
   var userPrompt = "";     // capturado del session_start para el detalle del aprendiz
 
@@ -114,8 +116,11 @@
       nodeEls[t.name] = { edge: grp, pulse: pulse };
     });
 
-    // Arista aprendiz→agente (la entrada que dispara la secuencia).
+    // Arista aprendiz→agente (la entrada que dispara la secuencia) + la chispa
+    // que viaja por ella: a la ida cuando el aprendiz pide, a la vuelta cuando
+    // el mago responde.
     el("line", { "class": "la-edge-user", x1: USER_X, y1: CY, x2: CX, y2: CY }, edgesG);
+    userSpark = el("circle", { "class": "la-spark-user", cx: USER_X, cy: CY, r: 5.5 }, edgesG);
 
     // Nodo aprendiz (usuario) a la izquierda.
     userEl = el("g", {
@@ -254,6 +259,21 @@
     }, 900);
   }
 
+  // Anima la chispa de la arista aprendiz↔mago.
+  //  dir 'in'   → el aprendiz envía su prompt (aprendiz → mago)
+  //  dir 'back' → el mago responde al aprendiz (mago → aprendiz)
+  function fireUserEdge(dir) {
+    if (!userSpark || reducedMotion) return;
+    var cls = dir === "back" ? "is-back" : "is-in";
+    userSpark.classList.remove("is-in", "is-back");
+    void userSpark.getBoundingClientRect();  // reinicia la animación CSS
+    userSpark.classList.add(cls);
+    if (userSparkTimer) clearTimeout(userSparkTimer);
+    userSparkTimer = setTimeout(function () {
+      userSpark.classList.remove("is-in", "is-back");
+    }, 1100);
+  }
+
   function startThinking() {
     if (agentRing && !reducedMotion) agentRing.classList.add("is-thinking");
   }
@@ -265,7 +285,10 @@
 
   function applyStep(step, animate) {
     var type = step.step_type;
-    if (type === "function_call") {
+    if (type === "session_start") {
+      // El aprendiz envía su petición: chispa aprendiz → mago.
+      if (animate) fireUserEdge("in");
+    } else if (type === "function_call") {
       livePending.push(step.name || null);
       stopThinking();
       if (animate && step.name) fireNode(step.name, "out");
@@ -278,36 +301,67 @@
       }
     } else if (type === "iteration_start") {
       if (animate) startThinking();
-    } else if (type === "agent_final" || type === "session_end" || type === "error") {
+    } else if (type === "agent_final") {
+      // El mago entrega su respuesta final: chispa mago → aprendiz.
+      stopThinking();
+      if (animate) fireUserEdge("back");
+    } else if (type === "session_end" || type === "error") {
       stopThinking();
     }
   }
 
   // Recalcula stats por herramienta sobre la lista completa (idempotente).
+  // Guarda TODAS las invocaciones (args + resultado), no solo la última, para
+  // que el detalle muestre el historial completo cuando se llama N veces.
   function recompute(steps) {
     var stats = {};
     tools.forEach(function (t) {
-      stats[t.name] = { calls: 0, lastArgs: null, lastResult: null, lastIsError: false };
+      stats[t.name] = { calls: 0, invocations: [], lastIsError: false };
     });
-    var pending = [];
+    var pending = [];  // [{name, inv, callId}] en orden de emisión (FIFO)
     steps.forEach(function (s) {
       if (!s) return;
       if (s.step_type === "function_call") {
         var nm = s.name;
-        if (nm && stats[nm]) {
-          stats[nm].calls += 1;
-          var args = (s.payload && typeof s.payload === "object") ? s.payload.args : null;
-          if (args != null) stats[nm].lastArgs = args;
-        }
-        pending.push(nm || null);
+        if (!nm || !stats[nm]) return;
+        var args = (s.payload && typeof s.payload === "object") ? s.payload.args : null;
+        var callId = (s.payload && typeof s.payload === "object") ? s.payload.call_id : null;
+        var inv = { args: args, result: null, isError: false, resolved: false };
+        stats[nm].invocations.push(inv);
+        stats[nm].calls += 1;
+        pending.push({ name: nm, inv: inv, callId: callId || null });
       } else if (s.step_type === "function_result") {
-        var popped = pending.length ? pending.shift() : null;
-        var target = s.name || (s.payload && s.payload.name) || popped;
-        if (target && stats[target]) {
-          var r = extractResult(s);
-          stats[target].lastResult = r.text;
-          stats[target].lastIsError = r.isError;
+        var resName = s.name || (s.payload && s.payload.name) || null;
+        var resCallId = (s.payload && typeof s.payload === "object") ? s.payload.call_id : null;
+        var idx = -1;
+        // 1) emparejado exacto por call_id (traces nuevos)
+        if (resCallId != null) {
+          for (var k = 0; k < pending.length; k++) {
+            if (pending[k].callId === resCallId) { idx = k; break; }
+          }
         }
+        // 2) por nombre (la invocación abierta más antigua de esa tool)
+        if (idx === -1 && resName) {
+          for (var k2 = 0; k2 < pending.length; k2++) {
+            if (pending[k2].name === resName) { idx = k2; break; }
+          }
+        }
+        // 3) FIFO global (traces viejos sin call_id ni name en el result)
+        if (idx === -1 && pending.length) idx = 0;
+        if (idx >= 0) {
+          var p = pending.splice(idx, 1)[0];
+          var r = extractResult(s);
+          p.inv.result = r.text;
+          p.inv.isError = r.isError;
+          p.inv.resolved = true;
+        }
+      }
+    });
+    // El estado del nodo (badge/borde) refleja la ÚLTIMA invocación resuelta.
+    tools.forEach(function (t) {
+      var invs = stats[t.name].invocations;
+      for (var i = invs.length - 1; i >= 0; i--) {
+        if (invs[i].resolved) { stats[t.name].lastIsError = invs[i].isError; break; }
       }
     });
     return stats;
@@ -458,35 +512,47 @@
       "</div>";
   }
 
+  // Arma el <dl> de argumentos de una invocación (o "" si no hay).
+  function renderArgsDl(args) {
+    if (!args || typeof args !== "object" || Array.isArray(args)) return "";
+    var keys = Object.keys(args);
+    if (!keys.length) return "";
+    return '<dl class="la-detail-args">' + keys.map(function (k) {
+      var v = args[k];
+      var vs = (typeof v === "string") ? v : (function () {
+        try { return JSON.stringify(v); } catch (_e) { return String(v); }
+      })();
+      return "<dt>" + escapeHtml(k) + "</dt><dd>" + escapeHtml(vs) + "</dd>";
+    }).join("") + "</dl>";
+  }
+
   function renderToolDetail(name) {
     if (!detailHost) return;
     var tool = null;
     for (var i = 0; i < tools.length; i++) { if (tools[i].name === name) { tool = tools[i]; break; } }
     if (!tool) return;
-    var st = lastStats[name] || { calls: 0, lastArgs: null, lastResult: null, lastIsError: false };
+    var st = lastStats[name] || { calls: 0, invocations: [] };
+    var invs = st.invocations || [];
 
-    var argsHtml = "";
-    if (st.lastArgs && typeof st.lastArgs === "object" && !Array.isArray(st.lastArgs)) {
-      var keys = Object.keys(st.lastArgs);
-      if (keys.length) {
-        argsHtml = '<dl class="la-detail-args">' + keys.map(function (k) {
-          var v = st.lastArgs[k];
-          var vs = (typeof v === "string") ? v : (function () {
-            try { return JSON.stringify(v); } catch (_e) { return String(v); }
-          })();
-          return "<dt>" + escapeHtml(k) + "</dt><dd>" + escapeHtml(vs) + "</dd>";
-        }).join("") + "</dl>";
+    // Una tarjeta por invocación: sus argumentos y su resultado.
+    var invsHtml = invs.map(function (inv, idx) {
+      var argsHtml = renderArgsDl(inv.args);
+      var resultHtml;
+      if (inv.result != null && inv.result !== "") {
+        resultHtml =
+          '<div class="la-detail-result-label' + (inv.isError ? " is-error" : "") + '">' +
+            (inv.isError ? "⚠️ Devolvió un error" : "📦 Devolvió") + "</div>" +
+          '<pre class="la-detail-result' + (inv.isError ? " is-error" : "") + '">' +
+            escapeHtml(truncate(inv.result, 1000)) + "</pre>";
+      } else {
+        resultHtml = '<p class="la-detail-empty">' +
+          (inv.resolved ? "(sin salida)" : "Ejecutando…") + "</p>";
       }
-    }
-
-    var resultHtml = "";
-    if (st.lastResult != null && st.lastResult !== "") {
-      resultHtml =
-        '<div class="la-detail-result-label">' +
-          (st.lastIsError ? "⚠️ Devolvió un error" : "📦 Devolvió") + "</div>" +
-        '<pre class="la-detail-result' + (st.lastIsError ? " is-error" : "") + '">' +
-          escapeHtml(truncate(st.lastResult, 1200)) + "</pre>";
-    }
+      return '<li class="la-inv' + (inv.isError ? " is-error" : "") + '">' +
+        '<div class="la-inv-num">Llamada ' + (idx + 1) + "</div>" +
+        argsHtml + resultHtml +
+      "</li>";
+    }).join("");
 
     detailHost.hidden = false;
     detailHost.innerHTML =
@@ -497,9 +563,11 @@
       "</header>" +
       '<p class="la-detail-desc">' + escapeHtml(tool.description || "") + "</p>" +
       '<code class="la-detail-name">' + escapeHtml(tool.name) + "</code>" +
-      (argsHtml ? '<div class="la-detail-section"><span class="la-detail-section-label">Últimos argumentos</span>' + argsHtml + "</div>" : "") +
-      (resultHtml ? '<div class="la-detail-section">' + resultHtml + "</div>" :
-        (st.calls === 0 ? '<p class="la-detail-empty">Aún no se ha llamado en este trace.</p>' : "")) ;
+      (invs.length
+        ? '<div class="la-detail-section"><span class="la-detail-section-label">' +
+            (invs.length === 1 ? "Invocación" : "Invocaciones (" + invs.length + ")") +
+          '</span><ol class="la-inv-list">' + invsHtml + "</ol></div>"
+        : '<p class="la-detail-empty">Aún no se ha llamado en este trace.</p>');
   }
 
   // ---- Tooltips arcanos ---------------------------------------------------
