@@ -185,8 +185,8 @@ Las tarifas usadas son las de Gemini 2.5 Flash al momento de implementar el mód
 Cinco subcomandos para controlar el server del dashboard.
 
 ```bash
-arkanum dashboard start            # arranca el server (detached por default)
-arkanum dashboard start --dev      # arranca en foreground con uvicorn --reload
+arkanum dashboard start            # arranca el server (detached) y abre el navegador
+arkanum dashboard start --dev      # arranca en foreground con uvicorn --reload (no abre browser)
 arkanum dashboard stop             # detiene el server
 arkanum dashboard status           # muestra PID + puerto
 arkanum dashboard logs             # muestra las últimas líneas del log
@@ -194,7 +194,7 @@ arkanum dashboard logs --lines 100 # con un tamaño específico
 arkanum dashboard open             # arranca (si hace falta) y abre el navegador
 ```
 
-> ℹ️ `start` **levanta el server pero no abre el navegador** — solo te imprime la URL. Si quieres que además se abra el browser, usa `arkanum dashboard open`.
+> ℹ️ `start` levanta el server **y abre el navegador automáticamente** (excepto en `--dev`, que corre en foreground). Si el server ya estaba activo, igual abre la pestaña. `open` queda como atajo equivalente cuando solo quieres abrir el navegador.
 
 El puerto por defecto es **8765**. Si está ocupado, el lifecycle intenta 8766, 8767, 8768 antes de rendirse.
 

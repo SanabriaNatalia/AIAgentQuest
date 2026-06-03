@@ -292,7 +292,7 @@ arkanum progress           # tabla de tu avance
 arkanum doctor             # diagnóstico completo (incluye ping real a Gemini)
 arkanum dashboard status   # PID y puerto del server
 arkanum dashboard stop     # detener el dashboard
-arkanum dashboard start    # volver a levantarlo
+arkanum dashboard start    # volver a levantarlo (y abrir el navegador)
 ```
 
 ---
