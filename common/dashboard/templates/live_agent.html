@@ -16,6 +16,7 @@
          data-trace-delete-url="/api/traces/{trace_id}"
          data-launcher-quests-url="/api/quests/live-agent"
          data-system-prompt-url="/api/system-prompt"
+         data-agent-tools-url="/api/agent/tools"
          aria-label="Agente en directo">
   <header class="live-agent-toolbar">
     <div class="live-agent-status" role="status" aria-live="polite">
@@ -24,6 +25,11 @@
     </div>
     <div class="live-agent-meta" data-trace-meta></div>
     <div class="live-agent-actions">
+      <button type="button"
+              class="live-agent-action live-agent-action--view"
+              data-trace-view-toggle
+              aria-pressed="false"
+              title="Alternar entre el grafo del agente y la línea de tiempo">🕸 Grafo</button>
       <button type="button"
               class="live-agent-action"
               data-trace-copy-md
@@ -140,6 +146,33 @@
     </p>
   </div>
 
+  <div class="live-agent-graph" data-trace-graph hidden>
+    <div class="live-agent-graph-stage">
+      <svg class="live-agent-graph-svg"
+           data-graph-svg
+           viewBox="0 0 820 540"
+           preserveAspectRatio="xMidYMid meet"
+           role="img"
+           aria-label="Grafo del agente y sus herramientas conectadas">
+        <defs>
+          <radialGradient id="la-agent-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(214,178,92,0.55)"></stop>
+            <stop offset="100%" stop-color="rgba(214,178,92,0)"></stop>
+          </radialGradient>
+        </defs>
+        <g data-graph-edges></g>
+        <g data-graph-nodes></g>
+      </svg>
+    </div>
+    <aside class="live-agent-graph-detail" data-graph-detail hidden>
+      <p class="live-agent-graph-detail-hint">
+        Toca una herramienta para ver con qué la llamó el agente y qué devolvió.
+      </p>
+    </aside>
+  </div>
+
   <ol class="live-agent-steps" data-trace-steps aria-live="polite"></ol>
 </section>
+
+<script src="/static/live_agent_graph.js" defer></script>
 {% endblock %}

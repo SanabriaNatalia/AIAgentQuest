@@ -3680,6 +3680,304 @@ code {
   text-transform: uppercase;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   Live Agent — vista de grafo "Constelación del Agente" (estilo n8n).
+   Convive con el timeline; el toggle alterna cuál se muestra.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* El atributo [hidden] debe ganar a cualquier display heredado. */
+.live-agent-graph[hidden],
+.live-agent-steps[hidden] {
+  display: none !important;
+}
+
+/* Botón toggle de vista en el toolbar. */
+.live-agent-action--view {
+  border-color: rgba(192, 132, 252, 0.4);
+}
+.live-agent-action--view[aria-pressed="true"] {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: var(--arkanum-purple);
+  color: var(--arkanum-text);
+}
+
+.live-agent-graph {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 880px) {
+  .live-agent-graph {
+    grid-template-columns: minmax(0, 1.7fr) minmax(240px, 1fr);
+    align-items: start;
+  }
+}
+
+.live-agent-graph-stage {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(139, 92, 246, 0.12), transparent 60%),
+    rgba(13, 10, 31, 0.55);
+  border: 1px solid rgba(201, 169, 97, 0.28);
+  border-radius: 16px;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.live-agent-graph-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-serif);
+}
+
+/* ---- Aristas agente↔herramienta ---- */
+.la-edge-base {
+  stroke: rgba(168, 159, 196, 0.28);
+  stroke-width: 2;
+}
+.la-edge-pulse {
+  stroke: transparent;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 14 220;
+  stroke-dashoffset: 0;
+  opacity: 0;
+}
+.la-edge-pulse.is-firing-out {
+  stroke: var(--arkanum-gold);
+  opacity: 1;
+  animation: la-pulse-out 0.8s ease-out;
+}
+.la-edge-pulse.is-firing-in {
+  stroke: var(--arkanum-success);
+  opacity: 1;
+  animation: la-pulse-in 0.8s ease-out;
+}
+@keyframes la-pulse-out {
+  from { stroke-dashoffset: 234; opacity: 1; }
+  to   { stroke-dashoffset: 0;   opacity: 0; }
+}
+@keyframes la-pulse-in {
+  from { stroke-dashoffset: 0;   opacity: 1; }
+  to   { stroke-dashoffset: 234; opacity: 0; }
+}
+
+/* ---- Nodo agente ---- */
+.la-agent-core {
+  fill: rgba(26, 21, 53, 0.95);
+  stroke: var(--arkanum-gold);
+  stroke-width: 2.5;
+}
+.la-agent-ring {
+  fill: none;
+  stroke: rgba(192, 132, 252, 0.5);
+  stroke-width: 2;
+  stroke-dasharray: 6 10;
+  opacity: 0.5;
+}
+.la-agent-ring.is-thinking {
+  opacity: 1;
+  transform-origin: center;
+  animation: la-spin 3.2s linear infinite;
+}
+@keyframes la-spin {
+  to { transform: rotate(360deg); }
+}
+.la-agent-sigil {
+  fill: var(--arkanum-gold);
+  font-size: 38px;
+  dominant-baseline: middle;
+}
+.la-agent-label {
+  fill: var(--arkanum-text);
+  font-size: 15px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  dominant-baseline: middle;
+}
+
+/* ---- Nodos herramienta ---- */
+.la-tool {
+  cursor: pointer;
+  outline: none;
+}
+.la-tool-core {
+  fill: rgba(26, 21, 53, 0.92);
+  stroke: rgba(168, 159, 196, 0.45);
+  stroke-width: 2;
+  transition: stroke 0.2s ease, fill 0.2s ease;
+}
+.la-tool.has-run .la-tool-core {
+  stroke: var(--arkanum-gold-soft);
+}
+.la-tool.has-error .la-tool-core {
+  stroke: var(--arkanum-fail);
+}
+.la-tool:hover .la-tool-core,
+.la-tool:focus-visible .la-tool-core,
+.la-tool.is-selected .la-tool-core {
+  stroke: var(--arkanum-glow);
+  fill: rgba(43, 34, 74, 0.95);
+}
+.la-tool.is-active .la-tool-core {
+  stroke: var(--arkanum-gold);
+  filter: drop-shadow(0 0 10px rgba(201, 169, 97, 0.8));
+}
+.la-tool.flash-ok .la-tool-core {
+  stroke: var(--arkanum-success);
+  filter: drop-shadow(0 0 10px rgba(101, 209, 150, 0.8));
+}
+.la-tool.flash-error .la-tool-core {
+  stroke: var(--arkanum-fail);
+  filter: drop-shadow(0 0 10px rgba(232, 122, 122, 0.8));
+}
+.la-tool-icon {
+  font-size: 30px;
+  dominant-baseline: middle;
+}
+.la-tool-label {
+  fill: var(--arkanum-muted);
+  font-size: 13px;
+  dominant-baseline: middle;
+}
+.la-tool.has-run .la-tool-label {
+  fill: var(--arkanum-text);
+}
+
+/* Badge contador sobre el nodo. */
+.la-tool-badge { opacity: 0; transition: opacity 0.2s ease; }
+.la-tool-badge.is-visible { opacity: 1; }
+.la-tool-badge-bg {
+  fill: var(--arkanum-gold);
+  stroke: var(--arkanum-bg);
+  stroke-width: 2;
+}
+.la-tool.has-error .la-tool-badge-bg {
+  fill: var(--arkanum-fail);
+}
+.la-tool-badge-text {
+  fill: var(--arkanum-bg);
+  font-size: 14px;
+  font-weight: 700;
+  dominant-baseline: middle;
+}
+
+/* ---- Panel de detalle ---- */
+.live-agent-graph-detail {
+  background: rgba(13, 10, 31, 0.55);
+  border: 1px solid rgba(201, 169, 97, 0.28);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  min-height: 120px;
+}
+.live-agent-graph-detail-hint {
+  margin: 0;
+  color: var(--arkanum-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.la-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.la-detail-icon { font-size: 1.4rem; }
+.la-detail-title {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--arkanum-text);
+}
+.la-detail-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--arkanum-gold);
+  letter-spacing: 0.04em;
+}
+.la-detail-desc {
+  margin: 0 0 0.5rem;
+  color: var(--arkanum-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.la-detail-name {
+  display: inline-block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  color: var(--arkanum-glow);
+  background: rgba(139, 92, 246, 0.12);
+  border-radius: 6px;
+  padding: 0.1rem 0.45rem;
+  margin-bottom: 0.75rem;
+}
+.la-detail-section { margin-top: 0.75rem; }
+.la-detail-section-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arkanum-muted);
+  margin-bottom: 0.3rem;
+}
+.la-detail-args {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  font-size: 0.84rem;
+}
+.la-detail-args dt {
+  font-family: var(--font-mono, monospace);
+  color: var(--arkanum-gold-soft);
+}
+.la-detail-args dd {
+  margin: 0;
+  color: var(--arkanum-text);
+  word-break: break-word;
+}
+.la-detail-result-label {
+  font-size: 0.78rem;
+  color: var(--arkanum-success);
+  margin-bottom: 0.3rem;
+}
+.la-detail-result {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  background: rgba(13, 10, 31, 0.7);
+  border: 1px solid rgba(168, 159, 196, 0.2);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--arkanum-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.la-detail-result.is-error {
+  border-color: rgba(232, 122, 122, 0.4);
+  color: #f2c4c4;
+}
+.la-detail-result-label.is-error { color: var(--arkanum-fail); }
+.la-detail-empty {
+  margin: 0.5rem 0 0;
+  color: var(--arkanum-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* Accesibilidad: sin movimiento, todo queda estático y legible. */
+@media (prefers-reduced-motion: reduce) {
+  .la-edge-pulse.is-firing-out,
+  .la-edge-pulse.is-firing-in,
+  .la-agent-ring.is-thinking {
+    animation: none;
+  }
+}
+
 /* ── Mejoras de claridad de pasos (ronda 2026-06) ───────────────────── */
 
 /* Args de una function_call como lista clave/valor (en vez de repr crudo). */

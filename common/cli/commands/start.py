@@ -81,7 +81,7 @@ _ERROR_RE = re.compile(r"Error in generate_content:\s*(.+)$")
 _MAX_ITERS_RE = re.compile(r"Maximum iterations\s*\((\d+)\)\s*reached")
 
 
-def _clean_call_args(raw: str) -> str:
+def _clean_call_args(raw: str, call_id: str | None = None) -> str:
     """Convierte la repr de los args de Gemini en un payload JSON legible.
 
     El starter imprime `Calling function: name({'directory': '.'})`; aquí
@@ -89,20 +89,32 @@ def _clean_call_args(raw: str) -> str:
     serializamos como `{"args": {...}}` para que el visualizador lo muestre
     como lista clave/valor en vez de un repr crudo. Si no parsea (args raros),
     devolvemos el string tal cual como fallback — nunca rompe el trace.
+
+    `call_id` (opcional) identifica esta llamada para emparejarla con su
+    `function_result` en el grafo de /live-agent. Es aditivo: el timeline
+    ignora la clave. Solo se incluye cuando el payload es estructurado (dict).
     """
     raw = (raw or "").strip()
     if not raw:
-        return json.dumps({"args": {}}, ensure_ascii=False)
+        payload: dict[str, object] = {"args": {}}
+        if call_id:
+            payload["call_id"] = call_id
+        return json.dumps(payload, ensure_ascii=False)
     try:
         parsed = ast.literal_eval(raw)
     except (ValueError, SyntaxError):
         return raw
     if isinstance(parsed, dict):
-        return json.dumps({"args": parsed}, ensure_ascii=False, default=str)
+        payload = {"args": parsed}
+        if call_id:
+            payload["call_id"] = call_id
+        return json.dumps(payload, ensure_ascii=False, default=str)
     return raw
 
 
-def _clean_result(raw: str) -> str:
+def _clean_result(
+    raw: str, call_id: str | None = None, name: str | None = None
+) -> str:
     """Desenvuelve `{'result': X}` / `{'error': X}` y marca si es un error.
 
     El starter imprime `-> {'result': '...'}` (la response de la tool). El
@@ -110,6 +122,10 @@ def _clean_result(raw: str) -> str:
     `{"value": X, "is_error": bool}`. Detecta error por la clave `error` o
     por un valor string que empiece con "Error" (nuestras tools devuelven
     mensajes así). Fallback: el string crudo si no parsea.
+
+    `call_id` y `name` (opcionales) atan este resultado a su `function_call`
+    para que el grafo sepa qué nodo-herramienta encender. Aditivos: el
+    timeline los ignora (empareja por DOM, no por estas claves).
     """
     raw = (raw or "").strip()
     value: object = raw
@@ -130,7 +146,12 @@ def _clean_result(raw: str) -> str:
         value = parsed
     if isinstance(value, str) and value.strip().lower().startswith("error"):
         is_error = True
-    return json.dumps({"value": value, "is_error": is_error}, ensure_ascii=False, default=str)
+    out: dict[str, object] = {"value": value, "is_error": is_error}
+    if call_id:
+        out["call_id"] = call_id
+    if name:
+        out["name"] = name
+    return json.dumps(out, ensure_ascii=False, default=str)
 
 
 def _print_missing_prompt(order: int, examples: tuple[str, ...]) -> None:
@@ -189,6 +210,11 @@ class _LiveTracer:
         self.iter = 0
         self._capturing_final = False
         self._final_lines: list[str] = []
+        # Pairing call↔result para el grafo: contador incremental + cola FIFO
+        # de llamadas sin resolver. En Q07/Q08 el starter imprime
+        # call→result→call→result en orden, así que el FIFO es determinista.
+        self._call_seq = 0
+        self._pending_calls: list[dict[str, str]] = []
 
     def _emit(self, step_type: str, name: str | None, payload: str | None) -> None:
         _emit_step(self.trace_id, self.quest_db_id, step_type, name, payload)
@@ -240,12 +266,24 @@ class _LiveTracer:
         call_match = _CALL_RE.search(stripped)
         if call_match:
             name, args = call_match.group(1), call_match.group(2).strip()
-            self._emit("function_call", name, _clean_call_args(args))
+            self._call_seq += 1
+            call_id = f"c{self._call_seq}"
+            self._pending_calls.append({"call_id": call_id, "name": name})
+            self._emit("function_call", name, _clean_call_args(args, call_id=call_id))
             return
 
         result_match = _RESULT_RE.match(stripped)
         if result_match:
-            self._emit("function_result", None, _clean_result(result_match.group(1)))
+            # Empareja (FIFO) con la llamada pendiente más antigua para que el
+            # grafo sepa qué herramienta devolvió este resultado.
+            pending = self._pending_calls.pop(0) if self._pending_calls else None
+            call_id = pending["call_id"] if pending else None
+            tool_name = pending["name"] if pending else None
+            self._emit(
+                "function_result",
+                tool_name,
+                _clean_result(result_match.group(1), call_id=call_id, name=tool_name),
+            )
             return
 
         pt = _PROMPT_TOK_RE.search(stripped)

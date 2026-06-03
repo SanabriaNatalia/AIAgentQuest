@@ -87,15 +87,29 @@ def _stringify_payload(payload: Any) -> str | None:
 # Helpers de alto nivel — atajos para los patrones más comunes en Q07/Q08.
 # El frontend ya sabe renderizar estos step_types con icono y label.
 
-def emit_function_call(name: str, args: Any = None) -> None:
+def emit_function_call(name: str, args: Any = None, call_id: str | None = None) -> None:
     """Emite un `function_call` estructurado. Sustituye al print del starter
-    cuando el aprendiz quiera tracing rico (args como dict, no string)."""
-    emit("function_call", name=name, payload={"args": args})
+    cuando el aprendiz quiera tracing rico (args como dict, no string).
+
+    `call_id` (opcional) ata la llamada a su resultado en el grafo de
+    /live-agent. Si lo usas, pásalo también a `emit_function_result`."""
+    payload: dict[str, Any] = {"args": args}
+    if call_id:
+        payload["call_id"] = call_id
+    emit("function_call", name=name, payload=payload)
 
 
-def emit_function_result(name: str | None, result: Any) -> None:
-    """Emite un `function_result` con el payload de la herramienta."""
-    emit("function_result", name=name, payload={"result": result})
+def emit_function_result(
+    name: str | None, result: Any, call_id: str | None = None
+) -> None:
+    """Emite un `function_result` con el payload de la herramienta.
+
+    `call_id` (opcional) debe coincidir con el de su `emit_function_call`
+    para que el grafo empareje llamada y resultado de forma exacta."""
+    payload: dict[str, Any] = {"result": result}
+    if call_id:
+        payload["call_id"] = call_id
+    emit("function_result", name=name, payload=payload)
 
 
 def emit_thought(text: str) -> None:

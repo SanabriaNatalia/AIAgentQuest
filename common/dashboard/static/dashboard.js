@@ -1148,6 +1148,16 @@
       return li;
     }
 
+    // Puente hacia la vista de grafo (live_agent_graph.js). Aditivo y
+    // best-effort: si nadie escucha el evento, es un no-op. El timeline no
+    // depende de esto en absoluto.
+    function dispatchGraphData(data) {
+      if (!data) return;
+      try {
+        host.dispatchEvent(new CustomEvent("live-agent:data", { detail: data }));
+      } catch (_e) { /* navegadores sin CustomEvent: ignorar */ }
+    }
+
     function applyData(data) {
       if (!data || !data.steps) return;
 
@@ -1170,6 +1180,7 @@
         if (statusHost) statusHost.textContent = "Esperando trace…";
         if (metaHost) metaHost.textContent = "";
         renderHud([]);
+        dispatchGraphData(data);  // resetea el grafo a su estado base
         return;
       }
 
@@ -1284,6 +1295,9 @@
       // Mejora #8: registra cuántos steps llegaron en este poll para decidir
       // el siguiente intervalo.
       lastPollAddedSteps = added;
+
+      // Alimenta la vista de grafo con el set completo de steps (idempotente).
+      dispatchGraphData(data);
     }
 
     function maybeAppendSummaryCard(data) {
@@ -1764,6 +1778,13 @@
         // Renderizado: reusa la misma máquina de applyData (subset).
         renderSingleStep(step);
         seenIds.add(step.id);
+
+        // Anima el grafo en paralelo con el subconjunto reproducido hasta aquí.
+        dispatchGraphData({
+          trace_id: data.trace_id,
+          summary: data.summary,
+          steps: steps.slice(0, i + 1),
+        });
 
         var nextStep = steps[i + 1];
         var delayMs = 0;

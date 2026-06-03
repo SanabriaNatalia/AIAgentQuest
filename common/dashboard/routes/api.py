@@ -288,6 +288,20 @@ def delete_trace(trace_id: str) -> JSONResponse:
     return JSONResponse({"ok": True, "deleted_steps": deleted, "trace_id": trace_id})
 
 
+@router.get("/api/agent/tools")
+def agent_tools() -> JSONResponse:
+    """Catálogo de herramientas del agente para el grafo de /live-agent.
+
+    Lo consume la vista "Constelación del Agente" para dibujar un nodo por
+    herramienta alrededor del agente desde el arranque, aunque ninguna se
+    haya llamado todavía. Catálogo estático (ver services/agent_tools.py):
+    no depende de los `schema_*` que el aprendiz aún puede no haber completado.
+    """
+    from common.dashboard.services.agent_tools import list_agent_tools
+
+    return JSONResponse({"tools": list_agent_tools()})
+
+
 @router.get("/api/quests/live-agent")
 def live_agent_quests() -> JSONResponse:
     """Catálogo de quests que el launcher de /live-agent puede ejecutar.
