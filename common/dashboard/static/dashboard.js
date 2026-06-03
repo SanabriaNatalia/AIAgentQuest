@@ -620,8 +620,12 @@
 
       if (iterEl) {
         iterEl.textContent = kpis.iterMax
-          ? kpis.iter + " / " + kpis.iterMax
+          ? kpis.iter + " · máx " + kpis.iterMax
           : String(kpis.iter);
+        iterEl.title = kpis.iterMax
+          ? "El agente va por la iteración " + kpis.iter + ". El máximo permitido es " +
+            kpis.iterMax + " (MAX_ITERS); no es un progreso hacia " + kpis.iterMax + "."
+          : "Iteraciones del loop ejecutadas.";
       }
       if (toolsEl) toolsEl.textContent = String(kpis.tools);
       if (tokensEl) tokensEl.textContent = formatTokens(kpis.tokens);
@@ -651,26 +655,39 @@
       meta.innerHTML = "";
 
       if (bandStats.latency != null) {
-        meta.appendChild(_makeMetaChip("⏱", bandStats.latency.toFixed(2) + " s"));
+        meta.appendChild(_makeMetaChip(
+          "⏱", bandStats.latency.toFixed(2) + " s",
+          "Latencia: lo que tardó Gemini en responder esta iteración."
+        ));
       }
       if (bandStats.promptTokens > 0) {
-        meta.appendChild(_makeMetaChip("↑", bandStats.promptTokens + " p"));
+        meta.appendChild(_makeMetaChip(
+          "↑", bandStats.promptTokens + " tok in",
+          "Tokens de entrada (prompt): lo que se le envió al modelo en esta iteración."
+        ));
       }
       if (bandStats.responseTokens > 0) {
-        meta.appendChild(_makeMetaChip("↓", bandStats.responseTokens + " r"));
+        meta.appendChild(_makeMetaChip(
+          "↓", bandStats.responseTokens + " tok out",
+          "Tokens de salida (respuesta): lo que el modelo generó en esta iteración."
+        ));
       }
       var totalTok = bandStats.promptTokens + bandStats.responseTokens;
       if (totalTok > 0) {
         var cost =
           bandStats.promptTokens * KPI_PRICE_INPUT_PER_1M / 1e6 +
           bandStats.responseTokens * KPI_PRICE_OUTPUT_PER_1M / 1e6;
-        meta.appendChild(_makeMetaChip("$", cost.toFixed(4)));
+        meta.appendChild(_makeMetaChip(
+          "$", cost.toFixed(4) + " USD",
+          "Costo estimado en USD de esta iteración (entrada + salida)."
+        ));
       }
     }
 
-    function _makeMetaChip(icon, value) {
+    function _makeMetaChip(icon, value, title) {
       var chip = document.createElement("span");
       chip.className = "trace-band-meta-chip";
+      if (title) chip.title = title;
       chip.innerHTML =
         '<span class="trace-band-meta-icon" aria-hidden="true">' + icon + '</span>' +
         '<span class="trace-band-meta-value">' + escapeHtml(value) + '</span>';
@@ -688,10 +705,15 @@
       var head = document.createElement("header");
       head.className = "trace-band-head";
       var iter = payload.iter != null ? payload.iter : "?";
-      var max = payload.max != null ? " / " + payload.max : "";
+      var max = payload.max != null ? '<span class="trace-band-max"> · máx ' + escapeHtml(payload.max) + '</span>' : "";
+      var bandTitle = payload.max != null
+        ? "Vuelta " + iter + " del loop. El agente puede dar hasta " + payload.max +
+          " iteraciones (MAX_ITERS) antes de rendirse — no es un progreso hacia 20."
+        : "Vuelta " + iter + " del loop del agente.";
       head.innerHTML =
         '<span class="trace-band-icon" aria-hidden="true">↻</span>' +
-        '<span class="trace-band-label">Iteración ' + escapeHtml(iter) + escapeHtml(max) + '</span>' +
+        '<span class="trace-band-label" title="' + escapeHtml(bandTitle) + '">Iteración ' +
+          escapeHtml(iter) + max + '</span>' +
         '<span class="trace-band-tools" data-band-tools></span>' +
         '<span class="trace-band-meta" data-band-meta></span>';
       band.appendChild(head);
@@ -725,6 +747,8 @@
         var chip = document.createElement("span");
         chip.className = "trace-band-tool-chip";
         chip.textContent = counts[k] > 1 ? k + " ×" + counts[k] : k;
+        chip.title = "Herramienta usada en esta iteración" +
+          (counts[k] > 1 ? " (" + counts[k] + " veces)" : "") + ": " + k;
         host.appendChild(chip);
       });
     }
@@ -755,13 +779,15 @@
 
       var details = document.createElement("details");
       details.className = "trace-context-growth";
+      details.title = "Memoria del loop: cuántos mensajes acumula `messages` tras esta " +
+        "iteración (el +N es lo que se añadió). El modelo lo relee en la siguiente vuelta.";
 
       var summary = document.createElement("summary");
       summary.innerHTML =
         '<span aria-hidden="true">🗂</span> ' +
-        '<span class="trace-context-summary-text">Contexto: ' +
-        escapeHtml(totalMessages) + ' messages' +
-        (deltaCount > 0 ? ' <span class="trace-context-delta-pill">+' + deltaCount + '</span>' : '') +
+        '<span class="trace-context-summary-text">Memoria del loop: ' +
+        escapeHtml(totalMessages) + ' mensajes' +
+        (deltaCount > 0 ? ' <span class="trace-context-delta-pill" title="Mensajes añadidos en esta iteración">+' + deltaCount + '</span>' : '') +
         '</span>';
       details.appendChild(summary);
 
@@ -1119,6 +1145,7 @@
           var chip = document.createElement("span");
           chip.className = "trace-step-chip";
           chip.textContent = seconds + " s";
+          chip.title = "Latencia: lo que tardó Gemini en responder esta llamada.";
           head.appendChild(chip);
         }
         return li;
@@ -1131,7 +1158,11 @@
         if (iter != null) {
           var counter = document.createElement("span");
           counter.className = "trace-step-counter";
-          counter.textContent = "Iteración " + iter + (max ? " / " + max : "");
+          counter.textContent = "Iteración " + iter + (max ? " · máx " + max : "");
+          if (max) {
+            counter.title = "Vuelta " + iter + " del loop. Máximo " + max +
+              " iteraciones (MAX_ITERS); no es un progreso hacia " + max + ".";
+          }
           head.appendChild(counter);
         }
         return li;
@@ -1373,8 +1404,9 @@
           '</div>' +
           '<div class="trace-summary-row">' +
             '<span class="trace-summary-label">🔄 iteraciones</span>' +
-            '<span class="trace-summary-value">' +
-              iterCount + (iterMax ? " / " + iterMax : "") +
+            '<span class="trace-summary-value"' +
+              (iterMax ? ' title="' + iterCount + ' vueltas del loop; el máximo era ' + iterMax + ' (MAX_ITERS)."' : '') + '>' +
+              iterCount + (iterMax ? " · máx " + iterMax : "") +
             '</span>' +
           '</div>' +
           '<div class="trace-summary-row">' +
@@ -1668,7 +1700,7 @@
           currentIter = p.iter;
           lines.push("");
           lines.push("## Iteración " + (p.iter || "?") +
-            (p.max ? " / " + p.max : ""));
+            (p.max ? " · máx " + p.max : ""));
           lines.push("");
           continue;
         }

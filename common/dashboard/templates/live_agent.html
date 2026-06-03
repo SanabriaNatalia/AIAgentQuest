@@ -85,24 +85,29 @@
   </nav>
 
   <aside class="live-agent-hud" data-trace-hud aria-label="Métricas del agente">
-    <div class="live-agent-kpi">
+    <div class="live-agent-kpi"
+         title="Vueltas del loop ejecutadas, junto al máximo permitido (MAX_ITERS). No es un progreso hacia el máximo.">
       <span class="live-agent-kpi-label">Iteraciones</span>
       <span class="live-agent-kpi-value" data-kpi-iter>0</span>
     </div>
-    <div class="live-agent-kpi">
-      <span class="live-agent-kpi-label">Tools</span>
+    <div class="live-agent-kpi"
+         title="Cuántas veces el agente llamó a una herramienta en todo el trace.">
+      <span class="live-agent-kpi-label">Tools llamadas</span>
       <span class="live-agent-kpi-value" data-kpi-tools>0</span>
     </div>
-    <div class="live-agent-kpi">
-      <span class="live-agent-kpi-label">Tokens</span>
+    <div class="live-agent-kpi"
+         title="Tokens totales consumidos (entrada + salida) en todas las llamadas a Gemini.">
+      <span class="live-agent-kpi-label">Tokens (total)</span>
       <span class="live-agent-kpi-value" data-kpi-tokens>0</span>
     </div>
-    <div class="live-agent-kpi">
-      <span class="live-agent-kpi-label">Costo (USD)</span>
+    <div class="live-agent-kpi"
+         title="Costo estimado en dólares de todo el trace, según el precio por millón de tokens de Gemini.">
+      <span class="live-agent-kpi-label">Costo estimado (USD)</span>
       <span class="live-agent-kpi-value" data-kpi-cost>$0.0000</span>
     </div>
-    <div class="live-agent-kpi">
-      <span class="live-agent-kpi-label">Latencia ⌀</span>
+    <div class="live-agent-kpi"
+         title="Latencia promedio: tiempo medio que tardó Gemini en responder por llamada.">
+      <span class="live-agent-kpi-label">Latencia promedio</span>
       <span class="live-agent-kpi-value" data-kpi-latency>—</span>
     </div>
   </aside>

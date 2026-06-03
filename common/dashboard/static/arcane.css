@@ -4074,3 +4074,22 @@ code {
 .trace-band-steps > .trace-step {
   position: relative;
 }
+
+/* "· máx N" del header de banda: secundario, para que no se lea como fracción. */
+.trace-band-max {
+  color: var(--arkanum-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* Pista visual de que estos elementos tienen explicación al pasar el cursor. */
+.trace-band-meta-chip,
+.trace-step-chip,
+.trace-band-tool-chip,
+.trace-step-counter[title],
+.trace-band-label[title],
+.trace-context-growth[title],
+.live-agent-kpi[title] {
+  cursor: help;
+}
