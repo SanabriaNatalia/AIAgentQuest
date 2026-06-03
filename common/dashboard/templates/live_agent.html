@@ -26,19 +26,6 @@
     <div class="live-agent-meta" data-trace-meta></div>
     <div class="live-agent-actions">
       <button type="button"
-              class="live-agent-action live-agent-action--view"
-              data-trace-view-toggle
-              aria-pressed="false"
-              title="Alternar entre el grafo del agente y la línea de tiempo">🕸 Grafo</button>
-      <button type="button"
-              class="live-agent-action"
-              data-trace-copy-md
-              title="Copiar el trace como markdown">📋 Markdown</button>
-      <button type="button"
-              class="live-agent-action"
-              data-trace-download-json
-              title="Descargar el trace como JSON">💾 JSON</button>
-      <button type="button"
               class="live-agent-action"
               data-trace-replay
               title="Reproducir paso a paso (Replay)">▶ Replay</button>
@@ -151,7 +138,7 @@
     </p>
   </div>
 
-  <div class="live-agent-graph" data-trace-graph hidden>
+  <div class="live-agent-graph" data-trace-graph>
     <div class="live-agent-graph-stage">
       <svg class="live-agent-graph-svg"
            data-graph-svg
@@ -171,11 +158,18 @@
     </div>
     <aside class="live-agent-graph-detail" data-graph-detail hidden>
       <p class="live-agent-graph-detail-hint">
-        Toca una herramienta para ver con qué la llamó el agente y qué devolvió.
+        Toca el <strong>aprendiz</strong> para ver su petición, el <strong>mago</strong>
+        para ver su system prompt, o una <strong>herramienta</strong> para ver con qué
+        la llamó y qué devolvió.
       </p>
     </aside>
   </div>
 
+  <header class="live-agent-steps-heading">
+    <span class="live-agent-steps-heading-icon" aria-hidden="true">📜</span>
+    <span class="live-agent-steps-heading-text">Paso a paso</span>
+    <span class="live-agent-steps-heading-hint">El detalle cronológico de cada llamada, observación y token</span>
+  </header>
   <ol class="live-agent-steps" data-trace-steps aria-live="polite"></ol>
 </section>
 

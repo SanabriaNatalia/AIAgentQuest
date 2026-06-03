@@ -19,16 +19,16 @@
   var svg = host.querySelector("[data-graph-svg]");
   var edgesG = host.querySelector("[data-graph-edges]");
   var nodesG = host.querySelector("[data-graph-nodes]");
-  var graphHost = host.querySelector("[data-trace-graph]");
-  var stepsHost = host.querySelector("[data-trace-steps]");
-  var toggleBtn = host.querySelector("[data-trace-view-toggle]");
   var detailHost = host.querySelector("[data-graph-detail]");
   if (!svg || !edgesG || !nodesG) return;
 
   var SVGNS = "http://www.w3.org/2000/svg";
   var VIEW_W = 820, VIEW_H = 540;
-  var CX = VIEW_W / 2, CY = VIEW_H / 2;
-  var ORBIT = 188, AGENT_R = 60, TOOL_R = 44;
+  var CY = VIEW_H / 2;
+  var AGENT_X = 388, USER_X = 96;   // flujo: aprendiz (izq) → mago (centro) → tools (der)
+  var CX = AGENT_X;                  // el mago es el centro de las órbitas de herramientas
+  var ORBIT = 196, AGENT_R = 60, TOOL_R = 44, USER_R = 40;
+  var ARC_SPREAD = 70;              // grados a cada lado del eje horizontal (tools a la derecha)
 
   var reducedMotion = window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -44,13 +44,17 @@
   var tools = [];          // catálogo {name,label,icon,description}
   var nodeEls = {};        // name -> {group, pulse, badge, badgeText, label}
   var agentRing = null;
+  var agentEl = null;      // grupo del nodo agente (mago)
+  var userEl = null;       // grupo del nodo aprendiz
+  var systemPrompt = "";   // cargado de /api/system-prompt para el detalle del agente
+  var userPrompt = "";     // capturado del session_start para el detalle del aprendiz
 
   // Estado de animación (se reinicia por trace o al reiniciar un replay).
   var currentTraceId = null;
   var lastStepCount = 0;
   var seenIds = {};        // step.id -> true
   var livePending = [];    // cola FIFO de nombres de tool para emparejar results
-  var selectedTool = null;
+  var selected = null;     // {kind:'user'|'agent'|'tool', name?}
 
   function el(tag, attrs, parent) {
     var n = document.createElementNS(SVGNS, tag);
@@ -100,32 +104,52 @@
     nodeEls = {};
 
     var n = tools.length || 1;
-    // Aristas primero (van por debajo de los nodos).
+
+    // Aristas agente→herramienta (por debajo de los nodos).
     tools.forEach(function (t, i) {
       var pos = toolPosition(i, n);
       var grp = el("g", { "class": "la-edge", "data-edge": t.name }, edgesG);
-      el("line", {
-        "class": "la-edge-base",
-        x1: CX, y1: CY, x2: pos.x, y2: pos.y
-      }, grp);
-      var pulse = el("line", {
-        "class": "la-edge-pulse",
-        x1: CX, y1: CY, x2: pos.x, y2: pos.y
-      }, grp);
+      el("line", { "class": "la-edge-base", x1: CX, y1: CY, x2: pos.x, y2: pos.y }, grp);
+      var pulse = el("line", { "class": "la-edge-pulse", x1: CX, y1: CY, x2: pos.x, y2: pos.y }, grp);
       nodeEls[t.name] = { edge: grp, pulse: pulse };
     });
 
-    // Nodo agente (central, grande).
-    var agent = el("g", { "class": "la-agent", transform: "translate(" + CX + "," + CY + ")" }, nodesG);
-    el("circle", { "class": "la-agent-glow", r: AGENT_R + 26, cx: 0, cy: 0, fill: "url(#la-agent-glow)" }, agent);
-    agentRing = el("circle", { "class": "la-agent-ring", r: AGENT_R + 8, cx: 0, cy: 0 }, agent);
-    el("circle", { "class": "la-agent-core", r: AGENT_R, cx: 0, cy: 0 }, agent);
-    var sigil = el("text", { "class": "la-agent-sigil", x: 0, y: -4, "text-anchor": "middle" }, agent);
-    sigil.textContent = "✦";
-    var aLabel = el("text", { "class": "la-agent-label", x: 0, y: 22, "text-anchor": "middle" }, agent);
-    aLabel.textContent = "Agente";
+    // Arista aprendiz→agente (la entrada que dispara la secuencia).
+    el("line", { "class": "la-edge-user", x1: USER_X, y1: CY, x2: CX, y2: CY }, edgesG);
 
-    // Nodos herramienta.
+    // Nodo aprendiz (usuario) a la izquierda.
+    userEl = el("g", {
+      "class": "la-user", transform: "translate(" + USER_X + "," + CY + ")",
+      tabindex: "0", role: "button",
+      "aria-label": "Aprendiz: lo que el usuario le pidió al agente"
+    }, nodesG);
+    el("circle", { "class": "la-user-core", r: USER_R, cx: 0, cy: 0 }, userEl);
+    buildLearner(userEl);
+    var uLabel = el("text", { "class": "la-tool-label", x: 0, y: USER_R + 22, "text-anchor": "middle" }, userEl);
+    uLabel.textContent = "Aprendiz";
+    userEl.addEventListener("click", function () { selectUser(); });
+    userEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectUser(); }
+    });
+
+    // Nodo agente (mago) al centro.
+    agentEl = el("g", {
+      "class": "la-agent", transform: "translate(" + CX + "," + CY + ")",
+      tabindex: "0", role: "button",
+      "aria-label": "Agente: el mago que decide qué herramienta usar. Toca para ver su system prompt."
+    }, nodesG);
+    el("circle", { "class": "la-agent-glow", r: AGENT_R + 26, cx: 0, cy: 0, fill: "url(#la-agent-glow)" }, agentEl);
+    agentRing = el("circle", { "class": "la-agent-ring", r: AGENT_R + 8, cx: 0, cy: 0 }, agentEl);
+    el("circle", { "class": "la-agent-core", r: AGENT_R, cx: 0, cy: 0 }, agentEl);
+    buildWizard(agentEl);
+    var aLabel = el("text", { "class": "la-agent-label", x: 0, y: AGENT_R + 24, "text-anchor": "middle" }, agentEl);
+    aLabel.textContent = "Agente";
+    agentEl.addEventListener("click", function () { selectAgent(); });
+    agentEl.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectAgent(); }
+    });
+
+    // Nodos herramienta (arco a la derecha del mago).
     tools.forEach(function (t, i) {
       var pos = toolPosition(i, n);
       var grp = el("g", {
@@ -159,9 +183,39 @@
   }
 
   function toolPosition(i, n) {
-    // Reparto radial empezando arriba (-90°).
-    var angle = (-90 + i * (360 / n)) * Math.PI / 180;
-    return { x: CX + ORBIT * Math.cos(angle), y: CY + ORBIT * Math.sin(angle) };
+    // Arco a la derecha del mago: de -ARC_SPREAD a +ARC_SPREAD grados.
+    var deg = (n === 1) ? 0 : (-ARC_SPREAD + i * (2 * ARC_SPREAD / (n - 1)));
+    var a = deg * Math.PI / 180;
+    return { x: CX + ORBIT * Math.cos(a), y: CY + ORBIT * Math.sin(a) };
+  }
+
+  // Figura simple del aprendiz (cabeza + capa con capucha), vectorial.
+  function buildLearner(group) {
+    var g = el("g", { "class": "la-learner" }, group);
+    el("path", { "class": "la-learner-body", d: "M -17,20 Q -15,-3 0,-3 Q 15,-3 17,20 Z" }, g);
+    el("path", { "class": "la-learner-hood", d: "M -13,-6 Q 0,-25 13,-6 Z" }, g);
+    el("circle", { "class": "la-learner-head", cx: 0, cy: -9, r: 8.5 }, g);
+  }
+
+  // Dibuja un sombrero de mago con estrellas dentro del nodo agente. Vectorial
+  // (no emoji) para que combine con la estética arcana del dashboard.
+  function buildWizard(group) {
+    var g = el("g", { "class": "la-wizard" }, group);
+    el("ellipse", { "class": "la-wiz-brim", cx: 0, cy: 16, rx: 34, ry: 7 }, g);
+    el("path", { "class": "la-wiz-cone", d: "M -20,15 Q -8,-13 1,-34 Q 11,-23 22,15 Z" }, g);
+    el("path", { "class": "la-wiz-band", d: "M -16,10 Q 1,16 19,10 L 17,15 Q 1,21 -14,15 Z" }, g);
+    el("rect", { "class": "la-wiz-buckle", x: -3.5, y: 9, width: 8, height: 7, rx: 1.5 }, g);
+    star(g, 13, -20, 1.15);
+    star(g, -11, -3, 0.7);
+    star(g, 21, -30, 0.6);
+  }
+
+  function star(group, x, y, s) {
+    el("path", {
+      "class": "la-wiz-star",
+      d: "M0,-4 L1,-1 L4,0 L1,1 L0,4 L-1,1 L-4,0 L-1,-1 Z",
+      transform: "translate(" + x + "," + y + ") scale(" + s + ")"
+    }, group);
   }
 
   // ---- Animación ----------------------------------------------------------
@@ -277,7 +331,9 @@
     seenIds = {};
     livePending = [];
     lastStats = {};
+    userPrompt = "";
     stopThinking();
+    if (userEl) userEl.classList.remove("has-run");
     Object.keys(nodeEls).forEach(function (name) {
       var node = nodeEls[name];
       if (!node.group) return;
@@ -313,24 +369,96 @@
       applyStep(step, !firstPaint);
     });
 
+    // Captura el prompt del aprendiz (entrada de la secuencia).
+    for (var j = 0; j < steps.length; j++) {
+      var s0 = steps[j];
+      if (s0 && s0.step_type === "session_start" && s0.payload && s0.payload.user_prompt) {
+        userPrompt = s0.payload.user_prompt;
+      }
+    }
+    if (userEl) userEl.classList.toggle("has-run", !!(userPrompt && userPrompt.trim()));
+
     lastStepCount = steps.length;
     lastStats = recompute(steps);
     refreshBadges(lastStats);
-    if (selectedTool) renderDetail(selectedTool);
+    refreshDetail();
+  }
+
+  function refreshDetail() {
+    if (!selected) return;
+    if (selected.kind === "tool") renderToolDetail(selected.name);
+    else if (selected.kind === "user") renderUserDetail();
+    else if (selected.kind === "agent") renderAgentDetail();
   }
 
   // ---- Panel de detalle ---------------------------------------------------
 
-  function selectTool(name) {
-    selectedTool = name;
+  function clearSelectedClass() {
+    if (userEl) userEl.classList.remove("is-selected");
+    if (agentEl) agentEl.classList.remove("is-selected");
     tools.forEach(function (t) {
       var node = nodeEls[t.name];
-      if (node && node.group) node.group.classList.toggle("is-selected", t.name === name);
+      if (node && node.group) node.group.classList.remove("is-selected");
     });
-    renderDetail(name);
   }
 
-  function renderDetail(name) {
+  function selectUser() {
+    selected = { kind: "user" };
+    clearSelectedClass();
+    if (userEl) userEl.classList.add("is-selected");
+    renderUserDetail();
+  }
+
+  function selectAgent() {
+    selected = { kind: "agent" };
+    clearSelectedClass();
+    if (agentEl) agentEl.classList.add("is-selected");
+    renderAgentDetail();
+  }
+
+  function selectTool(name) {
+    selected = { kind: "tool", name: name };
+    clearSelectedClass();
+    var node = nodeEls[name];
+    if (node && node.group) node.group.classList.add("is-selected");
+    renderToolDetail(name);
+  }
+
+  function renderUserDetail() {
+    if (!detailHost) return;
+    detailHost.hidden = false;
+    var has = userPrompt && userPrompt.trim();
+    detailHost.innerHTML =
+      '<header class="la-detail-head">' +
+        '<span class="la-detail-icon" aria-hidden="true">🧑‍🎓</span>' +
+        '<span class="la-detail-title">Aprendiz</span>' +
+      "</header>" +
+      '<p class="la-detail-desc">Lo que el usuario le pidió al agente: la entrada que dispara toda la secuencia.</p>' +
+      (has
+        ? '<div class="la-detail-section"><span class="la-detail-section-label">Prompt</span>' +
+            '<pre class="la-detail-result">' + escapeHtml(truncate(userPrompt, 1400)) + "</pre></div>"
+        : '<p class="la-detail-empty">Aún no hay prompt. Lanza el agente para registrarlo.</p>');
+  }
+
+  function renderAgentDetail() {
+    if (!detailHost) return;
+    detailHost.hidden = false;
+    var sp = systemPrompt && systemPrompt.trim();
+    detailHost.innerHTML =
+      '<header class="la-detail-head">' +
+        '<span class="la-detail-icon" aria-hidden="true">🧙</span>' +
+        '<span class="la-detail-title">Agente</span>' +
+        '<span class="la-detail-count">Gemini</span>' +
+      "</header>" +
+      '<p class="la-detail-desc">El mago orquesta el loop: lee el prompt, decide qué herramienta usar, observa el resultado y repite hasta dar una respuesta final.</p>' +
+      '<div class="la-detail-section"><span class="la-detail-section-label">System prompt</span>' +
+        (sp
+          ? '<pre class="la-detail-result">' + escapeHtml(truncate(systemPrompt, 1800)) + "</pre>"
+          : '<p class="la-detail-empty">Cargando o no disponible.</p>') +
+      "</div>";
+  }
+
+  function renderToolDetail(name) {
     if (!detailHost) return;
     var tool = null;
     for (var i = 0; i < tools.length; i++) { if (tools[i].name === name) { tool = tools[i]; break; } }
@@ -374,25 +502,47 @@
         (st.calls === 0 ? '<p class="la-detail-empty">Aún no se ha llamado en este trace.</p>' : "")) ;
   }
 
-  // ---- Toggle de vista ----------------------------------------------------
+  // ---- Tooltips arcanos ---------------------------------------------------
+  // Reemplaza los tooltips nativos del navegador (cuadro blanco sin estilo)
+  // por uno propio con la estética del dashboard. Convierte cada `title` del
+  // bloque del Live Agent en `data-la-tip` (matando el nativo) y los nodos
+  // del grafo ya traen su `data-la-tip`.
+  function initTooltips(root) {
+    root.querySelectorAll("[title]").forEach(function (elm) {
+      var t = elm.getAttribute("title");
+      if (t) { elm.setAttribute("data-la-tip", t); elm.removeAttribute("title"); }
+    });
 
-  var STORAGE_KEY = "live-agent-view";
+    var tip = document.createElement("div");
+    tip.className = "la-tooltip";
+    tip.setAttribute("role", "tooltip");
+    tip.hidden = true;
+    document.body.appendChild(tip);
 
-  function setView(view) {
-    var graph = view === "graph";
-    if (graphHost) graphHost.hidden = !graph;
-    if (stepsHost) stepsHost.hidden = graph;
-    if (toggleBtn) {
-      toggleBtn.setAttribute("aria-pressed", graph ? "true" : "false");
-      toggleBtn.textContent = graph ? "📜 Timeline" : "🕸 Grafo";
+    var current = null;
+
+    function closestTip(node) {
+      while (node && node !== root) {
+        if (node.getAttribute && node.getAttribute("data-la-tip")) return node;
+        node = node.parentNode;
+      }
+      return null;
     }
-    try { localStorage.setItem(STORAGE_KEY, view); } catch (_e) {}
-  }
 
-  if (toggleBtn) {
-    toggleBtn.addEventListener("click", function () {
-      var goingToGraph = (graphHost && graphHost.hidden);
-      setView(goingToGraph ? "graph" : "timeline");
+    root.addEventListener("mouseover", function (e) {
+      var elm = closestTip(e.target);
+      if (!elm) return;
+      current = elm;
+      tip.textContent = elm.getAttribute("data-la-tip");
+      tip.hidden = false;
+    });
+    root.addEventListener("mousemove", function (e) {
+      if (tip.hidden) return;
+      tip.style.left = e.clientX + "px";
+      tip.style.top = (e.clientY - 14) + "px";
+    });
+    root.addEventListener("mouseout", function (e) {
+      if (closestTip(e.target) === current) { tip.hidden = true; current = null; }
     });
   }
 
@@ -406,11 +556,22 @@
       onData(e.detail);
     });
 
-    // Vista por defecto: timeline (no sorprende al aprendiz). Respeta la
-    // última elección guardada.
-    var stored = null;
-    try { stored = localStorage.getItem(STORAGE_KEY); } catch (_e) {}
-    setView(stored === "graph" ? "graph" : "timeline");
+    initTooltips(host);
+    loadSystemPrompt();
+  }
+
+  function loadSystemPrompt() {
+    var url = host.dataset.systemPromptUrl;  // /api/system-prompt
+    if (!url) return;
+    fetch(url, { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (data && typeof data.content === "string") {
+          systemPrompt = data.content;
+          if (selected && selected.kind === "agent") renderAgentDetail();
+        }
+      })
+      .catch(function () { /* best-effort */ });
   }
 
   var url = host.dataset.agentToolsUrl;

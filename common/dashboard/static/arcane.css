@@ -3681,31 +3681,17 @@ code {
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   Live Agent — vista de grafo "Constelación del Agente" (estilo n8n).
-   Convive con el timeline; el toggle alterna cuál se muestra.
+   Live Agent — grafo "Constelación del Agente" (estilo n8n).
+   Vista unificada: el grafo va arriba (en vivo) y el timeline debajo
+   (paso a paso). No hay toggle — ambos se ven a la vez.
    ════════════════════════════════════════════════════════════════════ */
-
-/* El atributo [hidden] debe ganar a cualquier display heredado. */
-.live-agent-graph[hidden],
-.live-agent-steps[hidden] {
-  display: none !important;
-}
-
-/* Botón toggle de vista en el toolbar. */
-.live-agent-action--view {
-  border-color: rgba(192, 132, 252, 0.4);
-}
-.live-agent-action--view[aria-pressed="true"] {
-  background: rgba(139, 92, 246, 0.22);
-  border-color: var(--arkanum-purple);
-  color: var(--arkanum-text);
-}
 
 .live-agent-graph {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
   margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
 }
 
 @media (min-width: 880px) {
@@ -3717,12 +3703,34 @@ code {
 
 .live-agent-graph-stage {
   background:
-    radial-gradient(circle at 50% 45%, rgba(139, 92, 246, 0.12), transparent 60%),
-    rgba(13, 10, 31, 0.55);
-  border: 1px solid rgba(201, 169, 97, 0.28);
+    radial-gradient(circle at 50% 42%, rgba(139, 92, 246, 0.22), transparent 62%),
+    linear-gradient(180deg, #16122e 0%, #0f0c24 100%);
+  border: 1px solid rgba(201, 169, 97, 0.4);
   border-radius: 16px;
   padding: 0.5rem;
   overflow: hidden;
+}
+
+/* Encabezado que separa el grafo (arriba) del timeline (abajo). */
+.live-agent-steps-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(201, 169, 97, 0.2);
+}
+.live-agent-steps-heading-icon { font-size: 1.05rem; }
+.live-agent-steps-heading-text {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--arkanum-gold);
+  letter-spacing: 0.06em;
+}
+.live-agent-steps-heading-hint {
+  color: var(--arkanum-muted);
+  font-size: 0.82rem;
 }
 
 .live-agent-graph-svg {
@@ -3734,7 +3742,7 @@ code {
 
 /* ---- Aristas agente↔herramienta ---- */
 .la-edge-base {
-  stroke: rgba(168, 159, 196, 0.28);
+  stroke: rgba(185, 174, 224, 0.45);
   stroke-width: 2;
 }
 .la-edge-pulse {
@@ -3766,16 +3774,17 @@ code {
 
 /* ---- Nodo agente ---- */
 .la-agent-core {
-  fill: rgba(26, 21, 53, 0.95);
+  fill: #3a2f73;
   stroke: var(--arkanum-gold);
-  stroke-width: 2.5;
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 14px rgba(201, 169, 97, 0.55));
 }
 .la-agent-ring {
   fill: none;
-  stroke: rgba(192, 132, 252, 0.5);
-  stroke-width: 2;
+  stroke: rgba(192, 132, 252, 0.65);
+  stroke-width: 2.5;
   stroke-dasharray: 6 10;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 .la-agent-ring.is-thinking {
   opacity: 1;
@@ -3785,17 +3794,75 @@ code {
 @keyframes la-spin {
   to { transform: rotate(360deg); }
 }
-.la-agent-sigil {
-  fill: var(--arkanum-gold);
-  font-size: 38px;
-  dominant-baseline: middle;
-}
 .la-agent-label {
-  fill: var(--arkanum-text);
-  font-size: 15px;
-  letter-spacing: 0.12em;
+  fill: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
+  text-anchor: middle;
   dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: #0f0c24;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* Sombrero de mago del agente (vectorial, on-brand). */
+.la-wiz-brim { fill: var(--arkanum-gold); }
+.la-wiz-cone {
+  fill: #241a52;
+  stroke: var(--arkanum-gold);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.la-wiz-band { fill: var(--arkanum-gold); }
+.la-wiz-buckle {
+  fill: #241a52;
+  stroke: var(--arkanum-gold);
+  stroke-width: 1;
+}
+.la-wiz-star {
+  fill: #f7ecc9;
+  animation: la-twinkle 2.6s ease-in-out infinite;
+}
+@keyframes la-twinkle {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+/* ---- Nodo aprendiz (usuario, entrada del flujo) ---- */
+.la-user { cursor: pointer; outline: none; }
+.la-user-core {
+  fill: #1f2b52;
+  stroke: #7fb0e0;
+  stroke-width: 2.5;
+  transition: stroke 0.2s ease, fill 0.2s ease;
+}
+.la-user.has-run .la-user-core { stroke: var(--arkanum-glow); }
+.la-user:hover .la-user-core,
+.la-user:focus-visible .la-user-core,
+.la-user.is-selected .la-user-core {
+  stroke: var(--arkanum-glow);
+  fill: #2a3a6a;
+}
+.la-learner-body { fill: #5a6dbf; }
+.la-learner-hood { fill: #41509a; stroke: var(--arkanum-gold); stroke-width: 1; }
+.la-learner-head { fill: #f0e6cf; }
+
+/* Arista aprendiz→mago (la entrada que dispara la secuencia). */
+.la-edge-user {
+  stroke: rgba(127, 176, 224, 0.55);
+  stroke-width: 2.5;
+  stroke-dasharray: 5 6;
+}
+
+/* El mago también es clicable (muestra su system prompt). */
+.la-agent { cursor: pointer; outline: none; }
+.la-agent:hover .la-agent-core,
+.la-agent:focus-visible .la-agent-core,
+.la-agent.is-selected .la-agent-core {
+  stroke: var(--arkanum-glow);
 }
 
 /* ---- Nodos herramienta ---- */
@@ -3804,13 +3871,14 @@ code {
   outline: none;
 }
 .la-tool-core {
-  fill: rgba(26, 21, 53, 0.92);
-  stroke: rgba(168, 159, 196, 0.45);
-  stroke-width: 2;
+  fill: #2c2658;
+  stroke: #b9aee0;
+  stroke-width: 2.5;
   transition: stroke 0.2s ease, fill 0.2s ease;
 }
 .la-tool.has-run .la-tool-core {
-  stroke: var(--arkanum-gold-soft);
+  fill: #3a3168;
+  stroke: var(--arkanum-gold);
 }
 .la-tool.has-error .la-tool-core {
   stroke: var(--arkanum-fail);
@@ -3819,31 +3887,38 @@ code {
 .la-tool:focus-visible .la-tool-core,
 .la-tool.is-selected .la-tool-core {
   stroke: var(--arkanum-glow);
-  fill: rgba(43, 34, 74, 0.95);
+  fill: #443a7a;
 }
 .la-tool.is-active .la-tool-core {
   stroke: var(--arkanum-gold);
-  filter: drop-shadow(0 0 10px rgba(201, 169, 97, 0.8));
+  filter: drop-shadow(0 0 12px rgba(201, 169, 97, 0.9));
 }
 .la-tool.flash-ok .la-tool-core {
   stroke: var(--arkanum-success);
-  filter: drop-shadow(0 0 10px rgba(101, 209, 150, 0.8));
+  filter: drop-shadow(0 0 12px rgba(101, 209, 150, 0.9));
 }
 .la-tool.flash-error .la-tool-core {
   stroke: var(--arkanum-fail);
-  filter: drop-shadow(0 0 10px rgba(232, 122, 122, 0.8));
+  filter: drop-shadow(0 0 12px rgba(232, 122, 122, 0.9));
 }
 .la-tool-icon {
   font-size: 30px;
-  dominant-baseline: middle;
+  text-anchor: middle;
+  dominant-baseline: central;
 }
 .la-tool-label {
-  fill: var(--arkanum-muted);
-  font-size: 13px;
+  fill: #ece8f6;
+  font-size: 14px;
+  font-weight: 600;
+  text-anchor: middle;
   dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: #0f0c24;
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 .la-tool.has-run .la-tool-label {
-  fill: var(--arkanum-text);
+  fill: #ffffff;
 }
 
 /* Badge contador sobre el nodo. */
@@ -3969,11 +4044,75 @@ code {
   font-size: 0.85rem;
 }
 
+/* ---- Tooltip arcano (reemplaza los nativos del navegador) ---- */
+.la-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 280px;
+  transform: translate(-50%, -100%);
+  padding: 0.45rem 0.65rem;
+  background: linear-gradient(180deg, #221a47 0%, #14102f 100%);
+  border: 1px solid rgba(201, 169, 97, 0.55);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: var(--arkanum-text);
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+.la-tooltip[hidden] { display: none; }
+
+/* ---- Popover de velocidad del replay (reemplaza window.prompt) ---- */
+.live-agent-actions { position: relative; }
+.live-agent-replay-pop {
+  position: absolute;
+  z-index: 60;
+  display: grid;
+  gap: 4px;
+  padding: 0.5rem;
+  min-width: 170px;
+  background: linear-gradient(180deg, #1b1640 0%, #120f2e 100%);
+  border: 1px solid rgba(201, 169, 97, 0.5);
+  border-radius: 11px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+.live-agent-replay-pop[hidden] { display: none; }
+.live-agent-replay-pop-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--arkanum-muted);
+  padding: 0.1rem 0.2rem 0.25rem;
+}
+.live-agent-replay-speed {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(201, 169, 97, 0.25);
+  border-radius: 8px;
+  color: var(--arkanum-text);
+  font-family: var(--font-serif);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.live-agent-replay-speed:hover,
+.live-agent-replay-speed:focus-visible {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: var(--arkanum-gold);
+  outline: none;
+}
+
 /* Accesibilidad: sin movimiento, todo queda estático y legible. */
 @media (prefers-reduced-motion: reduce) {
   .la-edge-pulse.is-firing-out,
   .la-edge-pulse.is-firing-in,
-  .la-agent-ring.is-thinking {
+  .la-agent-ring.is-thinking,
+  .la-wiz-star {
     animation: none;
   }
 }
@@ -4090,6 +4229,41 @@ code {
 .trace-step-counter[title],
 .trace-band-label[title],
 .trace-context-growth[title],
-.live-agent-kpi[title] {
+.live-agent-kpi[title],
+[data-la-tip] {
   cursor: help;
+}
+
+/* Tarjeta de entrada del timeline: el prompt que envió el aprendiz. */
+.trace-prompt-card {
+  list-style: none;
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  background: linear-gradient(180deg, rgba(201, 169, 97, 0.10), rgba(13, 10, 31, 0.30));
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.7rem;
+}
+.trace-prompt-card .trace-step-type {
+  color: var(--arkanum-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+}
+.trace-prompt-card-tag {
+  margin-left: auto;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arkanum-bg);
+  background: var(--arkanum-gold);
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+}
+.trace-prompt-card-text {
+  margin: 0.4rem 0 0;
+  color: var(--arkanum-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

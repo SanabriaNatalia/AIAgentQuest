@@ -687,7 +687,9 @@
     function _makeMetaChip(icon, value, title) {
       var chip = document.createElement("span");
       chip.className = "trace-band-meta-chip";
-      if (title) chip.title = title;
+      // data-la-tip (no title): el tooltip arcano lo captura por delegación,
+      // aunque el chip se cree dinámicamente. Evita el tooltip nativo feo.
+      if (title) chip.setAttribute("data-la-tip", title);
       chip.innerHTML =
         '<span class="trace-band-meta-icon" aria-hidden="true">' + icon + '</span>' +
         '<span class="trace-band-meta-value">' + escapeHtml(value) + '</span>';
@@ -1067,6 +1069,23 @@
       return wrap;
     }
 
+    // Tarjeta de entrada del timeline: el prompt que el aprendiz envió.
+    function renderUserPromptCard(prompt) {
+      var li = document.createElement("li");
+      li.className = "trace-step trace-prompt-card";
+      li.innerHTML =
+        '<div class="trace-step-head">' +
+          '<span class="trace-step-icon" aria-hidden="true">🜂</span>' +
+          '<span class="trace-step-type">prompt del aprendiz</span>' +
+          '<span class="trace-prompt-card-tag">entrada</span>' +
+        '</div>';
+      var prose = document.createElement("p");
+      prose.className = "trace-step-prose trace-prompt-card-text";
+      prose.textContent = prompt;
+      li.appendChild(prose);
+      return li;
+    }
+
     function renderStep(step) {
       var li = document.createElement("li");
       li.className = "trace-step trace-step--" + step.step_type;
@@ -1247,12 +1266,14 @@
         } else if (step.step_type === "context_growth") {
           // Renderiza dentro de la banda como panel desplegable (mejora #11/#17).
           appendContextGrowth(step);
-        } else if (step.step_type === "session_start" || step.step_type === "session_end") {
-          // Problema A de UX: estos steps son técnicos y ya están
-          // reflejados en el toolbar (sealed badge) y en los paneles de
-          // prompt arriba. No los renderizamos como tarjetas para evitar
-          // ruido. El polling sigue procesándolos para detectar fin de
-          // trace y user_prompt.
+        } else if (step.step_type === "session_start") {
+          // Tarjeta de entrada: el prompt del aprendiz abre la secuencia y
+          // da la "línea de entrada" al timeline.
+          var sp = step.payload && step.payload.user_prompt;
+          if (sp) appendStep(renderUserPromptCard(sp));
+        } else if (step.step_type === "session_end") {
+          // Técnico; ya reflejado en el toolbar (badge "sellado"). No se
+          // renderiza como tarjeta para evitar ruido.
         } else if (step.step_type === "function_call") {
           appendStep(renderStep(step));
           // Resume el nombre de la tool en el header de la banda.
@@ -1835,6 +1856,12 @@
 
     function renderSingleStep(step) {
       if (step.step_type === "iteration_start") { openBand(step); return; }
+      if (step.step_type === "session_start") {
+        var sp = step.payload && step.payload.user_prompt;
+        if (sp) appendStep(renderUserPromptCard(sp));
+        return;
+      }
+      if (step.step_type === "session_end") { return; }
       if (step.step_type === "function_result") {
         var container = currentBand || stepsHost;
         if (!container || !attachResultToPendingCall(container, step)) {
@@ -1861,17 +1888,45 @@
     }
 
     if (replayBtn) {
-      replayBtn.addEventListener("click", function () {
-        var speed = parseFloat(window.prompt(
-          "Velocidad del replay (0.5, 1, 2, 4, o 999 para instantáneo):",
-          "1"
-        ));
-        if (isNaN(speed) || speed <= 0) return;
-        withLatestTraceData(function (data) {
-          startReplay(data, speed);
-          flashAction(replayBtn, "▶ Reproduciendo");
+      // Popover de velocidad estilizado (reemplaza el window.prompt nativo).
+      var SPEEDS = [["0.5×", 0.5], ["1×", 1], ["2×", 2], ["4×", 4], ["⚡ Instantáneo", 999]];
+      var actions = replayBtn.parentElement;  // .live-agent-actions (position: relative)
+      var pop = document.createElement("div");
+      pop.className = "live-agent-replay-pop";
+      pop.hidden = true;
+      var popTitle = document.createElement("span");
+      popTitle.className = "live-agent-replay-pop-title";
+      popTitle.textContent = "Velocidad del replay";
+      pop.appendChild(popTitle);
+      SPEEDS.forEach(function (s) {
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = "live-agent-replay-speed";
+        b.textContent = s[0];
+        b.addEventListener("click", function (e) {
+          e.stopPropagation();
+          pop.hidden = true;
+          withLatestTraceData(function (data) {
+            startReplay(data, s[1]);
+            flashAction(replayBtn, "▶ Reproduciendo");
+          });
         });
+        pop.appendChild(b);
       });
+      if (actions) actions.appendChild(pop);
+
+      replayBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (pop.hidden) {
+          pop.style.left = replayBtn.offsetLeft + "px";
+          pop.style.top = (replayBtn.offsetTop + replayBtn.offsetHeight + 6) + "px";
+          pop.hidden = false;
+        } else {
+          pop.hidden = true;
+        }
+      });
+      pop.addEventListener("click", function (e) { e.stopPropagation(); });
+      document.addEventListener("click", function () { pop.hidden = true; });
     }
 
     // ----- Mejora #15: Modo explicador. --------------------------------
