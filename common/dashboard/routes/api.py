@@ -204,7 +204,7 @@ def update_system_prompt(payload: SystemPromptUpdate) -> JSONResponse:
     - Crea un backup .system_prompt.py.bak antes de tocar el original.
     - Rechaza contenido con '\"\"\"' literal (rompería la sintaxis).
     - Solo reemplaza el primer match de la asignación system_prompt = '''...'''.
-    - El cambio se aplica al próximo arkanum run (no afecta procesos en curso).
+    - El cambio se aplica al próximo arkanum start (no afecta procesos en curso).
     """
     if not _SYSTEM_PROMPT_PATH.exists():
         raise HTTPException(

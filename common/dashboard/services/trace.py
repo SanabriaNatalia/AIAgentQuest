@@ -1,6 +1,6 @@
 """Servicio de traces del agent loop (F16).
 
-`arkanum run` captura el stdout de Q07-Q08 línea-por-línea y, por cada
+`arkanum start` captura el stdout de Q07-Q08 línea-por-línea y, por cada
 patrón reconocido, llama `record_step(...)`. La página `/live-agent`
 hace polling de `recent_steps()` cada segundo para renderizar el grafo.
 

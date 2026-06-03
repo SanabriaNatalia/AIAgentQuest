@@ -7,10 +7,11 @@ visualizador `/live-agent` además de imprimir a stdout, llama:
     emit("agent_thought", payload={"text": razonamiento})
 
 El módulo es opt-in y silencioso: si `ARKANUM_TRACE_ID` no está en el
-entorno (la quest se corrió fuera de `arkanum run`), no hace nada. Si
-el dashboard no responde, swallow el error sin tocar el flujo del agente.
+entorno (la quest se corrió fuera de `arkanum start` en Q07/Q08), no hace
+nada. Si el dashboard no responde, swallow el error sin tocar el flujo
+del agente.
 
-El regex de `common/cli/commands/run.py` sigue activo como fallback
+El regex de `common/cli/commands/start.py` sigue activo como fallback
 para starters que no usen este módulo — los dos caminos conviven sin
 duplicar steps porque emiten `step_type` diferentes.
 """
@@ -29,7 +30,7 @@ _ENV_TRACE_URL = "ARKANUM_TRACE_URL"
 
 
 def trace_enabled() -> bool:
-    """True si la quest fue lanzada vía `arkanum run` (hay trace_id activo)."""
+    """True si la quest fue lanzada con tracing activo (hay trace_id en el entorno)."""
     return bool(os.environ.get(_ENV_TRACE_ID))
 
 

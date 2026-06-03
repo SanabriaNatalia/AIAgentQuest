@@ -3,19 +3,20 @@
 El módulo [`common/tracing.py`](../../common/tracing.py) permite que tu
 agente envíe eventos estructurados al visualizador `/live-agent` del
 dashboard. Es la forma "rica" de trazar — más fiel que el regex que
-`arkanum run` aplica sobre tu `stdout`.
+`arkanum start` aplica sobre tu `stdout`.
 
 ## Cómo se activa
 
 `tracing.emit` solo hace algo cuando `ARKANUM_TRACE_ID` está en el
-entorno. Ese ID lo inyecta `arkanum run` cuando lanza tu starter como
-subprocess. Si corres `python -m quests…` directamente, el módulo es
-no-op silencioso.
+entorno. Ese ID lo inyecta `arkanum start` al lanzar el starter de un
+quest con agent loop (Q07/Q08), donde el tracing es automático. Si corres
+`python -m quests…` directamente —o `start` en un quest sin agent loop—
+el módulo es no-op silencioso.
 
-| Variable de entorno      | Quien la set      | Para qué |
+| Variable de entorno      | Quien la set     | Para qué |
 |---|---|---|
-| `ARKANUM_TRACE_ID`       | `arkanum run`     | Identifica el trace activo. Sin esto, `emit` no hace nada. |
-| `ARKANUM_QUEST_DB_ID`    | `arkanum run`     | Asocia el trace a una quest concreta. |
+| `ARKANUM_TRACE_ID`       | `arkanum start`  | Identifica el trace activo. Sin esto, `emit` no hace nada. |
+| `ARKANUM_QUEST_DB_ID`    | `arkanum start`  | Asocia el trace a una quest concreta. |
 | `ARKANUM_TRACE_URL`      | (override)        | Por defecto `http://127.0.0.1:8765/events/trace`. Cambia el destino si el dashboard corre en otro puerto. |
 
 ## API mínima
@@ -62,11 +63,11 @@ Lista mantenida en [`dashboard.js`](../../common/dashboard/static/dashboard.js):
 
 | `step_type`         | Origen                              | Render |
 |---|---|---|
-| `session_start`     | `arkanum run`                       | Marca el inicio del trace; payload incluye `user_prompt`. |
-| `session_end`       | `arkanum run`                       | Marca el final con exit code; toolbar pasa a sealed. |
-| `function_call`     | regex de `run.py` **o** `emit`      | Tarjeta agrupada con pending spinner hasta que llega su result. |
-| `function_result`   | regex de `run.py` **o** `emit`      | Se ancla dentro de su `function_call` (FIFO). |
-| `tokens`            | regex de `run.py` **o** `emit`      | Chip de uso (prompt/response). Suma al costo de la banda. |
+| `session_start`     | `arkanum start` (Q07/Q08)           | Marca el inicio del trace; payload incluye `user_prompt`. |
+| `session_end`       | `arkanum start` (Q07/Q08)           | Marca el final con exit code; toolbar pasa a sealed. |
+| `function_call`     | regex de `start.py` **o** `emit`    | Tarjeta agrupada con pending spinner hasta que llega su result. |
+| `function_result`   | regex de `start.py` **o** `emit`    | Se ancla dentro de su `function_call` (FIFO). |
+| `tokens`            | regex de `start.py` **o** `emit`    | Chip de uso (prompt/response). Suma al costo de la banda. |
 | `agent_thought`     | `emit` solo                         | Burbuja de prosa serif italic — el razonamiento del modelo. |
 | `agent_final`       | `emit` solo                         | Burbuja final dorada — respuesta sin más tool calls. |
 | `iteration_start`   | `emit` solo                         | Abre una banda visual ("Iteración N / MAX"). |
@@ -75,9 +76,9 @@ Lista mantenida en [`dashboard.js`](../../common/dashboard/static/dashboard.js):
 
 ## El regex como fallback
 
-`common/cli/commands/run.py` parsea el `stdout` del starter línea por
-línea y emite los step_types "clásicos" (`function_call`, `function_result`,
-`tokens`). Esto significa que:
+`common/cli/commands/start.py` (en Q07/Q08) parsea el `stdout` del
+starter línea por línea y emite los step_types "clásicos" (`function_call`,
+`function_result`, `tokens`). Esto significa que:
 
 - Starters que no usan `tracing.emit` siguen mostrando algo en
   `/live-agent`.
@@ -134,8 +135,8 @@ strings opacos para SQLite.
 # En una terminal: arranca el dashboard.
 arkanum dashboard
 
-# En otra: corre tu agente con tracing.
-arkanum run 8 "Lee notes.txt y dime qué contiene"
+# En otra: corre tu agente (Q08 traza solo).
+arkanum start 8 "Lee notes.txt y dime qué contiene"
 
 # Abre http://127.0.0.1:8765/live-agent — los steps aparecen en vivo.
 ```

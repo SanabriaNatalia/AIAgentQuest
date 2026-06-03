@@ -298,15 +298,14 @@ Y eso cambia todo.
 
 ---
 
-## 🧭 Tres comandos, tres propósitos
+## 🧭 Dos comandos, dos propósitos
 
 | Comando | Para qué | Toca Live Agent |
 |---|---|---|
-| `arkanum start 8 "..."` | Correr tu solución una vez en la terminal | No |
+| `arkanum start 8 "..."` | Correr tu solución + ver el agent loop iterativo en el dashboard | **Sí** (automático) |
 | `arkanum check 8` | Validar que `calculator.py` quedó arreglado y sellar la quest | No |
-| `arkanum run 8 "..."` | Correr + ver el agent loop iterativo en el dashboard | **Sí** |
 
-`arkanum check 8` aquí es especial: **no ejecuta el agente**, solo verifica que `workspace/calculator.py` tenga `return a + b` y que `python tests.py` pase. Para ver al agente arreglar el bug en vivo necesitas `arkanum run 8 "..."`.
+`arkanum check 8` aquí es especial: **no ejecuta el agente**, solo verifica que `workspace/calculator.py` tenga `return a + b` y que `python tests.py` pase. Para ver al agente arreglar el bug en vivo necesitas `arkanum start 8 "..."` — en Q08 el tracing es automático.
 
 ## 🪞 Ver el ciclo en vivo (este es el momento)
 
@@ -314,7 +313,7 @@ Q08 es la quest donde el agent loop importa más visualmente. Con el dashboard a
 
 ```bash
 arkanum dashboard start
-arkanum run 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
+arkanum start 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
 ```
 
 Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent). Verás:

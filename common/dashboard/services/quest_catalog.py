@@ -28,7 +28,7 @@ class QuestMeta:
     uses_gemini: bool = True
     # True si la quest emite traces que `/live-agent` puede visualizar.
     # Solo Q07/Q08 hoy (agent loop con tools); el CLI ofrece lanzar
-    # `arkanum run N` automáticamente tras un check exitoso.
+    # `arkanum start N` automáticamente tras un check exitoso.
     live_agent: bool = False
     # Prompt sugerido si el aprendiz no pasó uno al check explícitamente.
     live_agent_default_prompt: str | None = None
@@ -155,7 +155,7 @@ QUESTS: tuple[QuestMeta, ...] = (
         ),
         # El check de Q08 valida estado del filesystem (calculator.py +
         # python tests.py), NO invoca al agente. El agente lo corre el
-        # aprendiz antes con `arkanum run 8`.
+        # aprendiz antes con `arkanum start 8`.
         uses_gemini=False,
         live_agent=True,
         live_agent_default_prompt=(

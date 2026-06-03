@@ -1,4 +1,4 @@
-"""Endpoints que reciben eventos del laboratorio (notify.py, arkanum run, etc.).
+"""Endpoints que reciben eventos del laboratorio (notify.py, arkanum start, etc.).
 
 Cada evento se persiste en la tabla `events` con `seen=0`. El dashboard
 los consume vía `GET /api/events/recent`, que los marca como vistos al
@@ -81,7 +81,7 @@ class TracePayload(BaseModel):
 
 @router.post("/events/trace")
 def trace_event(payload: TracePayload) -> dict:
-    """Recibe un step del agent loop capturado por `arkanum run`.
+    """Recibe un step del agent loop capturado por `arkanum start` (Q07/Q08).
 
     No usa la tabla `events` (que es para notificaciones one-shot);
     los traces viven en `agent_traces` para que `/live-agent` pueda
