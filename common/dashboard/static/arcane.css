@@ -2671,9 +2671,9 @@ code {
 
 /* Modo verbose ON: nota pedagógica 💡 por step. Se muestra/oculta al instante
    con el toggle, sobre las tarjetas ya visibles — no requiere re-ejecutar el
-   agente. Estilo de "callout" para que el cambio sea evidente. */
-.live-agent--verbose .trace-step[data-explainer]::after,
-.live-agent--verbose .trace-band[data-iter]::after {
+   agente. Estilo de "callout" para que el cambio sea evidente. (Las bandas de
+   iteración no llevan nota: era genérica y repetitiva, no aportaba por paso.) */
+.live-agent--verbose .trace-step[data-explainer]::after {
   display: block;
   margin-top: 0.55rem;
   padding: 0.45rem 0.6rem;
@@ -2685,14 +2685,7 @@ code {
   font-size: 0.8rem;
   font-style: normal;
   line-height: 1.5;
-}
-
-.live-agent--verbose .trace-step[data-explainer]::after {
   content: "💡 " attr(data-explainer);
-}
-
-.live-agent--verbose .trace-band[data-iter]::after {
-  content: "💡 Una banda agrupa los pasos de UNA vuelta del agent loop. El meta del header muestra latencia y costo de la iteración.";
 }
 
 /* Launcher de traces desde el dashboard (mejora #7). */

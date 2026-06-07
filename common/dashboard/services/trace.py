@@ -42,6 +42,12 @@ class TraceSummary:
     started_at: str
     last_step_at: str
     steps: int
+    # `steps` es el conteo crudo de filas (incluye tokens, latency, session_*,
+    # function_result, etc.). Para el historial/toolbar mostramos en su lugar
+    # `iterations` (vueltas del loop) y `tool_calls`, que sí coinciden con lo
+    # que el timeline hace visible.
+    iterations: int = 0
+    tool_calls: int = 0
     seconds_since_last_step: float | None = None
     has_session_end: bool = False
 
@@ -118,7 +124,9 @@ def recent_trace_summaries(limit: int = 10) -> list[TraceSummary]:
             "       MAX(created_at) AS last_step_at, "
             "       COUNT(*)        AS steps, "
             "       MIN(quest_id)   AS quest_id, "
-            "       MAX(id)         AS last_step_id "
+            "       MAX(id)         AS last_step_id, "
+            "       SUM(CASE WHEN step_type = 'iteration_start' THEN 1 ELSE 0 END) AS iterations, "
+            "       SUM(CASE WHEN step_type = 'function_call'   THEN 1 ELSE 0 END) AS tool_calls "
             "FROM agent_traces "
             "GROUP BY trace_id "
             "ORDER BY last_step_id DESC "
@@ -133,6 +141,8 @@ def recent_trace_summaries(limit: int = 10) -> list[TraceSummary]:
             started_at=r[1] or "",
             last_step_at=r[2] or "",
             steps=int(r[3] or 0),
+            iterations=int(r[6] or 0),
+            tool_calls=int(r[7] or 0),
         )
         for r in rows
     ]
@@ -184,13 +194,15 @@ def trace_summary_for(trace_id: str) -> TraceSummary | None:
     init_db()
     with get_connection() as conn:
         stats = conn.execute(
-            "SELECT MIN(created_at), MAX(created_at), COUNT(*), MIN(quest_id) "
+            "SELECT MIN(created_at), MAX(created_at), COUNT(*), MIN(quest_id), "
+            "       SUM(CASE WHEN step_type = 'iteration_start' THEN 1 ELSE 0 END), "
+            "       SUM(CASE WHEN step_type = 'function_call'   THEN 1 ELSE 0 END) "
             "FROM agent_traces WHERE trace_id = ?",
             (trace_id,),
         ).fetchone()
         if stats is None or stats[2] == 0:
             return None
-        started_at, last_step_at, count, q_db_id = stats
+        started_at, last_step_at, count, q_db_id, iterations, tool_calls = stats
         has_end = conn.execute(
             "SELECT 1 FROM agent_traces "
             "WHERE trace_id = ? AND step_type = 'session_end' LIMIT 1",
@@ -211,6 +223,8 @@ def trace_summary_for(trace_id: str) -> TraceSummary | None:
         started_at=started_at or "",
         last_step_at=last_step_at or "",
         steps=int(count or 0),
+        iterations=int(iterations or 0),
+        tool_calls=int(tool_calls or 0),
         seconds_since_last_step=seconds_since,
         has_session_end=has_end,
     )

@@ -262,6 +262,8 @@ def recent_traces(limit: int = Query(10, ge=1, le=50)) -> JSONResponse:
             "started_at": s.started_at,
             "last_step_at": s.last_step_at,
             "steps": s.steps,
+            "iterations": s.iterations,
+            "tool_calls": s.tool_calls,
             "user_prompt": trace_first_user_prompt(s.trace_id),
         })
     return JSONResponse({"traces": items})
@@ -446,6 +448,8 @@ def current_trace(
                 "started_at": summary.started_at,
                 "last_step_at": summary.last_step_at,
                 "steps": summary.steps,
+                "iterations": summary.iterations,
+                "tool_calls": summary.tool_calls,
                 "seconds_since_last_step": summary.seconds_since_last_step,
                 "has_session_end": summary.has_session_end,
             }
