@@ -220,6 +220,21 @@ def _validate_api_key(api_key: str) -> SetupCheck:
         _write_cache_for_key(api_key, "ok")
         return SetupCheck("api_key_valid", "API key validada", "ok", "ping exitoso")
     except Exception as exc:
+        from common.gemini_errors import classify_gemini_error
+
+        err = classify_gemini_error(exc)
+        # Un 429 (cuota/rate) NO significa que la clave esté mal: el ping no
+        # debe marcarla inválida ni bloquear el onboarding por ello. Idem un
+        # problema temporal de servidor o de red. Solo auth/desconocido → fail.
+        if err.kind == "quota":
+            return SetupCheck(
+                "api_key_valid", "API key validada", "warn",
+                "cuota/rate de Gemini topada (la clave es válida; espera y reintenta)",
+            )
+        if err.kind in ("server", "network"):
+            return SetupCheck(
+                "api_key_valid", "API key validada", "warn", err.title.lower(),
+            )
         return SetupCheck(
             "api_key_valid",
             "API key validada",

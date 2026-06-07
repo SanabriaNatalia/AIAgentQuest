@@ -40,7 +40,6 @@ from rich.markup import escape
 
 from common.cli.helpers import (
     resolve_quest_by_number,
-    run_module,
     run_module_capturing,
     starter_module,
     starter_path,
@@ -556,14 +555,116 @@ class _ConsolePresenter:
         sys.stdout.flush()
 
 
-def _run_plain(module: str, quest_slug: str, extra: list[str]) -> int:
-    """Ejecución cruda: reenvía el stdout del starter tal cual."""
-    rc = run_module(
+# Detección de "corrida silenciosa": un starter sin resolver imprime solo el
+# header del quest (un panel rich) y termina con exit 0, sin ninguna señal de
+# que no hizo nada. Tras la corrida avisamos si no hubo NINGUNA línea de
+# contenido más allá de ese recuadro.
+_ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
+_BOX_CHARS = frozenset("│┌┐└┘├┤┬┴┼─━┃╭╮╰╯═║╔╗╚╝╠╣╦╩╬")
+
+
+def _has_content_output(captured: str) -> bool:
+    """True si el starter imprimió algo más que el header del quest.
+
+    El header de `show_quest_header` es un panel rich: sus líneas son bordes
+    (solo caracteres de caja) o contenido entre bordes verticales (`│ … │`).
+    Cualquier otra línea no vacía —un print, el emoji del narrador, `Prompt
+    tokens:`, una tool call, un traceback— cuenta como salida real.
+    """
+    for raw_line in (captured or "").splitlines():
+        line = _ANSI_RE.sub("", raw_line).strip()
+        if not line:
+            continue
+        if all(ch in _BOX_CHARS or ch == " " for ch in line):
+            continue  # borde superior/inferior del panel
+        if line[0] in "│║":
+            continue  # título/subtítulo dentro del panel
+        return True
+    return False
+
+
+def _warn_silent_run(quest) -> None:
+    """Aviso cuando una corrida termina en exit 0 sin producir salida — casi
+    siempre porque los TODOs del starter aún no están resueltos."""
+    console.print()
+    console.print(f"[yellow]ℹ️  Quest {quest.order} corrió sin producir salida.[/]")
+    if getattr(quest, "live_agent", False):
+        console.print(
+            "[dim]El agente no llegó a llamar a Gemini ni a ninguna herramienta. "
+            "Revisa que los TODOs de `main()` y `generate_content()` estén resueltos.[/]"
+        )
+    else:
+        console.print(
+            "[dim]Probablemente los TODOs del starter todavía no están resueltos.[/]"
+        )
+    console.print(
+        f"[dim]Pista:[/] [cyan]arkanum check {quest.order}[/] "
+        "[dim]te dice exactamente qué falta.[/]"
+    )
+    console.print()
+
+
+# Marcadores específicos de un error de Gemini en el stdout (nombres de
+# excepción del SDK / status). Restringimos la clasificación a las líneas que
+# los contengan para no confundir el contenido normal del agente (p. ej. un
+# archivo leído que mencione "rate") con un error real.
+_GEMINI_EXC_MARKERS = (
+    "resource_exhausted", "permission_denied", "unauthenticated",
+    "google.genai", "clienterror", "servererror", "apierror",
+    "deadline_exceeded", "serviceunavailable",
+)
+
+
+def _detect_gemini_error(captured: str):
+    """Si la corrida produjo un error de Gemini, devuelve su clasificación.
+
+    Mira solo las líneas que parecen un error —`Error in generate_content: …`
+    (lo imprime el loop del aprendiz) o líneas de traceback con marcadores del
+    SDK— para no clasificar el contenido normal del agente como un fallo.
+    """
+    from common.gemini_errors import classify_gemini_error
+
+    text = _ANSI_RE.sub("", captured or "")
+    error_lines: list[str] = []
+    for line in text.splitlines():
+        match = _ERROR_RE.search(line)
+        if match:
+            error_lines.append(match.group(1))
+            continue
+        low = line.lower()
+        if any(mark in low for mark in _GEMINI_EXC_MARKERS):
+            error_lines.append(line)
+    if not error_lines:
+        return None
+    err = classify_gemini_error(" ".join(error_lines))
+    return err if err.kind != "unknown" else None
+
+
+def _warn_gemini_error(err) -> None:
+    """Aviso claro de un error de Gemini, en vez de un traceback crudo o N
+    líneas de '429' sin contexto."""
+    soft = err.kind in ("quota", "server", "network")
+    color = "yellow" if soft else "red"
+    icon = "⏳" if err.kind == "quota" else "⚠️"
+    console.print()
+    console.print(f"[bold {color}]{icon}  {err.title}.[/]")
+    console.print(f"[dim]{err.hint}[/]")
+    console.print()
+
+
+def _run_plain(quest, module: str, extra: list[str]) -> tuple[int, str]:
+    """Ejecución cruda con `tee`: reenvía el stdout del starter tal cual y lo
+    captura para poder detectar una corrida silenciosa. `FORCE_COLOR` conserva
+    los colores rich pese a que el stdout del subprocess pasa por un pipe."""
+    return run_module_capturing(
         module,
         extra_args=extra,
-        env_extra={"ARKANUM_WORKSPACE": f"quests/{quest_slug}/workspace"},
+        echo=True,
+        env_extra={
+            "ARKANUM_WORKSPACE": f"quests/{quest.slug}/workspace",
+            "FORCE_COLOR": "1",
+        },
     )
-    return rc
 
 
 def _run_live(quest, module: str, extra: list[str]) -> int:
@@ -649,7 +750,7 @@ def _run_live(quest, module: str, extra: list[str]) -> int:
         f"exit code {rc}",
         json.dumps({"returncode": rc}),
     )
-    return rc
+    return rc, _captured
 
 
 def start(
@@ -711,6 +812,22 @@ def start(
         )
         console.print()
 
-    rc = _run_live(quest, module, extra) if use_live else _run_plain(module, quest.slug, extra)
+    if use_live:
+        rc, captured = _run_live(quest, module, extra)
+    else:
+        rc, captured = _run_plain(quest, module, extra)
+
+    # Errores de Gemini (cuota/rate/auth/servidor/red): un aviso claro en vez de
+    # un traceback crudo o N líneas de "429" sin contexto. Tiene prioridad sobre
+    # el aviso de corrida silenciosa.
+    gemini_err = _detect_gemini_error(captured)
+    if gemini_err is not None:
+        _warn_gemini_error(gemini_err)
+    elif rc == 0 and not _has_content_output(captured):
+        # Corrida silenciosa (exit 0 sin salida más allá del header): casi
+        # siempre son los TODOs del starter sin resolver. Damos una pista en vez
+        # de dejar al aprendiz mirando un header solitario sin saber qué pasó.
+        _warn_silent_run(quest)
+
     if rc != 0:
         raise typer.Exit(rc)
