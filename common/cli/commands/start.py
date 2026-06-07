@@ -428,11 +428,18 @@ class _ConsolePresenter:
     `Final response:`, pasa a modo "passthrough" volcando el texto final tal
     cual hasta el fin (igual que el tracer, así no malinterpreta líneas del
     texto que parezcan marcadores).
+
+    `loop_quest=True` solo para los quests con agent loop (Q08): Q07 hace una
+    sola pasada, así que no abrimos bandas "· Iteración N" para no sugerir un
+    ciclo que no existe (mismo criterio que `_LiveTracer`).
     """
 
-    def __init__(self, console: Console, *, verbose: bool) -> None:
+    def __init__(
+        self, console: Console, *, verbose: bool, loop_quest: bool
+    ) -> None:
         self.console = console
         self.verbose = verbose
+        self.loop_quest = loop_quest
         self.iter = 0
         self._in_final = False
         self._pending_prompt_tok: str | None = None
@@ -486,10 +493,14 @@ class _ConsolePresenter:
 
         prompt_tok = _PROMPT_TOK_RE.search(stripped)
         if prompt_tok:
-            self.iter += 1
-            self.console.print(
-                f"\n[bold]· Iteración {self.iter}/{MAX_ITERS}[/]"
-            )
+            # "Prompt tokens:" marca una llamada a Gemini. En los quests con
+            # loop (Q08) eso es una vuelta → abrimos banda. En Q07 (una sola
+            # pasada) no hay loop, así que no abrimos banda.
+            if self.loop_quest:
+                self.iter += 1
+                self.console.print(
+                    f"\n[bold]· Iteración {self.iter}/{MAX_ITERS}[/]"
+                )
             if self.verbose:
                 self._pending_prompt_tok = prompt_tok.group(1)
             return
@@ -600,7 +611,9 @@ def _run_live(quest, module: str, extra: list[str]) -> int:
         quest.db_id,
         loop_quest=quest.order >= 8,
     )
-    presenter = _ConsolePresenter(console, verbose=user_verbose)
+    presenter = _ConsolePresenter(
+        console, verbose=user_verbose, loop_quest=quest.order >= 8
+    )
 
     def on_line(line: str) -> None:
         # El tracer recibe SIEMPRE la línea cruda (dashboard con detalle
