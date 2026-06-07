@@ -856,7 +856,7 @@
 
     // Frase corta en lenguaje llano que se muestra SIEMPRE bajo la tarjeta
     // (a diferencia de explainerFor, que es el texto largo del modo
-    // "Explicador"). Objetivo: que un aprendiz entienda cada paso sin
+    // "Verbose"). Objetivo: que un aprendiz entienda cada paso sin
     // activar nada ni conocer la jerga.
     function shortWhyFor(stepType, opts) {
       var o = opts || {};
@@ -2058,22 +2058,30 @@
       document.addEventListener("click", function () { pop.hidden = true; });
     }
 
-    // ----- Mejora #15: Modo explicador. --------------------------------
-    var explainerToggle = host.querySelector("[data-trace-explainer-toggle]");
-    if (explainerToggle) {
-      var stored = null;
-      try { stored = localStorage.getItem("live-agent-explainer"); } catch (e) {}
-      if (stored === "1") {
-        explainerToggle.checked = true;
-        host.classList.add("live-agent--explainer");
+    // ----- Modo verbose (antes "Explicador"). --------------------------
+    // Un solo toggle que decide CUÁNTO detalle muestra la timeline. El
+    // dashboard siempre tiene TODO guardado (el subprocess corre en verbose):
+    // esto solo filtra la vista vía CSS, igual que el `--verbose` de la consola.
+    // - OFF (limpio, por defecto): esqueleto narrativo — prompt, iteraciones,
+    //   tools y respuesta final/errores. Oculta tokens, latencia, memoria del
+    //   loop (context_growth) y razonamiento (agent_thought).
+    // - ON (verbose): todo lo anterior + esos pasos técnicos + las notas
+    //   pedagógicas 💡 por tarjeta.
+    var verboseToggle = host.querySelector("[data-trace-verbose-toggle]");
+    if (verboseToggle) {
+      var storedVerbose = null;
+      try { storedVerbose = localStorage.getItem("live-agent-verbose"); } catch (e) {}
+      if (storedVerbose === "1") {
+        verboseToggle.checked = true;
+        host.classList.add("live-agent--verbose");
       }
-      explainerToggle.addEventListener("change", function () {
-        if (explainerToggle.checked) {
-          host.classList.add("live-agent--explainer");
-          try { localStorage.setItem("live-agent-explainer", "1"); } catch (e) {}
+      verboseToggle.addEventListener("change", function () {
+        if (verboseToggle.checked) {
+          host.classList.add("live-agent--verbose");
+          try { localStorage.setItem("live-agent-verbose", "1"); } catch (e) {}
         } else {
-          host.classList.remove("live-agent--explainer");
-          try { localStorage.setItem("live-agent-explainer", "0"); } catch (e) {}
+          host.classList.remove("live-agent--verbose");
+          try { localStorage.setItem("live-agent-verbose", "0"); } catch (e) {}
         }
       });
     }

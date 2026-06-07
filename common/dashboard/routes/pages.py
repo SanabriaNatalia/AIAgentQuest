@@ -40,10 +40,14 @@ router = APIRouter()
 def profile_page(request: Request):
     setup_ctx = build_setup_context()
     counts = setup_ctx["counts"]
-    # Onboarding: si el setup tiene avisos o errores, llevamos al aprendiz a /setup.
-    # El perfil queda como destino reservado para cuando los 9 checks estén verdes.
-    # El querystring `?from=auto` evita ciclos si el usuario regresa con el botón "Atrás".
-    if (counts["warn"] + counts["fail"] > 0) and request.query_params.get("from") != "auto":
+    # Onboarding: solo los errores críticos (fail) — sin API key, sin dependencias,
+    # .env ausente, DB rota… — llevan al aprendiz a /setup para repararlos antes de
+    # empezar. Los avisos (warn) NO bloquean el perfil: varios son normales en el
+    # uso diario (el ping a la API se omite por defecto para no quemar cuota, el
+    # workspace/ se crea hasta el Acto II), y el aprendiz puede revisarlos cuando
+    # quiera desde el enlace "Setup" del menú. El querystring `?from=auto` evita
+    # ciclos si el usuario regresa con el botón "Atrás".
+    if counts["fail"] > 0 and request.query_params.get("from") != "auto":
         return RedirectResponse(url="/setup?from=auto", status_code=303)
 
     apprentice = get_apprentice()
