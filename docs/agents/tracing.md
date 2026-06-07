@@ -126,7 +126,7 @@ for fc in response.function_calls or []:
 2. Llama `emit("mi_nuevo_tipo", payload={...})` desde el starter o
    solución.
 3. En `dashboard.js`, añade el case en `iconFor`, `labelFor` y
-   `explainerFor` (este último para el modo explicador).
+   `explainerFor` (este último alimenta la nota pedagógica del modo verbose).
 4. En `arcane.css`, añade `.trace-step--mi_nuevo_tipo` con el color
    distintivo.
 

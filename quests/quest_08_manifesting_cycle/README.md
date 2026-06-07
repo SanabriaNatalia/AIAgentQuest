@@ -263,18 +263,30 @@ Si todo funciona correctamente, el agente debería:
 6. volver a ejecutar tests
 7. generar una respuesta final
 
-Verás algo parecido a:
+Verás algo parecido a esto en la terminal (vista limpia, sin `--verbose`):
 
 ```text
-- Calling function: get_files_info
-- Calling function: get_file_content
-- Calling function: run_python_file
-- Calling function: write_file
-- Calling function: run_python_file
+· Iteración 1/20
+  🛠 get_files_info(directory=".")
+     ↳ ok (155 B)
+· Iteración 2/20
+  🛠 get_file_content(file_path="calculator.py")
+     ↳ ok (204 B)
+· Iteración 3/20
+  🛠 run_python_file(file_path="tests.py")
+     ↳ error: AssertionError en test_add
+· Iteración 4/20
+  🛠 write_file(file_path="calculator.py", content="…")
+     ↳ ok
+· Iteración 5/20
+  🛠 run_python_file(file_path="tests.py")
+     ↳ ok
 
-Final response:
+🤖 Agente:
 El problema fue corregido correctamente.
 ```
+
+Los valores exactos (tamaños, número de iteraciones) variarán. Añade `--verbose` para ver además los tokens por iteración, los args completos y el resultado completo de cada tool.
 
 Este será el primer momento donde el agente itera, aprende de observaciones, ajusta comportamiento y persiste hasta resolver un problema. Ese patrón es el corazón de los sistemas agénticos modernos.
 
@@ -316,16 +328,20 @@ arkanum dashboard start
 arkanum start 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
 ```
 
-Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent). Verás:
+Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent). Por defecto verás la **vista limpia**:
 
 - una **banda por iteración** del loop (Iteración 1, 2, 3…),
-- el **pensamiento** del modelo en italic antes de cada tool call,
 - las tool calls agrupadas con su resultado anidado,
-- la **latencia, tokens y costo** por iteración en el header de cada banda,
-- el **contexto creciente** (cuántos `messages` tiene el historial tras cada vuelta),
 - la **respuesta final** dorada cuando el agente sale del loop.
 
-> ℹ️ Si abres `/live-agent` y solo ves la celebración tras `arkanum check 8`, eso es esperado: `check` no emite traces. Solo `run` lo hace.
+Activa el toggle **🔍 Verbose** (arriba a la derecha) para añadir el detalle completo:
+
+- el **pensamiento** del modelo antes de cada tool call,
+- la **latencia, tokens y costo** por iteración en el header de cada banda,
+- el **contexto creciente** (cuántos `messages` tiene el historial tras cada vuelta),
+- y una nota pedagógica 💡 bajo cada paso.
+
+> ℹ️ Si abres `/live-agent` y solo ves la celebración tras `arkanum check 8`, eso es esperado: `check` no emite traces. Solo `arkanum start 8 "..."` lo hace.
 
 ---
 

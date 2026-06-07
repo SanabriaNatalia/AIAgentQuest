@@ -655,6 +655,10 @@ def start(
     En los quests con agent loop (Q07/Q08) la corrida se instrumenta
     automáticamente y aparece paso a paso en la pestaña `/live-agent`
     del dashboard — no hace falta ningún flag.
+
+    Añade `--verbose` para ver en la terminal el detalle completo (tokens,
+    args y resultados completos de cada tool); sin él, la consola muestra
+    una vista limpia. El dashboard recibe el detalle completo en ambos casos.
     """
     quest = resolve_quest_by_number(number)
     module = starter_module(quest)

@@ -132,11 +132,25 @@ Qué hace de más en estos quests:
 
 1. Genera un `trace_id` único y lo imprime con el link a `/live-agent`.
 2. Inserta un `session_start` step en la tabla `agent_traces`.
-3. Fuerza `--verbose` en el starter (sin él, las tool calls se imprimen sin paréntesis y el parser no las reconoce).
+3. Corre el starter **siempre** en `--verbose` internamente: así el dashboard recibe el detalle completo (tokens, args y resultados sin recortar) y el parser reconoce las tool calls (que en verbose se imprimen con paréntesis).
 4. Parsea cada línea del stdout buscando patrones (`Calling function: ...`, `Prompt tokens: ...`, etc.) y emite los steps correspondientes.
 5. Inserta un `session_end` step al terminar.
 
 Esto te deja ver la secuencia `function_call → function_result → siguiente iteración` en vivo, lo que da intuición de cómo razona el agente.
+
+#### Dos niveles de detalle en consola
+
+El `--verbose` que **tú** escribes no cambia lo que recibe el dashboard (siempre completo); cambia cuánto detalle se imprime en tu **terminal**:
+
+- **Sin `--verbose`** (por defecto) — vista limpia: una banda por iteración (`· Iteración N/20`), cada tool con sus args resumidos (`🛠 get_files_info(directory=".")`) y un resumen de su resultado (`↳ ok (155 B)`), más la respuesta final (`🤖 Agente: …`).
+- **Con `--verbose`** — además: tokens por iteración, los args completos y el resultado completo de cada tool (recortado a ~2 KB en consola; el íntegro siempre queda en el dashboard).
+
+```bash
+arkanum start 8 "Lee notes.txt y dime qué contiene"            # vista limpia
+arkanum start 8 "Lee notes.txt y dime qué contiene" --verbose  # detalle completo
+```
+
+En el dashboard, el toggle **🔍 Verbose** de `/live-agent` hace lo mismo sobre la timeline: apagado muestra el esqueleto (prompt → iteraciones → tools → respuesta); encendido añade tokens, latencia, memoria del loop y el razonamiento del agente.
 
 > ℹ️ **Opt-out:** con `ARKANUM_NO_DASHBOARD=1` el tracing se desactiva (útil en CI), coherente con `check` e `init`. El flag oculto `--live` permite forzar el tracing en cualquier quest; rara vez hace falta.
 
