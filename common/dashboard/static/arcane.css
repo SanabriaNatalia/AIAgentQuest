@@ -2587,7 +2587,7 @@ code {
   font-size: 0.9rem;
 }
 
-/* Acciones del toolbar: export, replay, explainer (mejoras #14, #15, #16). */
+/* Acciones del toolbar: export, replay, verbose (mejoras #14, #15, #16). */
 .live-agent-actions {
   display: flex;
   gap: 0.45rem;
@@ -2653,11 +2653,27 @@ code {
   color: var(--arkanum-bg);
 }
 
-/* Modo explicador: nota pedagógica por step (mejora #15). Se muestra/oculta
-   al instante con el toggle, sobre las tarjetas ya visibles — no requiere
-   re-ejecutar el agente. Estilo de "callout" para que el cambio sea evidente. */
-.live-agent--explainer .trace-step[data-explainer]::after,
-.live-agent--explainer .trace-band[data-iter]::after {
+/* Modo verbose OFF (vista limpia, por defecto): oculta el detalle técnico y
+   deja el esqueleto narrativo (prompt → iteraciones → tools → respuesta). El
+   dashboard conserva estos datos; solo se ocultan de la vista. Cubre el polling
+   vivo, el replay y el historial porque todos comparten estas clases.
+   - .trace-band-meta        : chips de tokens, latencia y costo por iteración.
+   - .trace-context-growth   : panel de memoria del loop (context_growth).
+   - .trace-step--agent_thought : razonamiento del modelo entre tool calls.
+   - .trace-step--tokens / --latency : por si algún camino los pinta como tarjeta. */
+.live-agent:not(.live-agent--verbose) .trace-band-meta,
+.live-agent:not(.live-agent--verbose) .trace-context-growth,
+.live-agent:not(.live-agent--verbose) .trace-step--tokens,
+.live-agent:not(.live-agent--verbose) .trace-step--latency,
+.live-agent:not(.live-agent--verbose) .trace-step--agent_thought {
+  display: none;
+}
+
+/* Modo verbose ON: nota pedagógica 💡 por step. Se muestra/oculta al instante
+   con el toggle, sobre las tarjetas ya visibles — no requiere re-ejecutar el
+   agente. Estilo de "callout" para que el cambio sea evidente. */
+.live-agent--verbose .trace-step[data-explainer]::after,
+.live-agent--verbose .trace-band[data-iter]::after {
   display: block;
   margin-top: 0.55rem;
   padding: 0.45rem 0.6rem;
@@ -2671,11 +2687,11 @@ code {
   line-height: 1.5;
 }
 
-.live-agent--explainer .trace-step[data-explainer]::after {
+.live-agent--verbose .trace-step[data-explainer]::after {
   content: "💡 " attr(data-explainer);
 }
 
-.live-agent--explainer .trace-band[data-iter]::after {
+.live-agent--verbose .trace-band[data-iter]::after {
   content: "💡 Una banda agrupa los pasos de UNA vuelta del agent loop. El meta del header muestra latencia y costo de la iteración.";
 }
 
@@ -3789,6 +3805,12 @@ code {
 }
 .la-agent-ring.is-thinking {
   opacity: 1;
+  /* fill-box ancla el giro al centro del propio anillo. Sin esto, el
+     transform-origin se resuelve contra el viewBox del SVG (no contra el
+     círculo) y, como el anillo cuelga de un grupo trasladado a (388,270),
+     acaba orbitando un punto lejano: parece un halo que sale disparado del
+     mago hacia la derecha y se va del cuadro. */
+  transform-box: fill-box;
   transform-origin: center;
   animation: la-spin 3.2s linear infinite;
 }
@@ -3925,6 +3947,27 @@ code {
   stroke: var(--arkanum-fail);
   filter: drop-shadow(0 0 12px rgba(232, 122, 122, 0.9));
 }
+
+/* Halo de actividad de la herramienta: gira mientras la tool está en
+   ejecución (llamada pero aún sin resultado). Blanco y discreto a propósito
+   —menos intenso que el anillo púrpura del mago— para que de un vistazo se
+   vea dónde ocurre la acción. Si el agente llama a varias tools a la vez,
+   cada una enciende el suyo. fill-box ancla el giro a su propio centro. */
+.la-tool-ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 2;
+  stroke-dasharray: 4 7;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.la-tool.is-waiting .la-tool-ring {
+  opacity: 0.9;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: la-spin 2.4s linear infinite;
+}
 .la-tool-icon {
   font-size: 30px;
   text-anchor: middle;
@@ -4060,6 +4103,14 @@ code {
   border-color: rgba(232, 122, 122, 0.4);
   color: #f2c4c4;
 }
+/* Respuesta final del agente: prosa legible (no mono) y acento dorado, igual
+   que la burbuja agent_final del timeline. */
+.la-detail-result--final {
+  font-family: inherit;
+  font-size: 0.86rem;
+  border-color: rgba(214, 178, 92, 0.4);
+  background: rgba(214, 178, 92, 0.06);
+}
 .la-detail-result-label.is-error { color: var(--arkanum-fail); }
 .la-detail-empty {
   margin: 0.5rem 0 0;
@@ -4164,6 +4215,7 @@ code {
   .la-edge-pulse.is-firing-out,
   .la-edge-pulse.is-firing-in,
   .la-agent-ring.is-thinking,
+  .la-tool.is-waiting .la-tool-ring,
   .la-wiz-star,
   .la-spark-user.is-in,
   .la-spark-user.is-back {
@@ -4197,7 +4249,7 @@ code {
 }
 
 /* Línea corta en lenguaje llano bajo cada tarjeta — siempre visible, para
-   que el aprendiz entienda el paso sin activar el modo Explicador. */
+   que el aprendiz entienda el paso sin activar el modo Verbose. */
 .trace-step-why {
   margin: 0.45rem 0 0;
   font-family: var(--font-sans);

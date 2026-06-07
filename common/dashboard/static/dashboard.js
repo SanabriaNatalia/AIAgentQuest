@@ -856,7 +856,7 @@
 
     // Frase corta en lenguaje llano que se muestra SIEMPRE bajo la tarjeta
     // (a diferencia de explainerFor, que es el texto largo del modo
-    // "Explicador"). Objetivo: que un aprendiz entienda cada paso sin
+    // "Verbose"). Objetivo: que un aprendiz entienda cada paso sin
     // activar nada ni conocer la jerga.
     function shortWhyFor(stepType, opts) {
       var o = opts || {};
@@ -1958,7 +1958,18 @@
         }
         replayState.timer = setTimeout(function () { scheduleStep(i + 1); }, delayMs);
       }
-      scheduleStep(0);
+
+      // Pequeña pausa antes del primer step: deja que el scroll suave hasta el
+      // grafo termine, para que se vea claramente la animación de entrada del
+      // aprendiz (la chispa aprendiz → mago del session_start). En reduced-motion
+      // el scroll es instantáneo, así que arrancamos sin esperar. Cancelable por
+      // stopReplay vía replayState.timer.
+      var reducedMotion = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var introDelay = reducedMotion ? 0 : 700;
+      replayState.timer = setTimeout(function () {
+        if (replayState.running) scheduleStep(0);
+      }, introDelay);
     }
 
     function renderSingleStep(step) {
@@ -1977,18 +1988,29 @@
         return;
       }
       if (step.step_type === "latency") {
+        // Igual que applyData: la latencia va al meta del header de la banda,
+        // NO como tarjeta separada (mejora #5 UX). El replay debe reflejar la
+        // misma vista que el polling en vivo.
         var sec = payloadField(step, "seconds");
         if (sec != null) updateBandMeta(sec);
-        appendStep(renderStep(step));
         return;
       }
       if (step.step_type === "tokens") {
+        // Igual que applyData: NO renderizamos tokens como tarjeta (se ven muy
+        // grandes y desbalancean el flujo). Se acumulan en el meta de la banda
+        // (las píldoras pequeñas arriba a la derecha de cada iteración).
         addBandTokens(step);
-        appendStep(renderStep(step));
         return;
       }
       if (step.step_type === "context_growth") {
         appendContextGrowth(step);
+        return;
+      }
+      if (step.step_type === "function_call") {
+        appendStep(renderStep(step));
+        // Igual que applyData: resume el nombre de la tool en el header de la
+        // banda (chips "tool ×N"), para que el replay sea fiel a la vista viva.
+        addBandTool(step.name);
         return;
       }
       appendStep(renderStep(step));
@@ -2036,22 +2058,30 @@
       document.addEventListener("click", function () { pop.hidden = true; });
     }
 
-    // ----- Mejora #15: Modo explicador. --------------------------------
-    var explainerToggle = host.querySelector("[data-trace-explainer-toggle]");
-    if (explainerToggle) {
-      var stored = null;
-      try { stored = localStorage.getItem("live-agent-explainer"); } catch (e) {}
-      if (stored === "1") {
-        explainerToggle.checked = true;
-        host.classList.add("live-agent--explainer");
+    // ----- Modo verbose (antes "Explicador"). --------------------------
+    // Un solo toggle que decide CUÁNTO detalle muestra la timeline. El
+    // dashboard siempre tiene TODO guardado (el subprocess corre en verbose):
+    // esto solo filtra la vista vía CSS, igual que el `--verbose` de la consola.
+    // - OFF (limpio, por defecto): esqueleto narrativo — prompt, iteraciones,
+    //   tools y respuesta final/errores. Oculta tokens, latencia, memoria del
+    //   loop (context_growth) y razonamiento (agent_thought).
+    // - ON (verbose): todo lo anterior + esos pasos técnicos + las notas
+    //   pedagógicas 💡 por tarjeta.
+    var verboseToggle = host.querySelector("[data-trace-verbose-toggle]");
+    if (verboseToggle) {
+      var storedVerbose = null;
+      try { storedVerbose = localStorage.getItem("live-agent-verbose"); } catch (e) {}
+      if (storedVerbose === "1") {
+        verboseToggle.checked = true;
+        host.classList.add("live-agent--verbose");
       }
-      explainerToggle.addEventListener("change", function () {
-        if (explainerToggle.checked) {
-          host.classList.add("live-agent--explainer");
-          try { localStorage.setItem("live-agent-explainer", "1"); } catch (e) {}
+      verboseToggle.addEventListener("change", function () {
+        if (verboseToggle.checked) {
+          host.classList.add("live-agent--verbose");
+          try { localStorage.setItem("live-agent-verbose", "1"); } catch (e) {}
         } else {
-          host.classList.remove("live-agent--explainer");
-          try { localStorage.setItem("live-agent-explainer", "0"); } catch (e) {}
+          host.classList.remove("live-agent--verbose");
+          try { localStorage.setItem("live-agent-verbose", "0"); } catch (e) {}
         }
       });
     }

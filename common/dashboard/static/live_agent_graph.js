@@ -50,6 +50,7 @@
   var userSparkTimer = null;
   var systemPrompt = "";   // cargado de /api/system-prompt para el detalle del agente
   var userPrompt = "";     // capturado del session_start para el detalle del aprendiz
+  var agentFinal = "";     // capturado del agent_final para el detalle del agente
 
   // Estado de animación (se reinicia por trace o al reiniciar un replay).
   var currentTraceId = null;
@@ -57,6 +58,9 @@
   var seenIds = {};        // step.id -> true
   var livePending = [];    // cola FIFO de nombres de tool para emparejar results
   var selected = null;     // {kind:'user'|'agent'|'tool', name?}
+  var agentSpinGate = false;    // retrasa el giro del mago hasta que la chispa del aprendiz llegue
+  var agentSpinGateTimer = null;
+  var lastActivity = null;      // último estado de actividad, para reaplicarlo al cerrar el gate
 
   function el(tag, attrs, parent) {
     var n = document.createElementNS(SVGNS, tag);
@@ -96,6 +100,16 @@
       try { return JSON.stringify(p); } catch (_e) { return String(p); }
     })();
     return { text: raw, isError: /^\s*error/i.test(raw) };
+  }
+
+  // Extrae el texto de un agent_final. payload puede ser {text:"…"} (shape
+  // canónico de tracing.emit_final / parser de start.py) o un string crudo.
+  function extractFinalText(step) {
+    var p = step.payload;
+    if (p == null) return "";
+    if (typeof p === "string") return p;
+    if (typeof p === "object" && typeof p.text === "string") return p.text;
+    try { return JSON.stringify(p); } catch (_e) { return String(p); }
   }
 
   // ---- Construcción del grafo ---------------------------------------------
@@ -165,6 +179,8 @@
       }, nodesG);
 
       el("circle", { "class": "la-tool-core", r: TOOL_R, cx: 0, cy: 0 }, grp);
+      // Halo de actividad: oculto salvo cuando la tool está en ejecución.
+      el("circle", { "class": "la-tool-ring", r: TOOL_R + 7, cx: 0, cy: 0 }, grp);
       var icon = el("text", { "class": "la-tool-icon", x: 0, y: 2, "text-anchor": "middle" }, grp);
       icon.textContent = t.icon || "🛠";
       var label = el("text", { "class": "la-tool-label", x: 0, y: TOOL_R + 20, "text-anchor": "middle" }, grp);
@@ -274,23 +290,88 @@
     }, 1100);
   }
 
-  function startThinking() {
-    if (agentRing && !reducedMotion) agentRing.classList.add("is-thinking");
+  // ---- Estado de actividad: "dónde ocurre la acción ahora mismo" ----------
+  // El mago gira mientras razona; al llamar una herramienta deja de girar
+  // (queda esperando) y gira el halo de esa tool; cuando su resultado vuelve,
+  // el mago retoma el giro. Si llama a varias tools a la vez, todas giran.
+  //
+  // Es estado puro derivado del set de pasos (idempotente): una tool está
+  // "ocupada" si tiene una invocación sin resolver (function_call sin su
+  // function_result); el mago "piensa" si la sesión sigue activa y no hay
+  // ninguna tool ocupada.
+  function computeActivity(stats, steps) {
+    var started = false, ended = false;
+    for (var i = 0; i < steps.length; i++) {
+      var s = steps[i];
+      if (!s) continue;
+      var t = s.step_type;
+      if (t === "session_start") started = true;
+      else if (t === "agent_final" || t === "session_end" || t === "error") ended = true;
+    }
+    var pendingTools = {}, anyPending = false;
+    tools.forEach(function (tool) {
+      var invs = (stats[tool.name] && stats[tool.name].invocations) || [];
+      var busy = false;
+      for (var k = 0; k < invs.length; k++) {
+        if (!invs[k].resolved) { busy = true; break; }
+      }
+      pendingTools[tool.name] = busy;
+      if (busy) anyPending = true;
+    });
+    return {
+      agentSpinning: started && !ended && !anyPending,
+      pendingTools: pendingTools
+    };
   }
-  function stopThinking() {
-    if (agentRing) agentRing.classList.remove("is-thinking");
+
+  // Aplica el estado a las clases CSS. El giro lo anima el CSS; en
+  // prefers-reduced-motion el halo se resalta pero sin rotar (ver media query).
+  // Mientras el gate esté abierto, el mago no enciende su giro aunque toque:
+  // así espera a que la chispa del aprendiz llegue. Las tools no dependen del
+  // gate (su halo refleja la espera real de cada herramienta).
+  function applyActivity(act) {
+    lastActivity = act;
+    if (agentRing) {
+      agentRing.classList.toggle("is-thinking", act.agentSpinning && !agentSpinGate);
+    }
+    tools.forEach(function (tool) {
+      var node = nodeEls[tool.name];
+      if (node && node.group) {
+        node.group.classList.toggle("is-waiting", !!act.pendingTools[tool.name]);
+      }
+    });
+  }
+
+  // Retiene el giro del mago durante `ms` (≈ duración de la chispa la-spark-in)
+  // y, al cumplirse, reaplica el último estado para encenderlo si corresponde.
+  function openAgentSpinGate(ms) {
+    agentSpinGate = true;
+    if (agentSpinGateTimer) clearTimeout(agentSpinGateTimer);
+    agentSpinGateTimer = setTimeout(function () {
+      agentSpinGate = false;
+      agentSpinGateTimer = null;
+      if (lastActivity) applyActivity(lastActivity);
+    }, ms);
   }
 
   // ---- Procesamiento de datos --------------------------------------------
 
+  // Pulsos transitorios de las aristas y la chispa aprendiz↔mago. El giro que
+  // indica "dónde ocurre la acción" NO se decide aquí: lo deriva applyActivity()
+  // del set completo de pasos, para que sea idempotente entre el polling (set
+  // entero) y el replay (subsets crecientes).
   function applyStep(step, animate) {
     var type = step.step_type;
     if (type === "session_start") {
-      // El aprendiz envía su petición: chispa aprendiz → mago.
-      if (animate) fireUserEdge("in");
+      // El aprendiz envía su petición: chispa aprendiz → mago. El giro del mago
+      // no arranca aquí: espera (gate) a que la chispa termine de viajar, para
+      // que la señal se lea como "la petición llega y entonces el mago piensa".
+      if (animate) {
+        fireUserEdge("in");
+        if (!reducedMotion) openAgentSpinGate(950);
+      }
     } else if (type === "function_call") {
       livePending.push(step.name || null);
-      stopThinking();
       if (animate && step.name) fireNode(step.name, "out");
     } else if (type === "function_result") {
       var popped = livePending.length ? livePending.shift() : null;
@@ -299,14 +380,9 @@
         var r = extractResult(step);
         fireNode(nm, "in", r.isError);
       }
-    } else if (type === "iteration_start") {
-      if (animate) startThinking();
     } else if (type === "agent_final") {
       // El mago entrega su respuesta final: chispa mago → aprendiz.
-      stopThinking();
       if (animate) fireUserEdge("back");
-    } else if (type === "session_end" || type === "error") {
-      stopThinking();
     }
   }
 
@@ -386,12 +462,16 @@
     livePending = [];
     lastStats = {};
     userPrompt = "";
-    stopThinking();
+    agentFinal = "";
+    agentSpinGate = false;
+    lastActivity = null;
+    if (agentSpinGateTimer) { clearTimeout(agentSpinGateTimer); agentSpinGateTimer = null; }
+    if (agentRing) agentRing.classList.remove("is-thinking");
     if (userEl) userEl.classList.remove("has-run");
     Object.keys(nodeEls).forEach(function (name) {
       var node = nodeEls[name];
       if (!node.group) return;
-      node.group.classList.remove("is-active", "flash-ok", "flash-error", "has-error", "has-run");
+      node.group.classList.remove("is-active", "flash-ok", "flash-error", "has-error", "has-run", "is-waiting");
       if (node.pulse) node.pulse.classList.remove("is-firing-out", "is-firing-in");
       if (node.badge) node.badge.classList.remove("is-visible");
       if (node.badgeText) node.badgeText.textContent = "0";
@@ -423,11 +503,16 @@
       applyStep(step, !firstPaint);
     });
 
-    // Captura el prompt del aprendiz (entrada de la secuencia).
+    // Captura el prompt del aprendiz (entrada) y la respuesta final del mago
+    // (salida): los dos extremos de la ejecución que alimentan los detalles.
     for (var j = 0; j < steps.length; j++) {
       var s0 = steps[j];
-      if (s0 && s0.step_type === "session_start" && s0.payload && s0.payload.user_prompt) {
+      if (!s0) continue;
+      if (s0.step_type === "session_start" && s0.payload && s0.payload.user_prompt) {
         userPrompt = s0.payload.user_prompt;
+      } else if (s0.step_type === "agent_final") {
+        var ft = extractFinalText(s0);
+        if (ft) agentFinal = ft;
       }
     }
     if (userEl) userEl.classList.toggle("has-run", !!(userPrompt && userPrompt.trim()));
@@ -435,6 +520,7 @@
     lastStepCount = steps.length;
     lastStats = recompute(steps);
     refreshBadges(lastStats);
+    applyActivity(computeActivity(lastStats, steps));
     refreshDetail();
   }
 
@@ -498,6 +584,7 @@
     if (!detailHost) return;
     detailHost.hidden = false;
     var sp = systemPrompt && systemPrompt.trim();
+    var fin = agentFinal && agentFinal.trim();
     detailHost.innerHTML =
       '<header class="la-detail-head">' +
         '<span class="la-detail-icon" aria-hidden="true">🧙</span>' +
@@ -505,6 +592,11 @@
         '<span class="la-detail-count">Gemini</span>' +
       "</header>" +
       '<p class="la-detail-desc">El mago orquesta el loop: lee el prompt, decide qué herramienta usar, observa el resultado y repite hasta dar una respuesta final.</p>' +
+      '<div class="la-detail-section"><span class="la-detail-section-label">✦ Respuesta final</span>' +
+        (fin
+          ? '<pre class="la-detail-result la-detail-result--final">' + escapeHtml(truncate(agentFinal, 1800)) + "</pre>"
+          : '<p class="la-detail-empty">Aún no hay respuesta final: el agente sigue ejecutando o no la emitió (p. ej. Q07, que no cierra el loop).</p>') +
+      "</div>" +
       '<div class="la-detail-section"><span class="la-detail-section-label">System prompt</span>' +
         (sp
           ? '<pre class="la-detail-result">' + escapeHtml(truncate(systemPrompt, 1800)) + "</pre>"
