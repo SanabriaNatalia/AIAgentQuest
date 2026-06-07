@@ -32,9 +32,11 @@ import ast
 import json
 import os
 import re
+import sys
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 
 from common.cli.helpers import (
     resolve_quest_by_number,
@@ -45,6 +47,15 @@ from common.cli.helpers import (
 )
 from common.config import MAX_ITERS
 from common.dashboard.services.trace import record_step, start_trace
+
+# En Windows, si el stdout del CLI no es una consola real (redirigido a archivo
+# o pipe), el codec por defecto es cp1252 y los emojis de la narrativa
+# (🤖, 🛠, 🧑) revientan al hacer `sys.stdout.write`. Forzamos UTF-8 igual que
+# hace `common.utils.ui` en el subprocess.
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 console = Console()
 
@@ -79,6 +90,14 @@ _RESPONSE_TOK_RE = re.compile(r"Response tokens:\s*(\d+)")
 _FINAL_HDR_RE = re.compile(r"^\s*Final response:\s*$")
 _ERROR_RE = re.compile(r"Error in generate_content:\s*(.+)$")
 _MAX_ITERS_RE = re.compile(r"Maximum iterations\s*\((\d+)\)\s*reached")
+# `User prompt: …` que imprime el starter en verbose: redundante con la línea
+# `🧑 Prompt:` del narrador, así que el presentador la oculta en modo limpio.
+_USER_PROMPT_RE = re.compile(r"^\s*User prompt:\s*(.*)$")
+
+# Umbral de recorte para el valor de un resultado de tool en modo verbose. El
+# dashboard guarda el valor completo; en consola recortamos lo muy largo (p. ej.
+# el contenido entero de un archivo) para no inundar la terminal.
+_RESULT_CLIP_CHARS = 2000
 
 
 def _clean_call_args(raw: str, call_id: str | None = None) -> str:
@@ -223,12 +242,21 @@ class _LiveTracer:
         raw = line.rstrip("\r\n")
         stripped = raw.strip()
 
-        # Captura multilínea de la respuesta final: acumulamos hasta toparnos
-        # con una línea en blanco o un marcador reconocible de otra sección.
+        # Captura multilínea de la respuesta final: acumulamos TODO el texto
+        # —incluidas las líneas en blanco internas— hasta toparnos con un
+        # marcador estructural de otra sección o hasta que el proceso termine
+        # (lo cierra `finish`). La respuesta final siempre es lo último que
+        # imprime el starter (en Q08 viene un `return` justo después).
+        #
+        # NO cortamos en líneas en blanco: la respuesta del modelo suele ser
+        # markdown con un párrafo introductorio que termina en ":" seguido de
+        # una línea vacía y luego una lista ("Las operaciones son:\n\n- suma
+        # …"). Cortar en el primer blanco dejaba el agent_final en "Las
+        # operaciones son:" y descartaba la lista. `_flush_final` ya hace
+        # `.strip()`, así que los blancos al inicio/fin no molestan.
         if self._capturing_final:
             if (
-                not stripped
-                or _CALL_RE.search(stripped)
+                _CALL_RE.search(stripped)
                 or _RESULT_RE.match(stripped)
                 or _PROMPT_TOK_RE.search(stripped)
                 or _RESPONSE_TOK_RE.search(stripped)
@@ -314,6 +342,206 @@ class _LiveTracer:
         self._flush_final()
 
 
+def _human_size(n_chars: int) -> str:
+    """Tamaño aproximado de un texto en B/KB (aprox. 1 char ≈ 1 byte)."""
+    if n_chars < 1024:
+        return f"{n_chars} B"
+    return f"{n_chars / 1024:.1f} KB"
+
+
+def _short(text: str, limit: int) -> str:
+    """Recorta `text` a `limit` caracteres con elipsis, sin saltos de línea."""
+    flat = " ".join(text.split())
+    return flat if len(flat) <= limit else flat[: limit - 1] + "…"
+
+
+def _fmt_args(raw: str, *, brief: bool) -> str:
+    """Repr de los args de Gemini → `k="v", k2=...` legible.
+
+    `brief=True` recorta cada valor string a 40 chars (modo limpio); con
+    `brief=False` los muestra completos (modo verbose). Si no parsea, devuelve
+    el string crudo como fallback.
+    """
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    try:
+        parsed = ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        return raw
+    if not isinstance(parsed, dict):
+        return str(parsed)
+    parts = []
+    for key, value in parsed.items():
+        if isinstance(value, str):
+            shown = value
+            if brief and len(shown) > 40:
+                shown = shown[:39] + "…"
+            parts.append(f'{key}="{shown}"')
+        else:
+            parts.append(f"{key}={value!r}")
+    return ", ".join(parts)
+
+
+def _unwrap_result(raw: str) -> tuple[str, bool]:
+    """Desenvuelve `{'result': X}` / `{'error': X}` → (texto, es_error).
+
+    Replica la lógica de `_clean_result` pero devuelve el valor crudo (no JSON)
+    para que el presentador lo muestre/recorte. Fallback: el string tal cual.
+    """
+    raw = (raw or "").strip()
+    try:
+        parsed = ast.literal_eval(raw)
+    except (ValueError, SyntaxError):
+        parsed = None
+    value: object = raw
+    is_error = False
+    if isinstance(parsed, dict):
+        if "error" in parsed:
+            value, is_error = parsed["error"], True
+        elif "result" in parsed:
+            value = parsed["result"]
+        else:
+            value = parsed
+    elif parsed is not None:
+        value = parsed
+    text = value if isinstance(value, str) else repr(value)
+    if not is_error and text.strip().lower().startswith("error"):
+        is_error = True
+    return text, is_error
+
+
+class _ConsolePresenter:
+    """Reescribe el stdout (verbose) del agente como una narrativa legible.
+
+    El subprocess de Q07/Q08 corre SIEMPRE en `--verbose` (lo necesita el
+    `_LiveTracer` del dashboard). Este presentador decide qué se muestra en la
+    consola del aprendiz según el `--verbose` que pidió el usuario:
+
+    - modo limpio (sin `--verbose`): bandas de iteración, tool calls con args
+      resumidos y el resultado colapsado a una línea (`↳ ok (812 B)`).
+    - modo verbose (con `--verbose`): además tokens por iteración, args
+      completos y el resultado completo (recortado a ~2 KB con aviso de que el
+      detalle íntegro está en el dashboard).
+
+    Es stateful: cuenta iteraciones (`Prompt tokens:` abre una) y, al ver
+    `Final response:`, pasa a modo "passthrough" volcando el texto final tal
+    cual hasta el fin (igual que el tracer, así no malinterpreta líneas del
+    texto que parezcan marcadores).
+    """
+
+    def __init__(self, console: Console, *, verbose: bool) -> None:
+        self.console = console
+        self.verbose = verbose
+        self.iter = 0
+        self._in_final = False
+        self._pending_prompt_tok: str | None = None
+
+    def feed(self, line: str) -> None:
+        # Una vez dentro de la respuesta final, todo pasa tal cual: preserva
+        # listas, párrafos y líneas en blanco internas sin parsear.
+        if self._in_final:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+            return
+
+        stripped = line.strip()
+
+        if _FINAL_HDR_RE.match(stripped):
+            self._in_final = True
+            self.console.print("\n[bold cyan]🤖 Agente:[/]")
+            return
+
+        user_prompt = _USER_PROMPT_RE.match(stripped)
+        if user_prompt:
+            # Redundante con `🧑 Prompt:`; solo en verbose.
+            if self.verbose:
+                self._passthrough(line)
+            return
+
+        err = _ERROR_RE.search(stripped)
+        if err:
+            self.console.print(f"  [red]⚠️ Error:[/] {escape(err.group(1))}")
+            return
+
+        maxed = _MAX_ITERS_RE.search(stripped)
+        if maxed:
+            self.console.print(
+                f"  [yellow]⚠️ Alcanzó el máximo de iteraciones "
+                f"({maxed.group(1)}) sin respuesta final.[/]"
+            )
+            return
+
+        call = _CALL_RE.search(stripped)
+        if call:
+            name = call.group(1)
+            args = _fmt_args(call.group(2).strip(), brief=not self.verbose)
+            self.console.print(f"  🛠 [cyan]{escape(name)}[/]([dim]{escape(args)}[/])")
+            return
+
+        result = _RESULT_RE.match(stripped)
+        if result:
+            self._render_result(result.group(1))
+            return
+
+        prompt_tok = _PROMPT_TOK_RE.search(stripped)
+        if prompt_tok:
+            self.iter += 1
+            self.console.print(
+                f"\n[bold]· Iteración {self.iter}/{MAX_ITERS}[/]"
+            )
+            if self.verbose:
+                self._pending_prompt_tok = prompt_tok.group(1)
+            return
+
+        resp_tok = _RESPONSE_TOK_RE.search(stripped)
+        if resp_tok:
+            if self.verbose:
+                prompt = self._pending_prompt_tok or "?"
+                self.console.print(
+                    f"  [dim]· tokens · prompt {prompt} · "
+                    f"respuesta {resp_tok.group(1)}[/]"
+                )
+                self._pending_prompt_tok = None
+            return
+
+        # No reconocida (header, narrador, prompt, success, blancos): tal cual.
+        self._passthrough(line)
+
+    def _render_result(self, raw: str) -> None:
+        text, is_error = _unwrap_result(raw)
+        if not self.verbose:
+            if is_error:
+                self.console.print(
+                    f"     [red]↳ error:[/] [dim]{escape(_short(text, 80))}[/]"
+                )
+            else:
+                self.console.print(
+                    f"     [green]↳ ok[/] [dim]({_human_size(len(text))})[/]"
+                )
+            return
+
+        # Verbose: valor completo, recortado si es muy largo.
+        clipped = len(text) > _RESULT_CLIP_CHARS
+        shown = text[:_RESULT_CLIP_CHARS] if clipped else text
+        self.console.print(
+            "     [red]↳ error[/]" if is_error else "     [green]↳ ok[/]"
+        )
+        for body_line in shown.splitlines() or [""]:
+            sys.stdout.write(f"       {body_line}\n")
+        sys.stdout.flush()
+        if clipped:
+            extra = len(text) - _RESULT_CLIP_CHARS
+            self.console.print(
+                f"       [dim][+{_human_size(extra)} recortado — "
+                f"detalle completo en el dashboard][/]"
+            )
+
+    def _passthrough(self, line: str) -> None:
+        sys.stdout.write(line)
+        sys.stdout.flush()
+
+
 def _run_plain(module: str, quest_slug: str, extra: list[str]) -> int:
     """Ejecución cruda: reenvía el stdout del starter tal cual."""
     rc = run_module(
@@ -327,9 +555,13 @@ def _run_plain(module: str, quest_slug: str, extra: list[str]) -> int:
 def _run_live(quest, module: str, extra: list[str]) -> int:
     """Ejecución con tracing: emite steps a `/live-agent` mientras corre.
 
-    Fuerza `--verbose` (sin él, los starters de Q07/Q08 imprimen las tool
-    calls sin paréntesis y el regex no matchea) y enmarca la corrida con
-    `session_start`/`session_end`.
+    El subprocess corre SIEMPRE en `--verbose` (sin él, los starters de Q07/Q08
+    imprimen las tool calls sin paréntesis y el regex no matchea, y faltarían
+    tokens y resultados para el dashboard). El `--verbose` que pidió el aprendiz
+    NO cambia el subprocess: cambia el `_ConsolePresenter`, que reescribe ese
+    stdout como una narrativa limpia (sin flag) o detallada (con flag). El eco
+    crudo se silencia (`echo=False`) para que el presentador sea el único que
+    escribe a consola. La corrida se enmarca con `session_start`/`session_end`.
     """
     trace_id = start_trace()
 
@@ -337,7 +569,12 @@ def _run_live(quest, module: str, extra: list[str]) -> int:
     # (sin guiones). Si el aprendiz pasa flags primero, los saltamos.
     user_prompt = next((a for a in extra if a and not a.startswith("-")), None)
 
-    if "--verbose" not in extra and "-v" not in extra:
+    # ¿El aprendiz pidió verbose? Esto decide el NIVEL DE CONSOLA. El subprocess
+    # corre siempre en verbose (abajo) para alimentar el dashboard sin recortes;
+    # el flag del usuario solo cambia cuánto detalle muestra el presentador.
+    user_verbose = "--verbose" in extra or "-v" in extra
+
+    if not user_verbose:
         extra.append("--verbose")
 
     _emit_step(
@@ -363,11 +600,21 @@ def _run_live(quest, module: str, extra: list[str]) -> int:
         quest.db_id,
         loop_quest=quest.order >= 8,
     )
+    presenter = _ConsolePresenter(console, verbose=user_verbose)
+
+    def on_line(line: str) -> None:
+        # El tracer recibe SIEMPRE la línea cruda (dashboard con detalle
+        # completo); el presentador decide qué se ve en la consola.
+        tracer.feed(line)
+        presenter.feed(line)
 
     rc, _captured = run_module_capturing(
         module,
         extra_args=extra,
-        on_line=tracer.feed,
+        on_line=on_line,
+        # El presentador es el único que escribe a consola (formateado); por eso
+        # silenciamos el eco crudo del subprocess.
+        echo=False,
         env_extra={
             "ARKANUM_TRACE_ID": trace_id,
             "ARKANUM_TRACE": "1",
