@@ -142,7 +142,7 @@ Esto te deja ver la secuencia `function_call → function_result → siguiente i
 
 El `--verbose` que **tú** escribes no cambia lo que recibe el dashboard (siempre completo); cambia cuánto detalle se imprime en tu **terminal**:
 
-- **Sin `--verbose`** (por defecto) — vista limpia: una banda por iteración (`· Iteración N/20`), cada tool con sus args resumidos (`🛠 get_files_info(directory=".")`) y un resumen de su resultado (`↳ ok (155 B)`), más la respuesta final (`🤖 Agente: …`).
+- **Sin `--verbose`** (por defecto) — vista limpia: una banda por iteración (`· Iteración N · máx 20`, donde `máx 20` es el tope `MAX_ITERS`, no un progreso), cada tool con sus args resumidos (`🛠 get_files_info(directory=".")`) y un resumen de su resultado (`↳ ok (155 B)`), más la respuesta final (`🤖 Agente: …`).
 - **Con `--verbose`** — además: tokens por iteración, los args completos y el resultado completo de cada tool (recortado a ~2 KB en consola; el íntegro siempre queda en el dashboard).
 
 ```bash

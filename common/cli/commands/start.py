@@ -498,8 +498,11 @@ class _ConsolePresenter:
             # pasada) no hay loop, así que no abrimos banda.
             if self.loop_quest:
                 self.iter += 1
+                # "N / MAX" se leía como progreso hacia MAX; mostramos el tope
+                # como "· máx MAX" (en gris) para que se entienda que es el
+                # límite (MAX_ITERS), no un avance. Mismo criterio que el dashboard.
                 self.console.print(
-                    f"\n[bold]· Iteración {self.iter}/{MAX_ITERS}[/]"
+                    f"\n[bold]· Iteración {self.iter}[/] [dim]· máx {MAX_ITERS}[/]"
                 )
             if self.verbose:
                 self._pending_prompt_tok = prompt_tok.group(1)
