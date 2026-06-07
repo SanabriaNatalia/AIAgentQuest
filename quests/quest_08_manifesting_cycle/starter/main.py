@@ -99,11 +99,16 @@ def generate_content(messages, verbose=False):
     # Pensamiento del agente: el texto que el modelo genera JUNTO a sus tool
     # calls (su razonamiento). El loop normalmente lo descarta; aquí lo
     # emitimos para que el visualizador lo muestre como `agent_thought`.
-    # (best-effort: solo se envía si el trace está activo).
-    try:
-        thought = (response.text or "").strip()
-    except Exception:
-        thought = ""
+    # Leemos el texto parte por parte en vez de `response.text`: esa propiedad
+    # avisa ("non-text parts in the response: ['function_call']") cuando la
+    # respuesta mezcla texto + tool call. (best-effort: solo si el trace activo).
+    thought = ""
+    for candidate in (response.candidates or []):
+        if candidate.content and candidate.content.parts:
+            for part in candidate.content.parts:
+                if getattr(part, "text", None):
+                    thought += part.text
+    thought = thought.strip()
     if thought and response.function_calls:
         emit_thought(thought)
 
