@@ -3789,6 +3789,12 @@ code {
 }
 .la-agent-ring.is-thinking {
   opacity: 1;
+  /* fill-box ancla el giro al centro del propio anillo. Sin esto, el
+     transform-origin se resuelve contra el viewBox del SVG (no contra el
+     círculo) y, como el anillo cuelga de un grupo trasladado a (388,270),
+     acaba orbitando un punto lejano: parece un halo que sale disparado del
+     mago hacia la derecha y se va del cuadro. */
+  transform-box: fill-box;
   transform-origin: center;
   animation: la-spin 3.2s linear infinite;
 }
@@ -4059,6 +4065,14 @@ code {
 .la-detail-result.is-error {
   border-color: rgba(232, 122, 122, 0.4);
   color: #f2c4c4;
+}
+/* Respuesta final del agente: prosa legible (no mono) y acento dorado, igual
+   que la burbuja agent_final del timeline. */
+.la-detail-result--final {
+  font-family: inherit;
+  font-size: 0.86rem;
+  border-color: rgba(214, 178, 92, 0.4);
+  background: rgba(214, 178, 92, 0.06);
 }
 .la-detail-result-label.is-error { color: var(--arkanum-fail); }
 .la-detail-empty {

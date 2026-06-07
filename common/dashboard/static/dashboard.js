@@ -1958,7 +1958,18 @@
         }
         replayState.timer = setTimeout(function () { scheduleStep(i + 1); }, delayMs);
       }
-      scheduleStep(0);
+
+      // Pequeña pausa antes del primer step: deja que el scroll suave hasta el
+      // grafo termine, para que se vea claramente la animación de entrada del
+      // aprendiz (la chispa aprendiz → mago del session_start). En reduced-motion
+      // el scroll es instantáneo, así que arrancamos sin esperar. Cancelable por
+      // stopReplay vía replayState.timer.
+      var reducedMotion = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var introDelay = reducedMotion ? 0 : 700;
+      replayState.timer = setTimeout(function () {
+        if (replayState.running) scheduleStep(0);
+      }, introDelay);
     }
 
     function renderSingleStep(step) {
@@ -1977,18 +1988,29 @@
         return;
       }
       if (step.step_type === "latency") {
+        // Igual que applyData: la latencia va al meta del header de la banda,
+        // NO como tarjeta separada (mejora #5 UX). El replay debe reflejar la
+        // misma vista que el polling en vivo.
         var sec = payloadField(step, "seconds");
         if (sec != null) updateBandMeta(sec);
-        appendStep(renderStep(step));
         return;
       }
       if (step.step_type === "tokens") {
+        // Igual que applyData: NO renderizamos tokens como tarjeta (se ven muy
+        // grandes y desbalancean el flujo). Se acumulan en el meta de la banda
+        // (las píldoras pequeñas arriba a la derecha de cada iteración).
         addBandTokens(step);
-        appendStep(renderStep(step));
         return;
       }
       if (step.step_type === "context_growth") {
         appendContextGrowth(step);
+        return;
+      }
+      if (step.step_type === "function_call") {
+        appendStep(renderStep(step));
+        // Igual que applyData: resume el nombre de la tool en el header de la
+        // banda (chips "tool ×N"), para que el replay sea fiel a la vista viva.
+        addBandTool(step.name);
         return;
       }
       appendStep(renderStep(step));

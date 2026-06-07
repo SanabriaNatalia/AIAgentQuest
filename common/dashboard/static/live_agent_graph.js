@@ -50,6 +50,7 @@
   var userSparkTimer = null;
   var systemPrompt = "";   // cargado de /api/system-prompt para el detalle del agente
   var userPrompt = "";     // capturado del session_start para el detalle del aprendiz
+  var agentFinal = "";     // capturado del agent_final para el detalle del agente
 
   // Estado de animación (se reinicia por trace o al reiniciar un replay).
   var currentTraceId = null;
@@ -96,6 +97,16 @@
       try { return JSON.stringify(p); } catch (_e) { return String(p); }
     })();
     return { text: raw, isError: /^\s*error/i.test(raw) };
+  }
+
+  // Extrae el texto de un agent_final. payload puede ser {text:"…"} (shape
+  // canónico de tracing.emit_final / parser de start.py) o un string crudo.
+  function extractFinalText(step) {
+    var p = step.payload;
+    if (p == null) return "";
+    if (typeof p === "string") return p;
+    if (typeof p === "object" && typeof p.text === "string") return p.text;
+    try { return JSON.stringify(p); } catch (_e) { return String(p); }
   }
 
   // ---- Construcción del grafo ---------------------------------------------
@@ -386,6 +397,7 @@
     livePending = [];
     lastStats = {};
     userPrompt = "";
+    agentFinal = "";
     stopThinking();
     if (userEl) userEl.classList.remove("has-run");
     Object.keys(nodeEls).forEach(function (name) {
@@ -423,11 +435,16 @@
       applyStep(step, !firstPaint);
     });
 
-    // Captura el prompt del aprendiz (entrada de la secuencia).
+    // Captura el prompt del aprendiz (entrada) y la respuesta final del mago
+    // (salida): los dos extremos de la ejecución que alimentan los detalles.
     for (var j = 0; j < steps.length; j++) {
       var s0 = steps[j];
-      if (s0 && s0.step_type === "session_start" && s0.payload && s0.payload.user_prompt) {
+      if (!s0) continue;
+      if (s0.step_type === "session_start" && s0.payload && s0.payload.user_prompt) {
         userPrompt = s0.payload.user_prompt;
+      } else if (s0.step_type === "agent_final") {
+        var ft = extractFinalText(s0);
+        if (ft) agentFinal = ft;
       }
     }
     if (userEl) userEl.classList.toggle("has-run", !!(userPrompt && userPrompt.trim()));
@@ -498,6 +515,7 @@
     if (!detailHost) return;
     detailHost.hidden = false;
     var sp = systemPrompt && systemPrompt.trim();
+    var fin = agentFinal && agentFinal.trim();
     detailHost.innerHTML =
       '<header class="la-detail-head">' +
         '<span class="la-detail-icon" aria-hidden="true">🧙</span>' +
@@ -505,6 +523,11 @@
         '<span class="la-detail-count">Gemini</span>' +
       "</header>" +
       '<p class="la-detail-desc">El mago orquesta el loop: lee el prompt, decide qué herramienta usar, observa el resultado y repite hasta dar una respuesta final.</p>' +
+      '<div class="la-detail-section"><span class="la-detail-section-label">✦ Respuesta final</span>' +
+        (fin
+          ? '<pre class="la-detail-result la-detail-result--final">' + escapeHtml(truncate(agentFinal, 1800)) + "</pre>"
+          : '<p class="la-detail-empty">Aún no hay respuesta final: el agente sigue ejecutando o no la emitió (p. ej. Q07, que no cierra el loop).</p>') +
+      "</div>" +
       '<div class="la-detail-section"><span class="la-detail-section-label">System prompt</span>' +
         (sp
           ? '<pre class="la-detail-result">' + escapeHtml(truncate(systemPrompt, 1800)) + "</pre>"
