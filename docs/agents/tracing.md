@@ -3,20 +3,20 @@
 El módulo [`common/tracing.py`](../../common/tracing.py) permite que tu
 agente envíe eventos estructurados al visualizador `/live-agent` del
 dashboard. Es la forma "rica" de trazar — más fiel que el regex que
-`arkanum start` aplica sobre tu `stdout`.
+`arkanum run` aplica sobre tu `stdout`.
 
 ## Cómo se activa
 
 `tracing.emit` solo hace algo cuando `ARKANUM_TRACE_ID` está en el
-entorno. Ese ID lo inyecta `arkanum start` al lanzar el starter de un
+entorno. Ese ID lo inyecta `arkanum run` al lanzar el starter de un
 quest con agent loop (Q07/Q08), donde el tracing es automático. Si corres
-`python -m quests…` directamente —o `start` en un quest sin agent loop—
+`python -m quests…` directamente —o `run` en un quest sin agent loop—
 el módulo es no-op silencioso.
 
 | Variable de entorno      | Quien la set     | Para qué |
 |---|---|---|
-| `ARKANUM_TRACE_ID`       | `arkanum start`  | Identifica el trace activo. Sin esto, `emit` no hace nada. |
-| `ARKANUM_QUEST_DB_ID`    | `arkanum start`  | Asocia el trace a una quest concreta. |
+| `ARKANUM_TRACE_ID`       | `arkanum run`  | Identifica el trace activo. Sin esto, `emit` no hace nada. |
+| `ARKANUM_QUEST_DB_ID`    | `arkanum run`  | Asocia el trace a una quest concreta. |
 | `ARKANUM_TRACE_URL`      | (override)        | Por defecto `http://127.0.0.1:8765/events/trace`. Cambia el destino si el dashboard corre en otro puerto. |
 
 ## API mínima
@@ -63,21 +63,21 @@ Lista mantenida en [`dashboard.js`](../../common/dashboard/static/dashboard.js):
 
 | `step_type`         | Origen                              | Render |
 |---|---|---|
-| `session_start`     | `arkanum start` (Q07/Q08)           | Marca el inicio del trace; payload incluye `user_prompt`. |
-| `session_end`       | `arkanum start` (Q07/Q08)           | Marca el final con exit code; toolbar pasa a sealed. |
-| `function_call`     | parser de `start.py` **o** `emit`   | Tarjeta agrupada con pending spinner hasta que llega su result. Los args se muestran como lista clave/valor. |
-| `function_result`   | parser de `start.py` **o** `emit`   | Se ancla dentro de su `function_call` (FIFO). El valor se desenvuelve de `{'result': …}` y un error se pinta en rojo. |
-| `tokens`            | parser de `start.py` **o** `emit`   | Chip de uso (prompt/response). Suma al costo de la banda. |
-| `iteration_start`   | parser de `start.py` (Q08) **o** `emit` | Abre una banda visual ("Iteración N / MAX"). Lo deriva del `Prompt tokens:` de cada llamada a Gemini. |
-| `agent_final`       | parser de `start.py` **o** `emit`   | Burbuja final dorada — respuesta sin más tool calls. Lo deriva del `Final response:` + texto. |
-| `error`             | parser de `start.py` **o** `emit`   | Tarjeta roja: excepción del loop (`Error in generate_content:`) o tope de iteraciones. |
+| `session_start`     | `arkanum run` (Q07/Q08)           | Marca el inicio del trace; payload incluye `user_prompt`. |
+| `session_end`       | `arkanum run` (Q07/Q08)           | Marca el final con exit code; toolbar pasa a sealed. |
+| `function_call`     | parser de `run.py` **o** `emit`   | Tarjeta agrupada con pending spinner hasta que llega su result. Los args se muestran como lista clave/valor. |
+| `function_result`   | parser de `run.py` **o** `emit`   | Se ancla dentro de su `function_call` (FIFO). El valor se desenvuelve de `{'result': …}` y un error se pinta en rojo. |
+| `tokens`            | parser de `run.py` **o** `emit`   | Chip de uso (prompt/response). Suma al costo de la banda. |
+| `iteration_start`   | parser de `run.py` (Q08) **o** `emit` | Abre una banda visual ("Iteración N / MAX"). Lo deriva del `Prompt tokens:` de cada llamada a Gemini. |
+| `agent_final`       | parser de `run.py` **o** `emit`   | Burbuja final dorada — respuesta sin más tool calls. Lo deriva del `Final response:` + texto. |
+| `error`             | parser de `run.py` **o** `emit`   | Tarjeta roja: excepción del loop (`Error in generate_content:`) o tope de iteraciones. |
 | `agent_thought`     | `emit` solo                         | Burbuja de prosa serif italic — el razonamiento del modelo (el stdout no lo expresa). |
 | `latency`           | `emit` solo                         | Chip de tiempo; suma al meta de la banda (el stdout no lo expresa). |
 | `context_growth`    | `emit` solo                         | Panel desplegable con el delta de `messages` tras la iteración (el stdout no lo expresa). |
 
 ## El regex como fallback
 
-`common/cli/commands/start.py` (en Q07/Q08) parsea el `stdout` del
+`common/cli/commands/run.py` (en Q07/Q08) parsea el `stdout` del
 starter línea por línea y, sin pedirle al aprendiz que escriba `emit`,
 deriva: `function_call`, `function_result` (con args/valor limpios),
 `tokens`, `iteration_start` (de cada `Prompt tokens:`), `agent_final`
@@ -140,7 +140,7 @@ strings opacos para SQLite.
 arkanum dashboard
 
 # En otra: corre tu agente (Q08 traza solo).
-arkanum start 8 "Lee notes.txt y dime qué contiene"
+arkanum run 8 "Lee notes.txt y dime qué contiene"
 
 # Abre http://127.0.0.1:8765/live-agent — los steps aparecen en vivo.
 ```

@@ -10,7 +10,7 @@ construido en el Quest 02.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 3 "¿Qué es un agente IA?"
+    arkanum run 3 "¿Qué es un agente IA?"
 
 Una vez que hayas terminado, valida tu solución ejecutando:
 

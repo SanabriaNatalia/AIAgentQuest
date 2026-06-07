@@ -18,7 +18,7 @@ from common.cli.commands.doctor import doctor
 from common.cli.commands.init import init
 from common.cli.commands.next_quest import next_quest
 from common.cli.commands.progress import progress
-from common.cli.commands.start import start
+from common.cli.commands.run import run
 
 app = typer.Typer(
     name="arkanum",
@@ -33,9 +33,9 @@ app.command(name="current")(current)
 app.command(name="next")(next_quest)
 app.command(name="progress")(progress)
 app.command(
-    name="start",
+    name="run",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)(start)
+)(run)
 app.command(
     name="check",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},

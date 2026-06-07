@@ -398,7 +398,7 @@
         body.classList.remove("live-agent-prompt-body--muted");
       } else {
         body.textContent =
-          "Lanza `arkanum start 7 \"…\"` o `arkanum start 8 \"…\"` para registrar el prompt del aprendiz.";
+          "Lanza `arkanum run 7 \"…\"` o `arkanum run 8 \"…\"` para registrar el prompt del aprendiz.";
         body.classList.add("live-agent-prompt-body--muted");
       }
     }

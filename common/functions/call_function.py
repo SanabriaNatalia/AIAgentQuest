@@ -82,7 +82,7 @@ def call_function(function_call, verbose=False):
     # TODO 7.1 (call_function.py, paso 7):
     # Inyecta el working_directory dentro de args.
     #
-    # El CLI (`arkanum start/run/check`) te pasa el workspace correcto vía
+    # El CLI (`arkanum run/check`) te pasa el workspace correcto vía
     # la variable de entorno `ARKANUM_WORKSPACE`. Léela con fallback al
     # workspace de Q07 por si corres el módulo directamente con `python -m`.
     #

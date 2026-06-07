@@ -10,7 +10,7 @@ No borres el código existente, solo añádele lo que se pide en cada paso.
 Puedes ejecutar el siguiente comando desde la raíz del proyecto
 para validar que funcione:
 
-    arkanum start 1
+    arkanum run 1
 
 Una vez que funcione, ejecuta el comando de check para validar tu solución:
 

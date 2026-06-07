@@ -8,7 +8,7 @@ desalentando al aprendiz cuando su clave está perfectamente bien.
 Es **defensivo**: no depende de los tipos exactos del SDK `google-genai` (que
 cambian entre versiones). Mira el `code`/`status` si el error lo expone y, como
 respaldo, el texto del error. Por eso clasifica tanto excepciones como strings
-(el wrapper `arkanum start` solo tiene el mensaje del stdout, no la excepción).
+(el wrapper `arkanum run` solo tiene el mensaje del stdout, no la excepción).
 """
 from __future__ import annotations
 

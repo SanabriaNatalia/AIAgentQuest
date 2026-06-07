@@ -89,7 +89,7 @@ def init(
             "[bold gold1]Laboratorio listo[/]\n\n"
             "Comandos útiles:\n"
             "  [cyan]arkanum current[/]   — quest actual\n"
-            "  [cyan]arkanum start 1[/]   — empezar Quest 1\n"
+            "  [cyan]arkanum run 1[/]   — empezar Quest 1\n"
             "  [cyan]arkanum progress[/]  — ver tu avance",
             border_style="purple",
         )

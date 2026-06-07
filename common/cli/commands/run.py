@@ -1,4 +1,4 @@
-"""Comando `arkanum start <N>` — ejecuta el starter del quest N.
+"""Comando `arkanum run <N>` — ejecuta el starter del quest N.
 
 Para los quests con agent loop (`live_agent=True`, hoy Q07/Q08) la
 ejecución se instrumenta **automáticamente**: captura el stdout
@@ -178,11 +178,11 @@ def _print_missing_prompt(order: int, examples: tuple[str, ...]) -> None:
     console.print(f"[bold red]❌ Falta el prompt para Quest {order}.[/]")
     console.print()
     console.print("[bold]Cómo se usa:[/]")
-    console.print(f'  [cyan]arkanum start {order} "tu prompt aquí"[/]')
+    console.print(f'  [cyan]arkanum run {order} "tu prompt aquí"[/]')
     console.print()
     console.print("[bold]Ejemplos:[/]")
     for example in examples:
-        console.print(f"  [cyan]arkanum start {order} {example}[/]")
+        console.print(f"  [cyan]arkanum run {order} {example}[/]")
     console.print()
 
 
@@ -753,7 +753,7 @@ def _run_live(quest, module: str, extra: list[str]) -> int:
     return rc, _captured
 
 
-def start(
+def run(
     ctx: typer.Context,
     number: int = typer.Argument(..., help="Número del quest (1..8)"),
     live: bool = typer.Option(
@@ -767,7 +767,7 @@ def start(
     """Ejecutar el starter del quest indicado.
 
     Cualquier argumento extra después del número se reenvía al starter.
-    Ejemplo: `arkanum start 3 "¿Qué es un agente IA?"`.
+    Ejemplo: `arkanum run 3 "¿Qué es un agente IA?"`.
 
     En los quests con agent loop (Q07/Q08) la corrida se instrumenta
     automáticamente y aparece paso a paso en la pestaña `/live-agent`

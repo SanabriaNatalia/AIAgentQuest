@@ -20,7 +20,7 @@ El laboratorio expone su voluntad a través de un único comando — `arkanum` �
 | [`arkanum current`](#arkanum-current) | Mostrar la quest actual | No | — |
 | [`arkanum next`](#arkanum-next) | Mostrar la próxima quest tras la actual | No | — |
 | [`arkanum progress`](#arkanum-progress) | Tabla con el estado de las 8 quests | No | — |
-| [`arkanum start N`](#arkanum-start-n) | Ejecutar el starter del quest N; en Q07/Q08 emite traces al `/live-agent` automáticamente | Sí (si el starter llama Gemini) | Steps en `/live-agent` (Q07/Q08) |
+| [`arkanum run N`](#arkanum-run-n) | Ejecutar el starter del quest N; en Q07/Q08 emite traces al `/live-agent` automáticamente | Sí (si el starter llama Gemini) | Steps en `/live-agent` (Q07/Q08) |
 | [`arkanum check N`](#arkanum-check-n) | Validar la solución del quest N | Sí | Sella la quest + abre `/celebrate` |
 | [`arkanum cost`](#arkanum-cost) | Tokens consumidos y costo estimado en USD | No | — |
 | [`arkanum dashboard`](#arkanum-dashboard) | Controlar el server (`start`/`stop`/`status`/`logs`/`open`) | No | Levanta o detiene el dashboard |
@@ -90,16 +90,16 @@ arkanum progress
 
 ## Ejecutar y validar
 
-Dos comandos para correr código: `start` y `check`. La diferencia clave es **qué hace cada uno con el resultado**.
+Dos comandos para correr código: `run` y `check`. La diferencia clave es **qué hace cada uno con el resultado**.
 
-### `arkanum start N`
+### `arkanum run N`
 
 Ejecuta el archivo `quests/quest_NN_*/starter/main.py` directamente.
 
 ```bash
-arkanum start 1
-arkanum start 3 "¿Qué es un agente IA?"   # Q03+ recibe argumentos vía argparse
-arkanum start 7 "Lee notes.txt"           # Q07/Q08 trazan solas en /live-agent
+arkanum run 1
+arkanum run 3 "¿Qué es un agente IA?"   # Q03+ recibe argumentos vía argparse
+arkanum run 7 "Lee notes.txt"           # Q07/Q08 trazan solas en /live-agent
 ```
 
 Qué hace:
@@ -121,11 +121,11 @@ Qué **no** hace (en quests sin agent loop):
 
 #### Tracing automático del agent loop (Q07/Q08)
 
-En los quests con agent loop (`live_agent=True`, hoy **Q07 y Q08**), `start` **emite traces estructurados automáticamente** — sin ningún flag. La pestaña `/live-agent` del dashboard los muestra paso a paso.
+En los quests con agent loop (`live_agent=True`, hoy **Q07 y Q08**), `run` **emite traces estructurados automáticamente** — sin ningún flag. La pestaña `/live-agent` del dashboard los muestra paso a paso.
 
 ```bash
-arkanum start 7 "¿Qué archivos hay en la raíz?"
-arkanum start 8 "Lee notes.txt y dime qué contiene"
+arkanum run 7 "¿Qué archivos hay en la raíz?"
+arkanum run 8 "Lee notes.txt y dime qué contiene"
 ```
 
 Qué hace de más en estos quests:
@@ -146,8 +146,8 @@ El `--verbose` que **tú** escribes no cambia lo que recibe el dashboard (siempr
 - **Con `--verbose`** — además: tokens por iteración, los args completos y el resultado completo de cada tool (recortado a ~2 KB en consola; el íntegro siempre queda en el dashboard).
 
 ```bash
-arkanum start 8 "Lee notes.txt y dime qué contiene"            # vista limpia
-arkanum start 8 "Lee notes.txt y dime qué contiene" --verbose  # detalle completo
+arkanum run 8 "Lee notes.txt y dime qué contiene"            # vista limpia
+arkanum run 8 "Lee notes.txt y dime qué contiene" --verbose  # detalle completo
 ```
 
 En el dashboard, el toggle **🔍 Verbose** de `/live-agent` hace lo mismo sobre la timeline: apagado muestra el esqueleto (prompt → iteraciones → tools → respuesta); encendido añade tokens, latencia, memoria del loop y el razonamiento del agente.
@@ -225,7 +225,7 @@ Todos los comandos `arkanum *` aceptan `--help`:
 ```bash
 arkanum --help               # lista los 9 comandos
 arkanum check --help         # detalle de check (incluyendo --dry-run, --yes)
-arkanum start --help         # detalle de start
+arkanum run --help         # detalle de run
 arkanum dashboard --help     # lista los 5 sub-subcomandos
 arkanum dashboard start --help
 ```
@@ -244,8 +244,8 @@ uv run arkanum --help
 |---|---|
 | Empezar desde cero | `arkanum init` |
 | Ver qué quest estoy haciendo | `arkanum current` |
-| Probar mi código sin "sellar" la quest | `arkanum start N` |
-| Probar mi agente y ver el agent loop en vivo | `arkanum start N "..."` (Q07/Q08 trazan solas) |
+| Probar mi código sin "sellar" la quest | `arkanum run N` |
+| Probar mi agente y ver el agent loop en vivo | `arkanum run N "..."` (Q07/Q08 trazan solas) |
 | Validar la solución y completar la quest | `arkanum check N` |
 | Saber cuántos tokens llevo gastados | `arkanum cost` |
 | Verificar que todo el setup está sano | `arkanum doctor` |

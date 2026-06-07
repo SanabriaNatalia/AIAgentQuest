@@ -204,7 +204,7 @@ def update_system_prompt(payload: SystemPromptUpdate) -> JSONResponse:
     - Crea un backup .system_prompt.py.bak antes de tocar el original.
     - Rechaza contenido con '\"\"\"' literal (rompería la sintaxis).
     - Solo reemplaza el primer match de la asignación system_prompt = '''...'''.
-    - El cambio se aplica al próximo arkanum start (no afecta procesos en curso).
+    - El cambio se aplica al próximo arkanum run (no afecta procesos en curso).
     """
     if not _SYSTEM_PROMPT_PATH.exists():
         raise HTTPException(
@@ -352,7 +352,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 @router.post("/api/trace/run")
 def trace_run(payload: TraceRunRequest) -> JSONResponse:
-    """Spawnea `python -m common.cli.main start N "prompt" --live` en background.
+    """Spawnea `python -m common.cli.main run N "prompt" --live` en background.
 
     El proceso queda desligado: devolvemos inmediatamente y el polling
     normal de /live-agent se encarga de mostrar los steps a medida que
@@ -389,7 +389,7 @@ def trace_run(payload: TraceRunRequest) -> JSONResponse:
         sys.executable,
         "-m",
         "common.cli.main",
-        "start",
+        "run",
         str(quest.order),
         prompt,
         "--live",

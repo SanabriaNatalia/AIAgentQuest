@@ -10,7 +10,7 @@ que construiste en el Quest 01.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 2
+    arkanum run 2
 
 Una vez que hayas terminado, valida tu solución ejecutando:
 

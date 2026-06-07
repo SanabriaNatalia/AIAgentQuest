@@ -51,7 +51,7 @@ Permite construir aplicaciones de terminal que reciben argumentos desde consola.
 Por ejemplo:
 
 ```bash
-arkanum start 3 "¿Qué es un agente IA?"
+arkanum run 3 "¿Qué es un agente IA?"
 ```
 
 (equivalente legacy: `uv run python -m quests.quest_03_apprentice_voice.starter.main "¿Qué es un agente IA?"`)
@@ -95,7 +95,7 @@ Luego accedes al prompt con `args.user_prompt`.
 Si ejecutas el programa sin enviar un prompt:
 
 ```bash
-arkanum start 3
+arkanum run 3
 ```
 
 `argparse` mostrará un error explicando qué argumento falta.

@@ -103,7 +103,7 @@
   }
 
   // Extrae el texto de un agent_final. payload puede ser {text:"…"} (shape
-  // canónico de tracing.emit_final / parser de start.py) o un string crudo.
+  // canónico de tracing.emit_final / parser de run.py) o un string crudo.
   function extractFinalText(step) {
     var p = step.payload;
     if (p == null) return "";

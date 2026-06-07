@@ -17,7 +17,7 @@ En este Quest trabajarás en dos lugares:
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 5
+    arkanum run 5
 
 Una vez hayas terminado, valida tu solución ejecutando:
 

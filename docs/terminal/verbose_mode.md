@@ -142,7 +142,7 @@ Sin verbose mode, muchas veces el agente parece una caja negra.
 
 ## Ejemplo en AI Agent Quest
 
-En los quests con agent loop (Q07 y Q08), `arkanum start` decide **cuánto** ves según pongas o no `--verbose`. El agente hace exactamente lo mismo en ambos casos; solo cambia el detalle que se imprime en tu terminal.
+En los quests con agent loop (Q07 y Q08), `arkanum run` decide **cuánto** ves según pongas o no `--verbose`. El agente hace exactamente lo mismo en ambos casos; solo cambia el detalle que se imprime en tu terminal.
 
 **Sin `--verbose`** — vista limpia, solo el esqueleto del ciclo:
 

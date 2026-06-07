@@ -7,11 +7,11 @@ utilizando tool calls y observaciones.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 8 "Lee notes.txt y dime qué contiene"
+    arkanum run 8 "Lee notes.txt y dime qué contiene"
 
 También puedes usar modo verbose:
 
-    arkanum start 8 "Lee notes.txt y dime qué contiene" --verbose
+    arkanum run 8 "Lee notes.txt y dime qué contiene" --verbose
 
 Una vez hayas terminado, y el agente haya solucionado el bug, 
 valida tu solución ejecutando:
