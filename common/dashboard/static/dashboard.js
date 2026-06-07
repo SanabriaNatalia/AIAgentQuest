@@ -1783,15 +1783,31 @@
       });
     }
 
+    // Filtro de quest (selector de la toolbar): solo se muestran en el historial
+    // las corridas del quest elegido. Lee el valor inicial del <select>.
+    var questSelect = host.querySelector("[data-quest-select]");
+    var questFilter = questSelect ? (questSelect.value || null) : null;
+
     function loadHistory() {
       if (!historyUrl) return;
-      fetch(historyUrl, { headers: { Accept: "application/json" } })
+      var url = questFilter
+        ? historyUrl + (historyUrl.indexOf("?") >= 0 ? "&" : "?") +
+          "quest=" + encodeURIComponent(questFilter)
+        : historyUrl;
+      fetch(url, { headers: { Accept: "application/json" } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (data) {
           if (!data || !Array.isArray(data.traces)) return;
           renderHistory(data.traces);
         })
         .catch(function () { /* best-effort */ });
+    }
+
+    if (questSelect) {
+      questSelect.addEventListener("change", function () {
+        questFilter = questSelect.value || null;
+        loadHistory();
+      });
     }
 
     loadHistory();

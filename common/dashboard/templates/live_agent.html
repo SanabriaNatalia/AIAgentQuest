@@ -24,6 +24,17 @@
       <span data-trace-status>Esperando trace…</span>
     </div>
     <div class="live-agent-meta" data-trace-meta></div>
+    {% if la_quests %}
+    <div class="live-agent-questsel">
+      <label for="la-quest-select" class="live-agent-questsel-label">Quest</label>
+      <select id="la-quest-select" class="live-agent-questsel-select"
+              data-quest-select aria-label="Elegir el quest a visualizar">
+        {% for q in la_quests %}
+        <option value="{{ q.order }}"{% if q.order == default_quest_order %} selected{% endif %}>Q{{ q.order }} — {{ q.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
     <div class="live-agent-actions">
       <button type="button"
               class="live-agent-action"

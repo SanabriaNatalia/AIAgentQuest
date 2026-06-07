@@ -244,14 +244,26 @@ def update_system_prompt(payload: SystemPromptUpdate) -> JSONResponse:
 
 
 @router.get("/api/traces/recent")
-def recent_traces(limit: int = Query(10, ge=1, le=50)) -> JSONResponse:
-    """Lista de los N últimos traces (sin steps) para el historial."""
+def recent_traces(
+    limit: int = Query(10, ge=1, le=50),
+    quest: int | None = Query(None, ge=1, le=8),
+) -> JSONResponse:
+    """Lista de los N últimos traces (sin steps) para el historial.
+
+    Con `quest=N` el historial se filtra a las corridas de ese quest (lo usa
+    el selector de la vista). Un `quest` desconocido resuelve a sin-filtro.
+    """
     from common.dashboard.services.trace import (
         recent_trace_summaries,
         trace_first_user_prompt,
     )
 
-    summaries = recent_trace_summaries(limit=limit)
+    quest_db_id = None
+    if quest is not None:
+        from common.dashboard.services.quest_catalog import QUESTS
+        quest_db_id = next((q.db_id for q in QUESTS if q.order == quest), None)
+
+    summaries = recent_trace_summaries(limit=limit, quest_db_id=quest_db_id)
     items = []
     for s in summaries:
         items.append({
@@ -291,17 +303,20 @@ def delete_trace(trace_id: str) -> JSONResponse:
 
 
 @router.get("/api/agent/tools")
-def agent_tools() -> JSONResponse:
+def agent_tools(quest: int | None = Query(None, ge=1, le=8)) -> JSONResponse:
     """Catálogo de herramientas del agente para el grafo de /live-agent.
 
     Lo consume la vista "Constelación del Agente" para dibujar un nodo por
     herramienta alrededor del agente desde el arranque, aunque ninguna se
-    haya llamado todavía. Catálogo estático (ver services/agent_tools.py):
+    haya llamado todavía. Catálogo estático por quest (ver agent_tools.py):
     no depende de los `schema_*` que el aprendiz aún puede no haber completado.
+
+    Con `quest=N` devuelve las tools de ese quest (lo usa el selector). Sin él,
+    el catálogo completo.
     """
     from common.dashboard.services.agent_tools import list_agent_tools
 
-    return JSONResponse({"tools": list_agent_tools()})
+    return JSONResponse({"tools": list_agent_tools(quest)})
 
 
 @router.get("/api/quests/live-agent")

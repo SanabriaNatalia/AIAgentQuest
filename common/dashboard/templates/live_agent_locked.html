@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Live Agent · Arkanum{% endblock %}
+
+{% block content %}
+<section class="arkanum-soon">
+  <h1>🔒 Live Agent</h1>
+  <blockquote class="zhyreon-quote">
+    La Constelación del Agente solo se ilumina cuando el aprendiz aprende a
+    invocar herramientas reales. Aún no es tu momento.
+    <cite>— Zhyréon</cite>
+  </blockquote>
+  <p class="arkanum-muted">
+    Esta vista se desbloquea en el <strong>Quest 07 — La Encarnación del
+    Agente</strong>, el primer quest donde el agente ejecuta tools y se traza
+    paso a paso. Antes de eso no habría nada que mostrar.
+  </p>
+  {% if current_quest %}
+  <p class="arkanum-muted">
+    Vas en el
+    <a href="/quest/{{ current_quest.slug }}">Quest {{ current_quest.order }} —
+    {{ current_quest.title }}</a>. Sigue avanzando y volveremos a encender la
+    constelación.
+  </p>
+  {% endif %}
+</section>
+{% endblock %}

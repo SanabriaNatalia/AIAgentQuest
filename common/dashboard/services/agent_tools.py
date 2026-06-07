@@ -68,6 +68,24 @@ AGENT_TOOLS: list[AgentTool] = [
 ]
 
 
-def list_agent_tools() -> list[AgentTool]:
-    """Devuelve el catálogo de herramientas del agente (copia defensiva)."""
-    return [dict(tool) for tool in AGENT_TOOLS]  # type: ignore[misc]
+# Tools por quest. Hoy Q07 y Q08 comparten las cuatro; indexar por quest deja
+# el grafo preparado para que un quest futuro declare un set distinto sin tocar
+# el frontend (el selector pide /api/agent/tools?quest=N).
+_TOOLS_BY_QUEST: dict[int, tuple[str, ...]] = {
+    7: ("get_files_info", "get_file_content", "write_file", "run_python_file"),
+    8: ("get_files_info", "get_file_content", "write_file", "run_python_file"),
+}
+
+
+def list_agent_tools(quest_order: int | None = None) -> list[AgentTool]:
+    """Herramientas a dibujar en el grafo, para el quest dado (copia defensiva).
+
+    Sin `quest_order` (o uno sin set propio) devuelve el catálogo completo —
+    compatibilidad con cualquier consumidor sin selector. Con un quest conocido,
+    filtra a sus tools preservando el orden declarado en `_TOOLS_BY_QUEST`.
+    """
+    by_name = {tool["name"]: tool for tool in AGENT_TOOLS}
+    names = _TOOLS_BY_QUEST.get(quest_order) if quest_order is not None else None
+    if names is None:
+        return [dict(tool) for tool in AGENT_TOOLS]  # type: ignore[misc]
+    return [dict(by_name[n]) for n in names if n in by_name]  # type: ignore[misc]

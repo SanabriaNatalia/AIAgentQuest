@@ -108,15 +108,23 @@ def recent_steps(limit: int = 200, trace_id: str | None = None) -> list[TraceSte
     ]
 
 
-def recent_trace_summaries(limit: int = 10) -> list[TraceSummary]:
+def recent_trace_summaries(
+    limit: int = 10, quest_db_id: str | None = None
+) -> list[TraceSummary]:
     """Devuelve los N últimos traces como summaries, sin sus steps.
 
     Útil para el historial de `/live-agent` (mejora #4): permite mostrar
     una lista clickable de ejecuciones previas sin cargar todos los
     payloads. La consulta agrupa por `trace_id` y ordena por el step
     más reciente de cada uno.
+
+    `quest_db_id` filtra a los traces de un quest concreto (selector de la
+    vista). Se aplica con `HAVING MIN(quest_id) = ?` para no distorsionar los
+    conteos por trace: COUNT/SUM siguen calculándose sobre todos sus steps.
     """
     init_db()
+    having = "HAVING MIN(quest_id) = ? " if quest_db_id else ""
+    params: tuple = (quest_db_id, limit) if quest_db_id else (limit,)
     with get_connection() as conn:
         rows = conn.execute(
             "SELECT trace_id, "
@@ -129,9 +137,10 @@ def recent_trace_summaries(limit: int = 10) -> list[TraceSummary]:
             "       SUM(CASE WHEN step_type = 'function_call'   THEN 1 ELSE 0 END) AS tool_calls "
             "FROM agent_traces "
             "GROUP BY trace_id "
+            + having +
             "ORDER BY last_step_id DESC "
             "LIMIT ?",
-            (limit,),
+            params,
         ).fetchall()
 
     return [
