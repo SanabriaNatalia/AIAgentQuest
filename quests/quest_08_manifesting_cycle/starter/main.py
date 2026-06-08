@@ -7,13 +7,13 @@ utilizando tool calls y observaciones.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum run 8 "Lee notes.txt y dime qué contiene"
+    arkanum run 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
 
 También puedes usar modo verbose:
 
-    arkanum run 8 "Lee notes.txt y dime qué contiene" --verbose
+    arkanum run 8 "Los tests de calculator están fallando. Ayúdame a corregir el error." --verbose
 
-Una vez hayas terminado, y el agente haya solucionado el bug, 
+Una vez hayas terminado, y el agente haya solucionado el bug,
 valida tu solución ejecutando:
 
     arkanum check 8
@@ -143,6 +143,26 @@ def generate_content(messages, verbose=False):
 
     messages.append(types.Content(role="tool", parts=function_results))
     return None
+
+
+
+# TODO 8.9:
+# Afina tu system prompt para el agent loop.
+#
+# El prompt minimalista del Quest 06 bastaba para tareas de un solo paso,
+# pero aquí el agente ejecuta tareas de varios pasos. Vuelve a:
+#
+# common/prompts/system_prompt.py
+#
+# y mejora el `system_prompt` para guiar mejor el ciclo: pídele que razone
+# paso a paso, que trabaje con rutas relativas (no debe especificar el
+# working_directory) y que responda al usuario en español al terminar.
+#
+# Tienes un ejemplo en el README de este Quest (sección "Afina tu system
+# prompt").
+#
+# Nota: `arkanum check 8` no valida el prompt directamente, pero verás la
+# diferencia en el comportamiento del agente al correr `arkanum run 8 "..."`.
 
 
 if __name__ == "__main__":

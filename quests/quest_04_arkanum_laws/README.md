@@ -60,7 +60,7 @@ En muchos modelos conversacionales, las instrucciones del sistema tienen mayor p
 
 ```text
 System prompt:
-"Responde únicamente: EL LABORATORIO ESCUCHA."
+"Responde únicamente: LAS LEYES DEL ARKANUM SON ABSOLUTAS."
 
 User prompt:
 "¿Cuál es la capital de Francia?"
@@ -69,7 +69,7 @@ User prompt:
 ↓
 
 ```text
-"EL LABORATORIO ESCUCHA."
+"LAS LEYES DEL ARKANUM SON ABSOLUTAS."
 ```
 
 ### Configuración del modelo
@@ -136,11 +136,12 @@ Dentro encontrarás una variable llamada `system_prompt`. Tu tarea será modific
 Sin importar lo que escriba el usuario, el agente debería obedecer las leyes del sistema.
 
 ```text
-🧑 Tú >
-¿Cuál es la capital de Francia?
+🧑 Prompt: ¿Cuál es la capital de Francia?
 
-🤖 Agente >
-EL LABORATORIO ESCUCHA.
+Prompt tokens: 42
+Response tokens: 14
+
+🤖 Agente: LAS LEYES DEL ARKANUM SON ABSOLUTAS.
 ```
 
 ---

@@ -142,7 +142,7 @@ response.text
 
 ## 📋 Tu misión
 
-En este Quest trabajarás en cinco partes.
+En este Quest trabajarás en seis partes.
 
 ### 1. Refactorizar la arquitectura principal
 
@@ -220,6 +220,38 @@ types.Content(
 - manejar iteraciones máximas
 - lanzar errores si no existe `response.text`
 - evitar loops infinitos
+
+### 6. Afina tu system prompt
+
+Hasta ahora tu agente resolvía tareas de **un solo paso**, y el system prompt minimalista del Quest 06 bastaba. Pero el agent loop de este Quest ejecuta **tareas de varios pasos** (explorar → leer → ejecutar tests → corregir → volver a ejecutar): ahí un prompt mejor guiado marca la diferencia.
+
+Vuelve a `common/prompts/system_prompt.py` y mejora el `system_prompt`. Considera pedirle al agente que:
+
+- **razone paso a paso** antes de actuar,
+- trabaje siempre con **rutas relativas** al directorio de trabajo (nosotros le inyectamos el `working_directory`, él no debe especificarlo),
+- y, al terminar, **responda al usuario en español**, de forma clara y concisa.
+
+Por ejemplo, partiendo del prompt del Quest 06 y añadiéndole ese cierre:
+
+```text
+Eres un agente de IA especializado en programación.
+Cuando el usuario haga una pregunta o solicitud,
+debes crear un plan de uso de herramientas.
+
+Puedes realizar las siguientes operaciones:
+
+- Listar archivos y directorios
+- Leer contenido de archivos
+- Escribir archivos
+- Ejecutar archivos Python
+
+Todas las rutas son relativas al directorio de trabajo permitido;
+trabaja siempre con rutas relativas. Razona paso a paso: inspecciona
+lo que necesites con las herramientas y, cuando tengas información
+suficiente, responde al usuario en español, de forma clara y concisa.
+```
+
+> ℹ️ `arkanum check 8` **no** valida el system prompt directamente (solo verifica que el bug quede corregido y que los tests pasen). Pero con un prompt mejor guiado verás al agente trabajar de forma más consistente al correr `arkanum run 8 "..."`. Experimenta: cambia el prompt y observa cómo cambia su comportamiento.
 
 ---
 
