@@ -270,15 +270,20 @@ def _open_doc_links_in_new_tab(html: str) -> str:
     return _DOC_LINK_RE.sub(add_target, html)
 
 
-def render_markdown_file(source_path: Path) -> RenderedMarkdown:
-    """Renderiza un archivo `.md`. Lanza FileNotFoundError si no existe."""
-    text = source_path.read_text(encoding="utf-8")
+def _render_markdown_text(text: str, source_path: Path) -> RenderedMarkdown:
+    """Renderiza `text` como Markdown, reescribiendo enlaces relativos respecto
+    a `source_path` (que puede ser un archivo virtual para contenido generado)."""
     toc, title = _extract_toc(text)
     text = _rewrite_inline_html(source_path, text)
     md = _build_renderer(source_path)
     html = md.render(text)
     html = _open_doc_links_in_new_tab(html)
     return RenderedMarkdown(html=html, toc=toc, title=title)
+
+
+def render_markdown_file(source_path: Path) -> RenderedMarkdown:
+    """Renderiza un archivo `.md`. Lanza FileNotFoundError si no existe."""
+    return _render_markdown_text(source_path.read_text(encoding="utf-8"), source_path)
 
 
 def pygments_css() -> str:
@@ -309,6 +314,68 @@ def resolve_codex_path(rel_path: str) -> Path | None:
     if base.is_file() and base.suffix.lower() == ".md":
         return base
     return None
+
+
+# Títulos legibles para las secciones (subcarpetas) del Códex. Si una carpeta
+# no está aquí, se usa su nombre capitalizado como fallback.
+_SECTION_TITLES = {
+    "terminal": "Terminal",
+    "cli": "CLI del laboratorio",
+    "python": "Python",
+    "LLMs": "Modelos de Lenguaje (LLMs)",
+    "agents": "Agentes",
+    "security": "Seguridad",
+}
+
+
+def resolve_codex_dir(rel_path: str) -> Path | None:
+    """Devuelve el Path de un subdirectorio de `docs/` (para renderizar un
+    índice de sección), o None si no es un directorio válido dentro de docs/."""
+    if not rel_path:
+        return None
+    safe = rel_path.strip("/").replace("\\", "/")
+    if ".." in safe.split("/"):
+        return None
+    base = (_DOCS_DIR / safe).resolve()
+    if base == _DOCS_DIR or _DOCS_DIR not in base.parents:
+        return None
+    return base if base.is_dir() else None
+
+
+def _doc_title(path: Path) -> str:
+    """Título (primer H1) de un .md; si no tiene, el nombre legible del archivo."""
+    try:
+        _, title = _extract_toc(path.read_text(encoding="utf-8"))
+    except OSError:
+        title = None
+    return title or path.stem.replace("_", " ").replace("-", " ")
+
+
+def render_codex_section(dir_path: Path) -> RenderedMarkdown:
+    """Genera y renderiza un índice de sección: lista las entradas (.md) del
+    directorio con su título, ordenadas alfabéticamente. Auto-generado, sin
+    necesidad de mantener un README por carpeta."""
+    rel = dir_path.relative_to(_DOCS_DIR).as_posix()
+    section_name = _SECTION_TITLES.get(rel, rel.replace("_", " ").title())
+    entries = sorted(
+        (
+            p for p in dir_path.iterdir()
+            if p.suffix.lower() == ".md" and p.name.lower() != "readme.md"
+        ),
+        key=lambda p: _doc_title(p).lower(),
+    )
+    lines = [f"# {section_name}", ""]
+    if entries:
+        lines.append(f"Entradas del Códex en esta sección ({len(entries)}):")
+        lines.append("")
+        for entry in entries:
+            lines.append(f"- [{_doc_title(entry)}](./{entry.name})")
+    else:
+        lines.append("_Esta sección aún no tiene entradas._")
+    text = "\n".join(lines) + "\n"
+    # `source_path` virtual dentro del directorio: hace que `./x.md` se reescriba
+    # a `/codex/<rel>/x` con la lógica de enlaces ya existente.
+    return _render_markdown_text(text, dir_path / "index.md")
 
 
 def resolve_quest_readme(slug: str) -> Path | None:
