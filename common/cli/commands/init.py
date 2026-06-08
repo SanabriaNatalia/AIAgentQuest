@@ -89,7 +89,7 @@ def init(
             "[bold gold1]Laboratorio listo[/]\n\n"
             "Comandos útiles:\n"
             "  [cyan]arkanum current[/]   — quest actual\n"
-            "  [cyan]arkanum run 1[/]   — empezar Quest 1\n"
+            "  [cyan]arkanum run 1[/]   — ejecutar Quest 1\n"
             "  [cyan]arkanum progress[/]  — ver tu avance",
             border_style="purple",
         )
@@ -177,4 +177,4 @@ def _start_and_open_dashboard() -> None:
         webbrowser.open(url)
         console.print(f"Abriendo {url}")
     except RuntimeError as exc:
-        console.print(f"[red]Error al iniciar dashboard:[/] {exc}")
+        console.print(f"[yellow]⚠ {exc}[/]")
