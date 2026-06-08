@@ -71,7 +71,7 @@ def start(
     detached: bool = True,
     dev: bool = False,
     wait_for_health: bool = True,
-    health_timeout: float = 5.0,
+    health_timeout: float | None = None,
 ) -> int:
     if dev:
         if is_running():
@@ -88,11 +88,20 @@ def start(
     PID_FILE.write_text(str(pid), encoding="utf-8")
     PORT_FILE.write_text(str(port), encoding="utf-8")
 
-    if wait_for_health and not _wait_for_health(port, timeout=health_timeout):
-        raise RuntimeError(
-            f"El servidor no respondió en {health_timeout}s. "
-            f"Revisa {LOG_FILE}."
-        )
+    if wait_for_health:
+        if health_timeout is None:
+            health_timeout = float(
+                os.environ.get("ARKANUM_DASHBOARD_HEALTH_TIMEOUT", "20")
+            )
+        if not _wait_for_health(port, timeout=health_timeout):
+            raise RuntimeError(
+                f"El servidor no respondió al health check en {health_timeout:.0f}s. "
+                "Probablemente siga arrancando en segundo plano (arranque en frío, "
+                "habitual la primera vez). Espera unos segundos y ábrelo con "
+                "`arkanum dashboard open`. Si no aparece, revisa el error real con "
+                f"`arkanum dashboard logs` (o {LOG_FILE}). Para máquinas lentas puedes "
+                "ampliar la espera con la variable ARKANUM_DASHBOARD_HEALTH_TIMEOUT."
+            )
 
     return pid
 
