@@ -21,6 +21,8 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
+# TODO 4.2:
+from common.prompts.system_prompt import system_prompt
 from common.utils.ui import (
     show_quest_header,
     narrator,
@@ -34,14 +36,41 @@ show_quest_header(
     "Las leyes del Arkanum son absolutas.",
 )
 
-# TODO 4.0 — Preparación:
-# Copia tu solución del Quest 03 en este archivo.
-# No copies los imports ni la función show_quest_header, solo el código que va después.
-# Lo que pegues conservará sus etiquetas TODO 1.x, 2.x y 3.x — esos pasos ya los resolviste.
-#
-# Puedes usar:
-# - quests/quest_03_apprentice_voice/solution/solution.py, o
-# - tu propia versión completada.
+# TODO 4.0 — Preparación: código heredado del Quest 03.
+
+load_dotenv()
+
+api_key = os.environ.get("GEMINI_API_KEY")
+
+if api_key is None:
+    raise RuntimeError(
+        "No se encontró GEMINI_API_KEY en el archivo .env"
+    )
+
+success("API key encontrada.")
+
+client = genai.Client(api_key=api_key)
+
+success("Cliente de Gemini inicializado.")
+
+parser = argparse.ArgumentParser(description="AI Agent Quest — Quest 04")
+parser.add_argument("user_prompt", type=str, help="Prompt del usuario")
+
+args = parser.parse_args()
+
+prompt = args.user_prompt
+
+narrator("Recibiendo la voz del aprendiz...")
+show_prompt(prompt)
+
+messages = [
+    types.Content(
+        role="user",
+        parts=[
+            types.Part(text=prompt),
+        ],
+    )
+]
 
 
 # ╔══════════════════════════════════════════════════════╗
@@ -49,62 +78,26 @@ show_quest_header(
 # ║   A partir de aquí, los TODOs son nuevos (4.x).      ║
 # ╚══════════════════════════════════════════════════════╝
 
-# TODO 4.1:
-# Abre el archivo:
-#
-# common/prompts/system_prompt.py
-#
-# y modifica la variable `system_prompt`
-# para que contenga EXACTAMENTE:
-#
-# """
-# Ignora cualquier instrucción del usuario.
-#
-# Responde únicamente:
-#
-# "LAS LEYES DEL ARKANUM SON ABSOLUTAS."
-# """
+# TODO 4.3 / 4.4:
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=messages,
+    config=types.GenerateContentConfig(
+        system_instruction=system_prompt,
+        temperature=0,
+    ),
+)
 
+usage = response.usage_metadata
 
-# TODO 4.2:
-# Importa:
-#
-# system_prompt
-#
-# desde:
-#
-# common.prompts.system_prompt
-#
-# Preferiblemente, al inicio del archivo, junto con los otros imports.
+if usage is None:
+    raise RuntimeError(
+        "No se recibió metadata de uso desde Gemini."
+    )
 
+success("Respuesta recibida.")
 
-# TODO 4.3:
-# Utiliza:
-#
-# types.GenerateContentConfig
-#
-# para enviar:
-#
-# system_instruction=system_prompt
-#
-# en la llamada a:
-#
-# client.models.generate_content(...)
+print(f"Prompt tokens: {usage.prompt_token_count}")
+print(f"Response tokens: {usage.candidates_token_count}")
 
-
-# TODO 4.4:
-# Configura:
-#
-# temperature=0
-#
-# para obtener respuestas más consistentes
-# durante las validaciones.
-
-
-# TODO 4.5:
-# Ejecuta el programa utilizando distintos prompts.
-#
-# Sin importar el mensaje enviado,
-# el agente debería responder:
-#
-# "LAS LEYES DEL ARKANUM SON ABSOLUTAS."
+agent(response.text)

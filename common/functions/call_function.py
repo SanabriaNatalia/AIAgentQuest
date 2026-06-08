@@ -33,47 +33,27 @@ def call_function(function_call, verbose=False):
     function_name = function_call.name or ""
 
     # TODO 7.1 (call_function.py, paso 5):
-    # Verifica si function_name existe en function_map.
-    #
-    # Si NO existe, retorna un types.Content con role="tool"
-    # y un types.Part.from_function_response(...)
-    #
-    # La response debe ser:
-    #
-    # {"error": f"Unknown function: {function_name}"}
+    if function_name not in function_map:
+        return types.Content(
+            role="tool",
+            parts=[types.Part.from_function_response(
+                name=function_name,
+                response={"error": f"Unknown function: {function_name}"},
+            )],
+        )
 
     # TODO 7.1 (call_function.py, paso 6):
-    # Copia los argumentos de function_call.
-    #
-    # Pista:
-    #
-    # args = dict(function_call.args) if function_call.args else {}
+    args = dict(function_call.args) if function_call.args else {}
 
     # TODO 7.1 (call_function.py, paso 7):
-    # Inyecta el working_directory dentro de args.
-    #
-    # El CLI (`arkanum run/check`) te pasa el workspace correcto vía
-    # la variable de entorno `ARKANUM_WORKSPACE`. Léela con fallback al
-    # workspace de Q07 por si corres el módulo directamente con `python -m`.
-    #
-    # Usa (recordá `import os` arriba si hace falta):
-    #
-    # args["working_directory"] = os.environ.get(
-    #     "ARKANUM_WORKSPACE",
-    #     "quests/quest_07_agent_incarnation/workspace",
-    # )
-    #
-    # Recuerda:
-    # El modelo NO debe controlar el working_directory.
-
+    # El modelo NO debe controlar el working_directory; lo inyectamos nosotros.
+    args["working_directory"] = os.environ.get(
+        "ARKANUM_WORKSPACE",
+        "quests/quest_07_agent_incarnation/workspace",
+    )
 
     # TODO 7.1 (call_function.py, paso 8):
-    # Ejecuta la función real y guarda su resultado en una variable llamada function_result.
-    #
-    # Pista:
-    #
-    # function_result = function_map[function_name](**args)
-
+    function_result = function_map[function_name](**args)
 
     return types.Content(
         role="tool",

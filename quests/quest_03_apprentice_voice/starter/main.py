@@ -16,10 +16,14 @@ Una vez que hayas terminado, valida tu solución ejecutando:
 
     arkanum check 3
 """
+# TODO 3.1:
+import argparse
 import os
 
 from dotenv import load_dotenv
 from google import genai
+# TODO 3.2:
+from google.genai import types
 
 from common.utils.ui import (
     show_quest_header,
@@ -35,14 +39,22 @@ show_quest_header(
 )
 
 
-# TODO 3.0 — Preparación:
-# Copia tu solución del Quest 02 en este archivo.
-# No copies los imports ni la función show_quest_header, solo el código que va después.
-# Lo que pegues conservará sus etiquetas TODO 1.x y 2.x — esos pasos ya los resolviste.
-#
-# Puedes usar:
-# - quests/quest_02_arcane_gauge/solution/solution.py, o
-# - tu propia versión completada.
+# TODO 3.0 — Preparación: código heredado del Quest 02.
+
+load_dotenv()
+
+api_key = os.environ.get("GEMINI_API_KEY")
+
+if api_key is None:
+    raise RuntimeError(
+        "No se encontró GEMINI_API_KEY en el archivo .env"
+    )
+
+success("API key encontrada.")
+
+client = genai.Client(api_key=api_key)
+
+success("Cliente de Gemini inicializado.")
 
 
 # ╔══════════════════════════════════════════════════════╗
@@ -50,95 +62,45 @@ show_quest_header(
 # ║   A partir de aquí, los TODOs son nuevos (3.x).      ║
 # ╚══════════════════════════════════════════════════════╝
 
-# TODO 3.1:
-# Importa argparse al inicio del archivo (junto a los demás imports).
-# Lo utilizaremos para recibir prompts desde consola.
-
-
-# TODO 3.2:
-# Importa `types` al inicio del archivo (junto a los demás imports):
-#
-# from google.genai import types
-#
-# Los modelos conversacionales trabajan con mensajes
-# estructurados en lugar de strings simples.
-
-
 # TODO 3.3:
-# Reemplaza el prompt hardcoded utilizando argparse.
-#
-# El programa debe aceptar un argumento llamado:
-#
-# user_prompt
-#
-# Ejemplo:
-#
-# uv run python -m quests.quest_03_apprentice_voice.starter.main \
-# "¿Qué es un agente IA?"
+parser = argparse.ArgumentParser(description="AI Agent Quest — Quest 03")
+parser.add_argument("user_prompt", type=str, help="Prompt del usuario")
 
+args = parser.parse_args()
 
 # TODO 3.4:
-# Reemplaza:
-#
-# prompt = ...
-#
-# por:
-#
-# prompt = args.user_prompt
-#
-# para utilizar el prompt enviado desde terminal.
+prompt = args.user_prompt
 
+narrator("Recibiendo la voz del aprendiz...")
+show_prompt(prompt)
 
 # TODO 3.5:
-# Crea una lista llamada `messages`.
-#
-# Debe contener un único mensaje con:
-#
-# role="user"
-#
-# y:
-#
-# types.Part(text=prompt)
-#
-# Pista:
-#
-# messages = [
-#     types.Content(
-#         role="user",
-#         parts=[
-#             types.Part(text=prompt)
-#         ]
-#     )
-# ]
-
+messages = [
+    types.Content(
+        role="user",
+        parts=[
+            types.Part(text=prompt),
+        ],
+    )
+]
 
 # TODO 3.6:
-# Reemplaza:
-#
-# contents=prompt
-#
-# por:
-#
-# contents=messages
-#
-# en la llamada a generate_content().
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=messages,
+)
 
+usage = response.usage_metadata
+
+if usage is None:
+    raise RuntimeError(
+        "No se recibió metadata de uso desde Gemini."
+    )
+
+success("Respuesta recibida.")
 
 # TODO 3.7:
-# Mantén funcionando el medidor de tokens
-# del Quest 02.
-#
-# El programa debe seguir mostrando:
-#
-# Prompt tokens: X
-# Response tokens: Y
+print(f"Prompt tokens: {usage.prompt_token_count}")
+print(f"Response tokens: {usage.candidates_token_count}")
 
-
-# TODO 3.8:
-# Ejecuta el programa usando distintos prompts
-# desde terminal.
-#
-# Ejemplo:
-#
-# uv run python -m quests.quest_03_apprentice_voice.starter.main \
-# "Explícame qué es RAG en un párrafo"
+agent(response.text)

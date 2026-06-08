@@ -31,6 +31,9 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+# TODO 7.3:
+from common.functions.call_function import available_functions, call_function
+from common.prompts.system_prompt import system_prompt
 from common.utils.ui import (
     show_quest_header,
     narrator,
@@ -44,14 +47,66 @@ show_quest_header(
     "El agente manifiesta su voluntad en el mundo.",
 )
 
-# TODO 7.0 — Preparación:
-# Copia tu solución del Quest 06 en este archivo.
-# No copies los imports ni la función show_quest_header, solo el código que va después.
-# Lo que pegues conservará sus etiquetas TODO 1.x … 6.x — esos pasos ya los resolviste.
-#
-# Puedes usar:
-# - quests/quest_06_tool_chest/solution/solution.py, o
-# - tu propia versión completada.
+# TODO 7.0 — Preparación: código heredado del Quest 06.
+
+load_dotenv()
+
+api_key = os.environ.get("GEMINI_API_KEY")
+
+if api_key is None:
+    raise RuntimeError(
+        "No se encontró GEMINI_API_KEY en el archivo .env"
+    )
+
+success("API key encontrada.")
+
+client = genai.Client(api_key=api_key)
+
+success("Cliente de Gemini inicializado.")
+
+parser = argparse.ArgumentParser(description="AI Agent Quest — Quest 07")
+parser.add_argument("user_prompt", type=str, help="Prompt del usuario")
+# TODO 7.2:
+parser.add_argument(
+    "--verbose",
+    action="store_true",
+    help="Muestra información detallada del agente",
+)
+
+args = parser.parse_args()
+
+prompt = args.user_prompt
+
+narrator("Recibiendo la solicitud del aprendiz...")
+show_prompt(prompt)
+
+messages = [
+    types.Content(
+        role="user",
+        parts=[
+            types.Part(text=prompt),
+        ],
+    )
+]
+
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=messages,
+    config=types.GenerateContentConfig(
+        tools=[available_functions],
+        system_instruction=system_prompt,
+        temperature=0,
+    ),
+)
+
+usage = response.usage_metadata
+
+if usage is None:
+    raise RuntimeError(
+        "No se recibió metadata de uso desde Gemini."
+    )
+
+success("Respuesta recibida.")
 
 
 # ╔══════════════════════════════════════════════════════╗
@@ -59,87 +114,37 @@ show_quest_header(
 # ║   A partir de aquí, los TODOs son nuevos (7.x).      ║
 # ╚══════════════════════════════════════════════════════╝
 
-# TODO 7.1:
-# Abre:
-#
-# common/functions/call_function.py
-#
-# y completa TODOS los pasos del Quest 07
-# (verás los marcadores `TODO 7.1 (call_function.py, paso N)`).
-#
-# Allí construirás:
-#
-# - function_map
-# - call_function()
-#
-# Esa función será responsable de:
-# - ejecutar tools reales
-# - inyectar working_directory
-# - devolver respuestas estructuradas
-
-
-# TODO 7.2:
-# Agrega el flag:
-#
-# --verbose
-#
-# usando argparse.
-#
-# Pista:
-#
-# parser.add_argument(
-#     "--verbose",
-#     action="store_true",
-#     help="Muestra información detallada del agente",
-# )
-#
-# Cuando verbose esté activo,
-# el programa deberá mostrar:
-#
-# - user prompt
-# - token usage
-# - resultados de tools
-#
-# Pista:
-#
-# if args.verbose:
-#     print(...)
-
-# TODO 7.3:
-# Importa:
-#
-# call_function
-#
-# desde:
-#
-# common.functions.call_function
-#
-# Preferiblemente, al inicio del archivo, junto con los otros imports.
+# TODO 7.2 (continuación):
+if args.verbose:
+    print(f"User prompt: {args.user_prompt}")
+    print(f"Prompt tokens: {usage.prompt_token_count}")
+    print(f"Response tokens: {usage.candidates_token_count}")
 
 # TODO 7.4:
-# Reemplaza el print de function_calls
-# por llamadas reales a:
-#
-# call_function(...)
-#
-# Debes:
-#
-# - iterar sobre response.function_calls
-# - ejecutar cada tool usando call_function, es importante guardar su resultado en una variable (ej: result) para los siguientes pasos
-# - valida result.parts (si no existe, lanza un error: Function call result has no parts)
-# Obtén el primer part de la respuesta de la función (nuestras funciones solo retornan un part, así que no es necesario iterar sobre ellos)
-# - validar:
-#   - .function_response (si no existe, lanza un error: Function response is missing)
-#   - .response dentro de .function_response (si no existe, lanza un error: Function response content is missing)
-# - guardar resultados en function_results usando function_results.append(part)
-#
-# Puedes consultar la entrada del códice sobre content y parts para más detalles:
-# docs/agents/content_and_parts.md
+function_results = []
 
-# TODO 7.5:
-# Si verbose=True,
-# imprime el resultado de cada tool usando:
-#
-# print(
-#     f"-> {result.parts[0].function_response.response}"
-# )
+for function_call in response.function_calls or []:
+    result = call_function(
+        function_call,
+        verbose=args.verbose,
+    )
+
+    if not result.parts:
+        raise RuntimeError("Function call result has no parts")
+
+    part = result.parts[0]
+
+    if part.function_response is None:
+        raise RuntimeError("Function response is missing")
+
+    if part.function_response.response is None:
+        raise RuntimeError("Function response content is missing")
+
+    function_results.append(part)
+
+    # TODO 7.5:
+    if args.verbose:
+        print(f"-> {part.function_response.response}")
+
+if not function_results:
+    agent(response.text)

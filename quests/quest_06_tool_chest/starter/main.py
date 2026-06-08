@@ -19,6 +19,9 @@ import os
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+# TODO 6.4:
+from common.functions.call_function import available_functions
+from common.prompts.system_prompt import system_prompt
 from common.utils.ui import (
     show_quest_header,
     narrator,
@@ -32,14 +35,41 @@ show_quest_header(
     "El agente descubre sus primeras herramientas.",
 )
 
-# TODO 6.0 — Preparación:
-# Copia tu solución del Quest 04 en este archivo.
-# No copies los imports ni la función show_quest_header, solo el código que va después.
-# Lo que pegues conservará sus etiquetas TODO 1.x … 4.x — esos pasos ya los resolviste.
-#
-# Puedes usar:
-# - quests/quest_04_arkanum_laws/solution/solution.py, o
-# - tu propia versión completada.
+# TODO 6.0 — Preparación: código heredado del Quest 04.
+
+load_dotenv()
+
+api_key = os.environ.get("GEMINI_API_KEY")
+
+if api_key is None:
+    raise RuntimeError(
+        "No se encontró GEMINI_API_KEY en el archivo .env"
+    )
+
+success("API key encontrada.")
+
+client = genai.Client(api_key=api_key)
+
+success("Cliente de Gemini inicializado.")
+
+parser = argparse.ArgumentParser(description="AI Agent Quest — Quest 06")
+parser.add_argument("user_prompt", type=str, help="Prompt del usuario")
+
+args = parser.parse_args()
+
+prompt = args.user_prompt
+
+narrator("Recibiendo la solicitud del aprendiz...")
+show_prompt(prompt)
+
+messages = [
+    types.Content(
+        role="user",
+        parts=[
+            types.Part(text=prompt),
+        ],
+    )
+]
 
 
 # ╔══════════════════════════════════════════════════════╗
@@ -47,108 +77,34 @@ show_quest_header(
 # ║   A partir de aquí, los TODOs son nuevos (6.x).      ║
 # ╚══════════════════════════════════════════════════════╝
 
-# TODO 6.1:
-# Abre el archivo:
-#
-# common/prompts/system_prompt.py
-#
-# y modifica la variable `system_prompt`
-# para que contenga un prompt de agente de herramientas.
-#
-# Usa este texto:
-#
-# """
-# Eres un agente de IA especializado en programación.
-#
-# Cuando el usuario haga una pregunta o solicitud,
-# debes crear un plan de uso de herramientas.
-#
-# Puedes realizar las siguientes operaciones:
-#
-# - Listar archivos y directorios
-# - Leer contenido de archivos
-# - Escribir archivos
-# - Ejecutar archivos Python
-# """
-
-# TODO 6.2:
-# Completa los schemas faltantes en:
-#
-# common/functions/get_file_content.py
-# common/functions/write_file.py
-# common/functions/run_python_file.py
-#
-# (en cada uno verás el marcador `TODO 6.2`).
-#
-# Usa como referencia el schema ya existente en:
-#
-# common/functions/get_files_info.py
-#
-# También puedes revisar esta entrada del códice:
-# docs/agents/tool_schemas.md
-
-# TODO 6.3:
-# Abre:
-#
-# common/functions/call_function.py
-#
-# y registra todas las herramientas disponibles en:
-#
-# available_functions = types.Tool(
-#     function_declarations=[
-#         ...
-#     ]
-# )
-
-# TODO 6.4:
-# Importa:
-#
-# available_functions
-#
-# desde:
-#
-# common.functions.call_function
-#
-# Preferiblemente, al inicio del archivo, junto con los otros imports.
-
 # TODO 6.5:
-# En la llamada a:
-#
-# client.models.generate_content(...)
-#
-# agrega las herramientas dentro de GenerateContentConfig:
-#
-# config=types.GenerateContentConfig(
-#     tools=[available_functions], <-- Agrega esta línea
-#     system_instruction=system_prompt,
-#     temperature=0,
-# )
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=messages,
+    config=types.GenerateContentConfig(
+        tools=[available_functions],
+        system_instruction=system_prompt,
+        temperature=0,
+    ),
+)
+
+usage = response.usage_metadata
+
+if usage is None:
+    raise RuntimeError(
+        "No se recibió metadata de uso desde Gemini."
+    )
+
+success("Respuesta recibida.")
+
+print(f"Prompt tokens: {usage.prompt_token_count}")
+print(f"Response tokens: {usage.candidates_token_count}")
 
 # TODO 6.6:
-# Después de recibir la respuesta, muestra DOS cosas (no son mutuamente
-# excluyentes — una misma respuesta de Gemini puede traer texto + plan
-# de tools en el mismo turno):
-#
-# 1. Si response.text existe, imprímelo con agent(response.text).
-#    Es el razonamiento del modelo antes de pedir herramientas.
-#
-# 2. Si response.function_calls existe, itera sobre ellas e imprime:
-#
-#    Calling function: {function_call.name}({function_call.args})
+function_calls = response.function_calls
 
-# TODO 6.7:
-# Ejecuta el programa con prompts que deberían activar tools.
-#
-# Ejemplo:
-#
-# uv run python -m quests.quest_06_tool_chest.starter.main \
-# "¿Qué archivos hay en la raíz?"
-#
-# Resultado esperado aproximado:
-#
-# Calling function: get_files_info({'directory': '.'})
-#
-# Cuando hayas validado que las tools se están llamando correctamente,
-# ejecuta el check para completar la quest:
-#
-# arkanum check 6
+if function_calls:
+    for function_call in function_calls:
+        print(f"Calling function: {function_call.name}({function_call.args})")
+else:
+    agent(response.text)

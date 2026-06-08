@@ -34,15 +34,39 @@ show_quest_header(
     "Es hora de conocer el costo de tus respuestas",
 )
 
-# TODO 2.0 — Preparación:
-# Copia tu solución del Quest 01 en este archivo.
-# No copies los imports ni la función show_quest_header, solo el código que va después.
-# Lo que pegues conservará sus etiquetas TODO 1.1 … TODO 1.6
-# (esos pasos ya los resolviste; son el cimiento sobre el que construyes).
-#
-# Puedes usar:
-# - quests/quest_01_first_invocation/solution/solution.py, o
-# - tu propia versión completada.
+# TODO 2.0 — Preparación: código heredado del Quest 01.
+
+# TODO 1.1:
+load_dotenv()
+
+# TODO 1.2:
+api_key = os.environ.get("GEMINI_API_KEY")
+
+# TODO 1.3:
+if api_key is None:
+    raise RuntimeError(
+        "No se encontró GEMINI_API_KEY en el archivo .env"
+    )
+
+success("API key encontrada.")
+
+# TODO 1.4:
+client = genai.Client(api_key=api_key)
+
+success("Cliente de Gemini inicializado.")
+
+# TODO 1.5:
+prompt = "Explícame qué es un agente IA en un párrafo corto."
+
+narrator("Enviando la primera invocación al modelo...")
+show_prompt(prompt)
+
+# TODO 1.6:
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=prompt,
+)
+success("Respuesta recibida.")
 
 
 # ╔══════════════════════════════════════════════════════╗
@@ -51,33 +75,16 @@ show_quest_header(
 # ╚══════════════════════════════════════════════════════╝
 
 # TODO 2.1:
-# Después de generar la respuesta, obtén la
-# metadata de uso desde:
-#
-# response.usage_metadata
-#
-# Guárdala en una variable llamada `usage`.
-
+usage = response.usage_metadata
 
 # TODO 2.2:
-# Verifica que `usage` no sea None.
-# Si es None, lanza:
-# RuntimeError(
-#     "No se recibió metadata de uso desde Gemini."
-# )
+if usage is None:
+    raise RuntimeError(
+        "No se recibió metadata de uso desde Gemini."
+    )
 
+# TODO 2.3 / 2.4:
+print(f"Prompt tokens: {usage.prompt_token_count}")
+print(f"Response tokens: {usage.candidates_token_count}")
 
-# TODO 2.3:
-# Imprime los tokens consumidos usando:
-# usage.prompt_token_count
-# y:
-# usage.candidates_token_count
-#
-# El formato esperado es:
-# Prompt tokens: X
-# Response tokens: Y
-
-
-# TODO 2.4:
-# Asegúrate de imprimir los tokens ANTES
-# de mostrar la respuesta final del agente.
+agent(response.text)

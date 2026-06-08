@@ -52,28 +52,29 @@ for path in valid_paths:
     test(f"Validando ruta permitida: {path}")
 
     # TODO 5.7:
-    # Ejecuta get_valid_target_path(WORKING_DIRECTORY, path).
-    #
-    # Si la ruta es válida, usa:
-    #
-    # pass_test(f"Ruta válida -> {result}")
-    #
-    # Si ocurre un error, usa:
-    #
-    # fail_test(f"Error inesperado: {e}")
+    try:
+        result = get_valid_target_path(
+            WORKING_DIRECTORY,
+            path,
+        )
+
+        pass_test(f"Ruta válida -> {result}")
+
+    except Exception as e:
+        fail_test(f"Error inesperado: {e}")
 
 for path in invalid_paths:
 
     test(f"Validando ruta prohibida: {path}")
 
     # TODO 5.8:
-    # Ejecuta get_valid_target_path(WORKING_DIRECTORY, path).
-    #
-    # Si la ruta prohibida NO genera error, usa:
-    #
-    # fail_test("La ruta prohibida NO fue bloqueada")
-    #
-    # Si ocurre un error, eso significa que la ruta fue bloqueada correctamente.
-    # En ese caso usa:
-    #
-    # pass_test(f"Ruta bloqueada correctamente -> {e}")
+    try:
+        result = get_valid_target_path(
+            WORKING_DIRECTORY,
+            path,
+        )
+
+        fail_test("La ruta prohibida NO fue bloqueada")
+
+    except Exception as e:
+        pass_test(f"Ruta bloqueada correctamente -> {e}")
