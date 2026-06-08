@@ -125,16 +125,29 @@ show_quest_header(
 # )
 
 # TODO 6.6:
-# Después de recibir la respuesta, muestra DOS cosas (no son mutuamente
-# excluyentes — una misma respuesta de Gemini puede traer texto + plan
-# de tools en el mismo turno):
+# Después de recibir la respuesta, revisa si el modelo pidió herramientas:
 #
-# 1. Si response.text existe, imprímelo con agent(response.text).
-#    Es el razonamiento del modelo antes de pedir herramientas.
+# - Si response.function_calls existe, itera sobre ellas e imprime cada una:
 #
-# 2. Si response.function_calls existe, itera sobre ellas e imprime:
+#       Calling function: {function_call.name}({function_call.args})
 #
-#    Calling function: {function_call.name}({function_call.args})
+# - Si NO hay function_calls, el agente respondió con texto normal:
+#   muéstralo con agent(response.text).
+#
+# Pista:
+#
+# function_calls = response.function_calls
+#
+# if function_calls:
+#     for function_call in function_calls:
+#         print(f"Calling function: {function_call.name}({function_call.args})")
+# else:
+#     agent(response.text)
+#
+# Nota: tratamos los dos casos como excluyentes (if/else). Accede a
+# response.text SOLO cuando no hay tools; si lees response.text mientras la
+# respuesta trae un function_call, Gemini emite un warning
+# ("non-text parts in the response: ['function_call']").
 
 # TODO 6.7:
 # Ejecuta el programa con prompts que deberían activar tools.
