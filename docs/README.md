@@ -34,8 +34,8 @@ El Códice a comprender.
 
 Fundamentos para navegar e interactuar con herramientas desde consola.
 
-- [cli basics](./terminal/cli_basics.md)
-- [help flags](./terminal/help_flags.md)
+- [cli basics](./terminal/cli-basics.md)
+- [help flags](./terminal/flags.md)
 - [`--verbose` mode](./terminal/verbose_mode.md)
 
 ---
@@ -68,11 +68,12 @@ Conceptos fundamentales sobre LLMs y sistemas basados en agentes.
 - [expedición de funciones](./agents/function_dispatch.md)
 - [guardrails](./agents/guardrails.md)
 - [manejo de errores](./agents/error_handling.md)
-- [prompts](./llms/prompts.md)
-- [roles y mensajes](./llms/roles_and_messages.md)
+- [tracing — emitir al Live Agent](./agents/tracing.md)
+- [¿qué es un LLM?](./LLMs/llms.md)
+- [roles y mensajes](./LLMs/roles_and_messages.md)
 - [prompts de sistema](./LLMs/system_prompts.md)
 - [temperatura](./LLMs/temperature.md)
-- [tokens](./llms/tokens.md)
+- [tokens](./LLMs/tokens.md)
 
 
 ---

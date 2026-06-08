@@ -173,7 +173,11 @@ def _start_and_open_dashboard() -> None:
             console.print(
                 f"[green]✓[/] Dashboard activo (PID {pid}, puerto {st['port']})."
             )
-        url = f"http://127.0.0.1:{lifecycle.status()['port']}"
+        # Onboarding: en el primer arranque (init) llevamos al aprendiz directo
+        # a /setup para que lo primero que vea sea el diagnóstico de
+        # prerrequisitos. Los arranques posteriores (`arkanum dashboard start`)
+        # abren el perfil, que ya redirige a /setup solo si hay errores críticos.
+        url = f"http://127.0.0.1:{lifecycle.status()['port']}/setup"
         webbrowser.open(url)
         console.print(f"Abriendo {url}")
     except RuntimeError as exc:
