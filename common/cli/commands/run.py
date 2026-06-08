@@ -61,8 +61,8 @@ console = Console()
 
 # Quests cuyos starters esperan un prompt como argv[1]. Mapea order →
 # ejemplos para mostrar en el mensaje de error si el aprendiz lo invoca
-# sin argumentos. Los starters de Q01/Q02/Q05/Q08 no reciben prompt, por
-# eso no aparecen aquí.
+# sin argumentos. Los starters de Q01/Q02/Q05 no reciben prompt, por eso
+# no aparecen aquí.
 QUESTS_REQUIRING_PROMPT: dict[int, tuple[str, ...]] = {
     3: (
         '"¿Qué es un agente IA?"',
@@ -79,6 +79,10 @@ QUESTS_REQUIRING_PROMPT: dict[int, tuple[str, ...]] = {
     7: (
         '"¿Qué archivos hay en la raíz?"',
         '"Lee notes.txt y dime de qué trata" --verbose',
+    ),
+    8: (
+        '"Los tests de calculator están fallando. Ayúdame a corregir el error."',
+        '"Los tests de calculator están fallando. Ayúdame a corregir el error." --verbose',
     ),
 }
 
@@ -177,12 +181,24 @@ def _print_missing_prompt(order: int, examples: tuple[str, ...]) -> None:
     console.print()
     console.print(f"[bold red]❌ Falta el prompt para Quest {order}.[/]")
     console.print()
+    console.print(
+        "En [bold]arkanum run[/] el prompt es [bold]obligatorio[/]: es la "
+        "petición en lenguaje natural que le das al agente."
+    )
+    console.print()
     console.print("[bold]Cómo se usa:[/]")
     console.print(f'  [cyan]arkanum run {order} "tu prompt aquí"[/]')
     console.print()
     console.print("[bold]Ejemplos:[/]")
     for example in examples:
         console.print(f"  [cyan]arkanum run {order} {example}[/]")
+    if any("--verbose" in ex for ex in examples):
+        console.print()
+        console.print(
+            "[dim]Tip: agrega [cyan]--verbose[/cyan] al final para ver en la "
+            "terminal el detalle completo (tokens, argumentos y el resultado "
+            "de cada herramienta). Sin él verás una vista limpia.[/]"
+        )
     console.print()
 
 
