@@ -76,6 +76,22 @@ def get_current_quest() -> QuestMeta | None:
     return None
 
 
+def live_agent_unlocked() -> bool:
+    """True si el aprendiz ya llegó al primer quest con agent loop (Q07).
+
+    La vista `/live-agent` solo tiene sentido a partir de ahí: antes el agente
+    no ejecuta tools ni se traza, así que mostrar la Constelación con sus 4
+    herramientas confundiría (parecería que ya están construidas). "Llegó" =
+    algún quest con `live_agent=True` está `current` o `completed` (no `locked`).
+    """
+    status_map = get_quest_status_map()
+    for quest in QUESTS:
+        if getattr(quest, "live_agent", False) and \
+                status_map.get(quest.slug) in ("current", "completed"):
+            return True
+    return False
+
+
 def is_quest_readme_read(quest_db_id: str) -> bool:
     init_db()
     with get_connection() as conn:

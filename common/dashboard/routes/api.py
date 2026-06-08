@@ -204,7 +204,7 @@ def update_system_prompt(payload: SystemPromptUpdate) -> JSONResponse:
     - Crea un backup .system_prompt.py.bak antes de tocar el original.
     - Rechaza contenido con '\"\"\"' literal (rompería la sintaxis).
     - Solo reemplaza el primer match de la asignación system_prompt = '''...'''.
-    - El cambio se aplica al próximo arkanum start (no afecta procesos en curso).
+    - El cambio se aplica al próximo arkanum run (no afecta procesos en curso).
     """
     if not _SYSTEM_PROMPT_PATH.exists():
         raise HTTPException(
@@ -244,14 +244,26 @@ def update_system_prompt(payload: SystemPromptUpdate) -> JSONResponse:
 
 
 @router.get("/api/traces/recent")
-def recent_traces(limit: int = Query(10, ge=1, le=50)) -> JSONResponse:
-    """Lista de los N últimos traces (sin steps) para el historial."""
+def recent_traces(
+    limit: int = Query(10, ge=1, le=50),
+    quest: int | None = Query(None, ge=1, le=8),
+) -> JSONResponse:
+    """Lista de los N últimos traces (sin steps) para el historial.
+
+    Con `quest=N` el historial se filtra a las corridas de ese quest (lo usa
+    el selector de la vista). Un `quest` desconocido resuelve a sin-filtro.
+    """
     from common.dashboard.services.trace import (
         recent_trace_summaries,
         trace_first_user_prompt,
     )
 
-    summaries = recent_trace_summaries(limit=limit)
+    quest_db_id = None
+    if quest is not None:
+        from common.dashboard.services.quest_catalog import QUESTS
+        quest_db_id = next((q.db_id for q in QUESTS if q.order == quest), None)
+
+    summaries = recent_trace_summaries(limit=limit, quest_db_id=quest_db_id)
     items = []
     for s in summaries:
         items.append({
@@ -262,6 +274,8 @@ def recent_traces(limit: int = Query(10, ge=1, le=50)) -> JSONResponse:
             "started_at": s.started_at,
             "last_step_at": s.last_step_at,
             "steps": s.steps,
+            "iterations": s.iterations,
+            "tool_calls": s.tool_calls,
             "user_prompt": trace_first_user_prompt(s.trace_id),
         })
     return JSONResponse({"traces": items})
@@ -289,17 +303,20 @@ def delete_trace(trace_id: str) -> JSONResponse:
 
 
 @router.get("/api/agent/tools")
-def agent_tools() -> JSONResponse:
+def agent_tools(quest: int | None = Query(None, ge=1, le=8)) -> JSONResponse:
     """Catálogo de herramientas del agente para el grafo de /live-agent.
 
     Lo consume la vista "Constelación del Agente" para dibujar un nodo por
     herramienta alrededor del agente desde el arranque, aunque ninguna se
-    haya llamado todavía. Catálogo estático (ver services/agent_tools.py):
+    haya llamado todavía. Catálogo estático por quest (ver agent_tools.py):
     no depende de los `schema_*` que el aprendiz aún puede no haber completado.
+
+    Con `quest=N` devuelve las tools de ese quest (lo usa el selector). Sin él,
+    el catálogo completo.
     """
     from common.dashboard.services.agent_tools import list_agent_tools
 
-    return JSONResponse({"tools": list_agent_tools()})
+    return JSONResponse({"tools": list_agent_tools(quest)})
 
 
 @router.get("/api/quests/live-agent")
@@ -335,7 +352,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 @router.post("/api/trace/run")
 def trace_run(payload: TraceRunRequest) -> JSONResponse:
-    """Spawnea `python -m common.cli.main start N "prompt" --live` en background.
+    """Spawnea `python -m common.cli.main run N "prompt" --live` en background.
 
     El proceso queda desligado: devolvemos inmediatamente y el polling
     normal de /live-agent se encarga de mostrar los steps a medida que
@@ -372,7 +389,7 @@ def trace_run(payload: TraceRunRequest) -> JSONResponse:
         sys.executable,
         "-m",
         "common.cli.main",
-        "start",
+        "run",
         str(quest.order),
         prompt,
         "--live",
@@ -446,6 +463,8 @@ def current_trace(
                 "started_at": summary.started_at,
                 "last_step_at": summary.last_step_at,
                 "steps": summary.steps,
+                "iterations": summary.iterations,
+                "tool_calls": summary.tool_calls,
                 "seconds_since_last_step": summary.seconds_since_last_step,
                 "has_session_end": summary.has_session_end,
             }

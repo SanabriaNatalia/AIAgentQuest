@@ -130,7 +130,7 @@ Esto sigue siendo un [guardrail](../../docs/agents/guardrails.md) importante.
 
 ### Verbose Mode
 
-En este Quest agregaremos:
+En este Quest agregaremos el flag:
 
 ```bash
 --verbose
@@ -138,10 +138,17 @@ En este Quest agregaremos:
 
 para inspeccionar prompts, token usage, tool calls y resultados de herramientas.
 
+Con `arkanum run 7 "..."` ese flag controla **cuánto detalle ves en la terminal**:
+
+- **sin `--verbose`** — vista limpia: la tool con sus args resumidos y un resumen del resultado (`↳ ok (…)`),
+- **con `--verbose`** — además los tokens, los argumentos completos y el resultado completo de cada tool.
+
+El dashboard `/live-agent` recibe el detalle completo en ambos casos (lo filtra su propio toggle **🔍 Verbose**).
+
 Ejemplo:
 
 ```bash
-arkanum start 7 "lee notes.txt" --verbose
+arkanum run 7 "lee notes.txt" --verbose
 ```
 
 (equivalente legacy: `uv run python -m quests.quest_07_agent_incarnation.starter.main "lee notes.txt" --verbose`)
@@ -237,10 +244,10 @@ A partir de Q07 vale la pena entender bien cuándo usar cada uno:
 
 | Comando | Para qué | Toca Live Agent |
 |---|---|---|
-| `arkanum start 7 "..."` | Correr tu solución + ver al agente paso a paso en el dashboard | **Sí** (automático) |
+| `arkanum run 7 "..."` | Correr tu solución + ver al agente paso a paso en el dashboard | **Sí** (automático) |
 | `arkanum check 7` | Validar y sellar la quest | No |
 
-Ambos consumen cuota de Gemini. En Q07 `start` **traza solo**: cada corrida aparece en el visualizador sin que tengas que recordar ningún flag. `check` es lo que te da el rango y el XP, pero no alimenta el panel.
+Ambos consumen cuota de Gemini. En Q07 `run` **traza solo**: cada corrida aparece en el visualizador sin que tengas que recordar ningún flag. `check` es lo que te da el rango y el XP, pero no alimenta el panel.
 
 ## 🪞 Ver al agente en vivo
 
@@ -250,15 +257,15 @@ Para ver paso a paso cómo el modelo decide qué tool usar, asegúrate de tener 
 arkanum dashboard start
 ```
 
-Luego ejecuta el agente con `start` (en Q07 el tracing es automático):
+Luego ejecuta el agente con `run` (en Q07 el tracing es automático):
 
 ```bash
-arkanum start 7 "lee notes.txt y resume su contenido"
+arkanum run 7 "lee notes.txt y resume su contenido"
 ```
 
-Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent) en el navegador. El panel muestra cada `function_call` con su argumento, el resultado de cada tool y los tokens consumidos — sin que tengas que leer el output en la terminal.
+Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent) en el navegador. El panel muestra cada `function_call` con su argumento y el resultado de cada tool — sin que tengas que leer el output en la terminal. Activa el toggle **🔍 Verbose** del panel para añadir los tokens, la latencia y el razonamiento del modelo.
 
-> ℹ️ `arkanum check 7` **no** alimenta `/live-agent`. Si terminas la quest y el panel está vacío, eso es esperado: corre `arkanum start 7 "..."` para verlo.
+> ℹ️ `arkanum check 7` **no** alimenta `/live-agent`. Si terminas la quest y el panel está vacío, eso es esperado: corre `arkanum run 7 "..."` para verlo.
 
 ---
 
@@ -270,7 +277,12 @@ Prompt:
 ¿Qué archivos hay en la raíz?
 ```
 
-Resultado aproximado:
+El agente solicita la herramienta `get_files_info` y devuelve el listado. Con `arkanum run 7` lo verás formateado:
+
+- **sin `--verbose`** (vista limpia): `🛠 get_files_info(directory=".")` con `↳ ok (…)`, más la respuesta final `🤖 Agente: …`.
+- **con `--verbose`**: además los args completos, los tokens y el resultado completo de la tool.
+
+Si corres el starter directo (legacy `uv run python -m …`), verás el stdout sin formatear:
 
 ```text
 Calling function: get_files_info({'directory': '.'})

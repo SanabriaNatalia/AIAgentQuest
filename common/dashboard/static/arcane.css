@@ -131,6 +131,17 @@ h1, h2, h3, h4 {
   text-shadow: 0 0 12px rgba(192, 132, 252, 0.4);
 }
 
+/* Link de nav atenuado: una vista aún bloqueada por progreso (p. ej. Live
+   Agent antes de Q07). Sigue siendo clickable —lleva al panel que explica
+   cómo desbloquearla— pero se ve apagado y sin el glow del hover. */
+.arkanum-nav-links a.arkanum-nav-locked,
+.arkanum-nav-links a.arkanum-nav-locked:hover {
+  color: var(--arkanum-muted);
+  opacity: 0.45;
+  text-shadow: none;
+  cursor: help;
+}
+
 /* === Main layout === */
 .arkanum-main {
   max-width: 920px;
@@ -2595,6 +2606,36 @@ code {
   align-items: center;
 }
 
+/* Selector de quest: filtra el grafo (tools) y el historial al quest elegido. */
+.live-agent-questsel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.live-agent-questsel-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--arkanum-muted);
+}
+
+.live-agent-questsel-select {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  background: rgba(13, 10, 31, 0.6);
+  color: var(--arkanum-text);
+  cursor: pointer;
+}
+
+.live-agent-questsel-select:hover {
+  border-color: var(--arkanum-glow);
+}
+
 .live-agent-action {
   font-family: var(--font-mono);
   font-size: 0.78rem;
@@ -2671,9 +2712,9 @@ code {
 
 /* Modo verbose ON: nota pedagógica 💡 por step. Se muestra/oculta al instante
    con el toggle, sobre las tarjetas ya visibles — no requiere re-ejecutar el
-   agente. Estilo de "callout" para que el cambio sea evidente. */
-.live-agent--verbose .trace-step[data-explainer]::after,
-.live-agent--verbose .trace-band[data-iter]::after {
+   agente. Estilo de "callout" para que el cambio sea evidente. (Las bandas de
+   iteración no llevan nota: era genérica y repetitiva, no aportaba por paso.) */
+.live-agent--verbose .trace-step[data-explainer]::after {
   display: block;
   margin-top: 0.55rem;
   padding: 0.45rem 0.6rem;
@@ -2685,14 +2726,7 @@ code {
   font-size: 0.8rem;
   font-style: normal;
   line-height: 1.5;
-}
-
-.live-agent--verbose .trace-step[data-explainer]::after {
   content: "💡 " attr(data-explainer);
-}
-
-.live-agent--verbose .trace-band[data-iter]::after {
-  content: "💡 Una banda agrupa los pasos de UNA vuelta del agent loop. El meta del header muestra latencia y costo de la iteración.";
 }
 
 /* Launcher de traces desde el dashboard (mejora #7). */

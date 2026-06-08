@@ -125,15 +125,45 @@ def milestones_page(request: Request):
 
 @router.get("/live-agent", response_class=HTMLResponse)
 def live_agent_page(request: Request):
+    from common.dashboard.services.progress import (
+        get_current_quest,
+        live_agent_unlocked,
+    )
+
+    # Gating: la Constelación del Agente solo se habilita al llegar a Q07 (el
+    # primer quest con agent loop). Antes mostramos un panel explicativo en vez
+    # del grafo —que parecería tener tools ya construidas— para no confundir.
+    if not live_agent_unlocked():
+        return templates.TemplateResponse(
+            request,
+            "live_agent_locked.html",
+            {
+                "request": request,
+                "current_quest": get_current_quest(),
+            },
+        )
+
     from common.dashboard.services.trace import latest_trace_summary
 
     summary = latest_trace_summary()
+
+    # Selector de quest: solo los quests con agent loop (Q07/Q08). El default es
+    # el quest actual del aprendiz si es uno de ellos; si ya los pasó, el último.
+    la_quests = [q for q in QUESTS if getattr(q, "live_agent", False)]
+    current = get_current_quest()
+    default_order = (
+        current.order
+        if current and getattr(current, "live_agent", False)
+        else max((q.order for q in la_quests), default=None)
+    )
     return templates.TemplateResponse(
         request,
         "live_agent.html",
         {
             "request": request,
             "summary": summary,
+            "la_quests": la_quests,
+            "default_quest_order": default_order,
         },
     )
 

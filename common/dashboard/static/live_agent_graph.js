@@ -103,7 +103,7 @@
   }
 
   // Extrae el texto de un agent_final. payload puede ser {text:"…"} (shape
-  // canónico de tracing.emit_final / parser de start.py) o un string crudo.
+  // canónico de tracing.emit_final / parser de run.py) o un string crudo.
   function extractFinalText(step) {
     var p = step.payload;
     if (p == null) return "";
@@ -734,9 +734,40 @@
       .catch(function () { /* best-effort */ });
   }
 
-  var url = host.dataset.agentToolsUrl;
-  if (url) {
-    fetch(url, { headers: { Accept: "application/json" } })
+  function toolsUrlFor(questOrder) {
+    var u = host.dataset.agentToolsUrl;  // /api/agent/tools
+    if (!u) return null;
+    return questOrder
+      ? u + (u.indexOf("?") >= 0 ? "&" : "?") + "quest=" + encodeURIComponent(questOrder)
+      : u;
+  }
+
+  // Recarga las tools del quest elegido y reconstruye el grafo. No re-registra
+  // los listeners de init(); el estado de actividad se repuebla con el próximo
+  // `live-agent:data` del polling (≤1s).
+  function reloadTools(questOrder) {
+    var u = toolsUrlFor(questOrder);
+    if (!u) return;
+    fetch(u, { headers: { Accept: "application/json" } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        tools = (data && data.tools && data.tools.length) ? data.tools : FALLBACK_TOOLS;
+        selected = null;
+        buildGraph();
+      })
+      .catch(function () { /* best-effort */ });
+  }
+
+  var questSelect = host.querySelector("[data-quest-select]");
+  if (questSelect) {
+    questSelect.addEventListener("change", function () {
+      reloadTools(questSelect.value);
+    });
+  }
+
+  var initialUrl = toolsUrlFor(questSelect ? questSelect.value : null);
+  if (initialUrl) {
+    fetch(initialUrl, { headers: { Accept: "application/json" } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) { init(data && data.tools); })
       .catch(function () { init(null); });

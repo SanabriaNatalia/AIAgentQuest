@@ -1,10 +1,22 @@
 """
-Quest 08 — El Ciclo de la Manifestación  (STARTER RELLENADO LOCALMENTE)
+Quest 08 — El Ciclo de la Manifestación
 
-⚠️ Este archivo fue completado SOLO para probar el visualizador en local.
-NO debe commitearse: el starter de producción conserva sus TODOs para que
-cada aprendiz resuelva el agent loop por su cuenta. Restaurar con:
-    git checkout -- quests/quest_08_manifesting_cycle/starter/main.py
+Objetivo:
+Construir el primer agent loop iterativo
+utilizando tool calls y observaciones.
+
+Ejecutar desde la raíz del proyecto:
+
+    arkanum run 8 "Lee notes.txt y dime qué contiene"
+
+También puedes usar modo verbose:
+
+    arkanum run 8 "Lee notes.txt y dime qué contiene" --verbose
+
+Una vez hayas terminado, y el agente haya solucionado el bug, 
+valida tu solución ejecutando:
+
+    arkanum check 8
 """
 
 import argparse

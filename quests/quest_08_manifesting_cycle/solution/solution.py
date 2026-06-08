@@ -79,7 +79,7 @@ def main():
     prev_msgs_count = len(messages)
     for i in range(MAX_ITERS):
         # Nota: `iteration_start` y `agent_final` NO se emiten aquí. El
-        # wrapper de `arkanum start` los deriva del stdout ("Prompt tokens:"
+        # wrapper de `arkanum run` los deriva del stdout ("Prompt tokens:"
         # abre la iteración; "Final response:" + texto es la respuesta final).
         # Emitirlos también desde aquí duplicaría bandas y respuestas. Lo que
         # el stdout no puede expresar (latencia, pensamiento, contexto) sí se

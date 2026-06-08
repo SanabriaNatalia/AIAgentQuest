@@ -4,7 +4,7 @@
 - Modo normal: corre pre-checks primero. Si fallan, pide confirmación antes
   de invocar el check real. Si pasan, sigue derecho.
 - Tras éxito en una quest marcada con `live_agent=True` (Q07/Q08), ofrece
-  lanzar `arkanum start N "..."` y abrir el visualizador automáticamente
+  lanzar `arkanum run N "..."` y abrir el visualizador automáticamente
   (esos quests trazan solos, sin flag).
 """
 from __future__ import annotations
@@ -171,7 +171,7 @@ def check(
 
     # Para Q08 (live_agent sin uses_gemini), la pregunta va al final: el
     # check no ejecutó el agente, así que invitamos a re-correrlo con
-    # `arkanum start N "..."` (Q08 traza solo).
+    # `arkanum run N "..."` (Q08 traza solo).
     if quest.live_agent and not live_during_check:
         _offer_live_agent(quest, user_prompt or quest.live_agent_default_prompt)
 
@@ -276,7 +276,7 @@ def _run_starter_for_live_check(
     )
     console.print()
 
-    # Patrones del parser, idénticos a los de start.py (camino con tracing).
+    # Patrones del parser, idénticos a los de run.py (camino con tracing).
     call_re = re.compile(r"Calling function:\s*([A-Za-z_][A-Za-z0-9_]*)\s*\((.*)\)\s*$")
     result_re = re.compile(r"^\s*->\s*(.+?)\s*$")
     prompt_tok_re = re.compile(r"Prompt tokens:\s*(\d+)")
@@ -384,7 +384,7 @@ def _record_trace_step(
 
 
 def _offer_live_agent(quest: QuestMeta, prompt: str | None) -> None:
-    """Tras un check exitoso, pregunta si lanzar `arkanum start` + abrir el panel.
+    """Tras un check exitoso, pregunta si lanzar `arkanum run` + abrir el panel.
 
     Reutiliza el prompt que ya validó el check (o el default por quest).
     Si el aprendiz acepta, spawnea el subprocess detached y abre el navegador.
@@ -395,7 +395,7 @@ def _offer_live_agent(quest: QuestMeta, prompt: str | None) -> None:
     console.print()
     console.print("[bold cyan]💡 ¿Quieres ver al agente trabajando en vivo?[/bold cyan]")
     console.print(
-        f"   Esto correrá: [white]arkanum start {quest.order} {prompt!r}[/white]"
+        f"   Esto correrá: [white]arkanum run {quest.order} {prompt!r}[/white]"
     )
     console.print(
         "   [dim](consume cuota Gemini · abre /live-agent automáticamente)[/dim]"
@@ -409,7 +409,7 @@ def _offer_live_agent(quest: QuestMeta, prompt: str | None) -> None:
 
     if not proceed:
         console.print(
-            f"   [dim]Cuando quieras:[/] [cyan]arkanum start {quest.order} {prompt!r}[/cyan]"
+            f"   [dim]Cuando quieras:[/] [cyan]arkanum run {quest.order} {prompt!r}[/cyan]"
         )
         return
 
@@ -438,16 +438,16 @@ def _offer_live_agent(quest: QuestMeta, prompt: str | None) -> None:
 
 
 def _spawn_arkanum_run(quest_order: int, prompt: str) -> bool:
-    """Spawnea `python -m common.cli.main start N "prompt"` detached. True si OK.
+    """Spawnea `python -m common.cli.main run N "prompt"` detached. True si OK.
 
-    Para Q07/Q08 (`live_agent=True`) `start` traza automáticamente, así que
+    Para Q07/Q08 (`live_agent=True`) `run` traza automáticamente, así que
     no hace falta pasar ningún flag para alimentar `/live-agent`.
     """
     cmd = [
         sys.executable,
         "-m",
         "common.cli.main",
-        "start",
+        "run",
         str(quest_order),
         prompt,
     ]

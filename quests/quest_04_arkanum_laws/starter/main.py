@@ -7,7 +7,7 @@ un system prompt.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 4 "¿Cuál es la capital de Francia?"
+    arkanum run 4 "¿Cuál es la capital de Francia?"
 
 Una vez hayas terminado, valida tu solución ejecutando:
 

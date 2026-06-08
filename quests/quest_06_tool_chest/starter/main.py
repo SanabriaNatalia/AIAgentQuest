@@ -7,7 +7,7 @@ solicitar function calls.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 6 "¿Qué archivos hay en la raíz?"
+    arkanum run 6 "¿Qué archivos hay en la raíz?"
 
 Una vez hayas terminado, valida tu solución ejecutando:
 

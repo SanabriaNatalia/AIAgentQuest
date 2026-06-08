@@ -398,7 +398,7 @@
         body.classList.remove("live-agent-prompt-body--muted");
       } else {
         body.textContent =
-          "Lanza `arkanum start 7 \"…\"` o `arkanum start 8 \"…\"` para registrar el prompt del aprendiz.";
+          "Lanza `arkanum run 7 \"…\"` o `arkanum run 8 \"…\"` para registrar el prompt del aprendiz.";
         body.classList.add("live-agent-prompt-body--muted");
       }
     }
@@ -1401,7 +1401,7 @@
       if (metaHost && data.summary) {
         var meta = [];
         if (data.summary.quest_title) meta.push(data.summary.quest_title);
-        meta.push(data.summary.steps + " pasos");
+        meta.push(formatRunCount(data.summary.iterations, data.summary.tool_calls));
         if (data.summary.has_session_end) {
           meta.push("sellado");
         } else if (data.summary.seconds_since_last_step != null && data.summary.seconds_since_last_step > 30) {
@@ -1654,6 +1654,19 @@
       return Math.round(delta / 86400) + " d atrás";
     }
 
+    // Texto de conteo de una corrida para historial/toolbar, coherente con el
+    // timeline y el HUD: "3 iteraciones · 2 tools". El conteo crudo de `steps`
+    // confundía porque incluye tokens/latency/session_* que el timeline fusiona
+    // u oculta. En Q07 (sin loop) no hay iteraciones → muestra solo las tools.
+    function formatRunCount(iterations, toolCalls) {
+      var it = iterations || 0;
+      var tc = toolCalls || 0;
+      var parts = [];
+      if (it > 0) parts.push(it + (it === 1 ? " iteración" : " iteraciones"));
+      if (tc > 0) parts.push(tc + (tc === 1 ? " tool" : " tools"));
+      return parts.length ? parts.join(" · ") : "sin tools aún";
+    }
+
     function renderHistory(traces) {
       if (!historyListHost) return;
       historyListHost.innerHTML = "";
@@ -1707,7 +1720,7 @@
 
         var meta = document.createElement("div");
         meta.className = "live-agent-history-meta";
-        meta.textContent = t.steps + " pasos · " + (t.trace_id || "");
+        meta.textContent = formatRunCount(t.iterations, t.tool_calls);
         btn.appendChild(meta);
 
         btn.addEventListener("click", function () {
@@ -1770,15 +1783,31 @@
       });
     }
 
+    // Filtro de quest (selector de la toolbar): solo se muestran en el historial
+    // las corridas del quest elegido. Lee el valor inicial del <select>.
+    var questSelect = host.querySelector("[data-quest-select]");
+    var questFilter = questSelect ? (questSelect.value || null) : null;
+
     function loadHistory() {
       if (!historyUrl) return;
-      fetch(historyUrl, { headers: { Accept: "application/json" } })
+      var url = questFilter
+        ? historyUrl + (historyUrl.indexOf("?") >= 0 ? "&" : "?") +
+          "quest=" + encodeURIComponent(questFilter)
+        : historyUrl;
+      fetch(url, { headers: { Accept: "application/json" } })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (data) {
           if (!data || !Array.isArray(data.traces)) return;
           renderHistory(data.traces);
         })
         .catch(function () { /* best-effort */ });
+    }
+
+    if (questSelect) {
+      questSelect.addEventListener("change", function () {
+        questFilter = questSelect.value || null;
+        loadHistory();
+      });
     }
 
     loadHistory();

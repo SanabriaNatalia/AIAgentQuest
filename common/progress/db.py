@@ -105,7 +105,7 @@ def init_db() -> None:
             )
         """)
 
-        # F16: traces del agent loop capturados por `arkanum start` en
+        # F16: traces del agent loop capturados por `arkanum run` en
         # Q07/Q08. Cada step es una línea parseada del stdout del starter
         # (function_call, function_result, tokens). `trace_id` agrupa todos
         # los steps de una misma corrida.
@@ -192,7 +192,7 @@ def record_quest_attempt(
         if done is not None:
             return
         # Asegura row de quest_progress por si arkanum check se invoca sin
-        # un arkanum start previo.
+        # un arkanum run previo.
         conn.execute(
             "INSERT OR IGNORE INTO quest_progress (quest_id, first_attempt_at, attempts) "
             "VALUES (?, ?, 0)",

@@ -15,11 +15,11 @@ intencional. Q08 cierra el loop.
 
 Ejecutar desde la raíz del proyecto:
 
-    arkanum start 7 "¿Qué archivos hay en la raíz?"
+    arkanum run 7 "¿Qué archivos hay en la raíz?"
 
 También puedes usar modo verbose:
 
-    arkanum start 7 "¿Qué archivos hay en la raíz?" --verbose
+    arkanum run 7 "¿Qué archivos hay en la raíz?" --verbose
 
 Una vez hayas terminado, valida tu solución ejecutando:
 

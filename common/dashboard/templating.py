@@ -30,3 +30,17 @@ def _format_duration(seconds) -> str:
 
 
 templates.env.filters["format_duration"] = _format_duration
+
+
+def _live_agent_unlocked() -> bool:
+    """Expuesto a las plantillas (nav) para atenuar el link de Live Agent hasta
+    que el aprendiz llega a Q07. Import lazy para evitar ciclos; fail-open: ante
+    cualquier error no escondemos la navegación."""
+    try:
+        from common.dashboard.services.progress import live_agent_unlocked
+        return live_agent_unlocked()
+    except Exception:
+        return True
+
+
+templates.env.globals["live_agent_unlocked"] = _live_agent_unlocked

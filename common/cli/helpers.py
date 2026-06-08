@@ -94,7 +94,7 @@ def run_module_capturing(
 
     `echo=False` silencia el reenvío crudo a `sys.stdout`: la línea se
     sigue acumulando y se sigue pasando a `on_line`, pero NO se escribe a la
-    consola. Lo usa `arkanum start` (Q07/Q08) para que un "presentador"
+    consola. Lo usa `arkanum run` (Q07/Q08) para que un "presentador"
     formatee el stdout del agente en vez de volcarlo tal cual; el subprocess
     sigue corriendo en `--verbose` para que el dashboard reciba todo el
     detalle sin recortes.
