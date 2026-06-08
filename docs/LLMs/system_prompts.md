@@ -100,6 +100,7 @@ response = client.models.generate_content(
     config=types.GenerateContentConfig(
         system_instruction=system_prompt
     ),
+)
 ```
 
 ---

@@ -21,7 +21,7 @@ prompt = "Explícame qué es un agente IA"
 Con `argparse`, el usuario puede enviarlo desde terminal:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "Explícame qué es un agente IA"
+uv run python -m quests.quest_03_apprentice_voice.starter.main "Explícame qué es un agente IA"
 ```
 
 ---
@@ -97,13 +97,13 @@ args.user_prompt
 `argparse` genera ayuda automáticamente.
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main -h
+uv run python -m quests.quest_03_apprentice_voice.starter.main -h
 ```
 
 También puedes usar:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main --help
+uv run python -m quests.quest_03_apprentice_voice.starter.main --help
 ```
 
 ---
@@ -113,7 +113,7 @@ uv run python -m quests.quest_03_user_input.starter.main --help
 Un argumento posicional es obligatorio y depende de su posición.
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "Hola agente"
+uv run python -m quests.quest_03_apprentice_voice.starter.main "Hola agente"
 ```
 
 Aquí:
@@ -135,7 +135,7 @@ args.user_prompt
 Si ejecutas el programa sin prompt:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main
+uv run python -m quests.quest_03_apprentice_voice.starter.main
 ```
 
 `argparse` detiene el programa y muestra un mensaje de error indicando qué argumento falta.
@@ -159,7 +159,7 @@ parser.add_argument(
 Y usarlo así:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "Hola agente" --verbose
+uv run python -m quests.quest_03_apprentice_voice.starter.main "Hola agente" --verbose
 ```
 
 Si el usuario incluye `--verbose`, entonces:
