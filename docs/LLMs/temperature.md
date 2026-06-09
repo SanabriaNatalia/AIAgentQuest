@@ -97,6 +97,8 @@ Eso es importante cuando:
 - quieres validar salidas automáticamente
 - estás construyendo agentes
 
+> Aun con `temperature=0` el resultado puede variar ligeramente entre ejecuciones: reduce mucho la variabilidad, pero no garantiza salidas idénticas siempre.
+
 ---
 
 ## ¿Temperatura = inteligencia?

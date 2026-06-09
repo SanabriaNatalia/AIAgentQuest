@@ -1,4 +1,4 @@
-# Function Dispatch
+# Despacho de funciones
 
 > *“El agente expresa una intención.  
 > El programa decide cómo convertirla en acción.”*  
@@ -34,7 +34,7 @@ Pero para ejecutar código necesitamos llamar una función real:
 write_file(...)
 ```
 
-Ahí entra el function dispatch.
+Ahí entra el despacho de funciones.
 
 ---
 
@@ -214,7 +214,7 @@ Esto permite que el agente use herramientas sin controlar directamente los lími
 
 ## Idea importante
 
-Function dispatch convierte una intención del modelo en una acción real del programa.
+El despacho de funciones convierte una intención del modelo en una acción real del programa.
 
 Ese es uno de los puentes centrales entre:
 

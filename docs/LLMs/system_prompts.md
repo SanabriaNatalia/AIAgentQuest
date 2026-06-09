@@ -9,7 +9,7 @@ Una de las piezas más importantes es el **system prompt**.
 
 ---
 
-# ¿Qué es un system prompt?
+## ¿Qué es un system prompt?
 
 Un system prompt es una instrucción especial enviada al modelo antes de la conversación.
 

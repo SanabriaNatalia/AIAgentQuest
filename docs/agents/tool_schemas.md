@@ -188,7 +188,7 @@ Esto es una forma de:
 
 ---
 
-## Required Fields
+## Parámetros obligatorios
 
 También es posible especificar parámetros obligatorios usando:
 
@@ -211,7 +211,7 @@ parameters=types.Schema(
             description="Content to write into the file",
         ),
     },
-    required=["file_path", "content"], ## <- Acá le decimos cuáles parámetros debe utilizar sí o sí
+    required=["file_path", "content"],  # <- Acá le decimos cuáles parámetros debe utilizar sí o sí
 )
 ```
 
@@ -250,7 +250,7 @@ schema_write_file = types.FunctionDeclaration(
 
 ---
 
-# Registrando herramientas
+## Registrando herramientas
 
 Los schemas normalmente se registran usando:
 
@@ -271,7 +271,7 @@ available_functions = types.Tool(
 
 ---
 
-# Qué ocurre después
+## Qué ocurre después
 
 Una vez registradas las herramientas:
 - el modelo puede verlas
@@ -284,7 +284,7 @@ Pero:
 
 ---
 
-# Idea importante
+## Idea importante
 
 Un schema no ejecuta herramientas.
 

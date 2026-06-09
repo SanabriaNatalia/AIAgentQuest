@@ -15,7 +15,7 @@ En Gemini, OpenAI y muchos otros sistemas, las conversaciones se representan com
 
 ---
 
-# ¿Por qué existen los roles?
+## ¿Por qué existen los roles?
 
 Los roles permiten que el modelo comprenda el contexto conversacional.
 
@@ -42,9 +42,9 @@ Los roles ayudan al modelo a distinguir:
 
 ---
 
-# Roles comunes
+## Roles comunes
 
-## `user`
+### `user`
 
 Representa mensajes enviados por el usuario.
 
@@ -69,7 +69,7 @@ Normalmente contiene:
 
 ---
 
-## `model`
+### `model`
 
 Representa respuestas generadas por el modelo.
 
@@ -90,7 +90,7 @@ Guardar respuestas del modelo permite construir historial conversacional y memor
 
 ---
 
-## `system`
+### `system`
 
 Representa instrucciones globales sobre el comportamiento del modelo.
 
@@ -114,7 +114,7 @@ Dependiendo del SDK o proveedor, el rol `system` puede enviarse:
 
 ---
 
-# Conversaciones estructuradas
+## Conversaciones estructuradas
 
 Una conversación completa suele representarse como una lista de mensajes:
 
@@ -151,7 +151,7 @@ El modelo recibe toda esta estructura como contexto.
 
 ---
 
-# `types.Content`
+## `types.Content`
 
 En Gemini, un mensaje se representa utilizando:
 
@@ -178,7 +178,7 @@ types.Content(
 
 ---
 
-# `types.Part`
+## `types.Part`
 
 El contenido de un mensaje se divide en partes.
 
@@ -207,7 +207,7 @@ en lugar de texto plano directamente.
 
 ---
 
-# Contexto conversacional
+## Contexto conversacional
 
 Los modelos no “recuerdan” conversaciones automáticamente entre llamadas.
 
@@ -252,7 +252,7 @@ Gestionar correctamente el contexto es una parte fundamental del diseño de agen
 
 ---
 
-# Memoria conversacional
+## Memoria conversacional
 
 La memoria en un agente normalmente consiste en:
 - almacenar mensajes anteriores
@@ -263,7 +263,7 @@ Esto permite que el modelo responda considerando interacciones previas.
 
 ---
 
-# Idea clave
+## Idea clave
 
 Un agente conversacional no funciona únicamente porque el modelo “sea inteligente”.
 

@@ -6,7 +6,7 @@
 
 `argparse` es un módulo estándar de Python que permite crear programas de terminal capaces de recibir argumentos.
 
-En AI Agent Quest lo usamos para que el agente reciba instrucciones desde consola sin tener que modificar el código, así como para parsarle opciones de ejecución ([flags](../terminal/flags.md)).
+En AI Agent Quest lo usamos para que el agente reciba instrucciones desde consola sin tener que modificar el código, así como para pasarle opciones de ejecución ([flags](../terminal/flags.md)).
 
 ---
 

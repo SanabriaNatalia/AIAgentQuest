@@ -219,7 +219,7 @@ hace el sistema:
 
 ---
 
-# Idea importante
+## Idea importante
 
 `main()` organiza la ejecución.
 

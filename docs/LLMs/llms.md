@@ -104,8 +104,8 @@ El término “large” normalmente hace referencia a:
 - la escala computacional del modelo
 
 Los modelos modernos suelen contener:
-- miles de millones
-- o incluso billones de parámetros
+- desde miles de millones
+- hasta cientos de miles de millones de parámetros
 
 ---
 
@@ -126,7 +126,7 @@ Todo convertido en tokens.
 
 ---
 
-# Context window
+## Context window
 
 Los modelos tienen un límite máximo de contexto que pueden procesar en una sola invocación.
 
