@@ -221,6 +221,31 @@ def _build_renderer(source_path: Path) -> MarkdownIt:
 
     md.renderer.rules["image"] = image
 
+    # Envolver cada tabla en un contenedor con scroll horizontal propio. En
+    # pantallas estrechas una tabla ancha (p. ej. la de comandos del Códex)
+    # desbordaría el viewport; el wrapper la deja hacer scroll sin empujar el
+    # ancho de la página. No se toca el `<table>` en sí, así que en desktop
+    # se sigue renderizando igual.
+    default_table_open = md.renderer.rules.get("table_open")
+    default_table_close = md.renderer.rules.get("table_close")
+
+    def table_open(tokens, idx, options, env):
+        if default_table_open:
+            rendered = default_table_open(tokens, idx, options, env)
+        else:
+            rendered = md.renderer.renderToken(tokens, idx, options, env)
+        return '<div class="table-wrap">' + rendered
+
+    def table_close(tokens, idx, options, env):
+        if default_table_close:
+            rendered = default_table_close(tokens, idx, options, env)
+        else:
+            rendered = md.renderer.renderToken(tokens, idx, options, env)
+        return rendered + "</div>"
+
+    md.renderer.rules["table_open"] = table_open
+    md.renderer.rules["table_close"] = table_close
+
     default_heading_open = md.renderer.rules.get("heading_open")
     counters: dict[str, int] = {}
 
