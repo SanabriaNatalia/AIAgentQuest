@@ -1,5 +1,5 @@
 ## El susurro
 
-> Una acción no basta. El agente lee, escribe, ejecuta — y luego necesita _ver_ el resultado para decidir el próximo paso. ¿Cómo construyes ese ciclo sin caer en un loop infinito?
+> Una sola acción no basta: el agente lee, escribe, ejecuta, y luego necesita ver el resultado para decidir el siguiente paso. ¿Cómo construyes ese ciclo de acción → observación → nueva acción, sin caer en un loop infinito?
 
-El historial de mensajes es el río que conecta cada iteración. Cada tool deja un sedimento en él; cada respuesta del modelo, también.
+La lista `messages` es la memoria compartida entre iteraciones: cada respuesta del modelo y cada resultado de tool se agrega al historial, y la siguiente iteración los usa como contexto.

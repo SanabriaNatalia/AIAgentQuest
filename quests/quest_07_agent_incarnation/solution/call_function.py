@@ -50,7 +50,7 @@ def call_function(function_call, verbose=False):
     args = dict(function_call.args) if function_call.args else {}
 
     args["working_directory"] = (
-        "quests/quest_07_agent_embodiment/workspace"
+        "quests/quest_07_agent_incarnation/workspace"
     )
 
     function_result = function_map[function_name](**args)

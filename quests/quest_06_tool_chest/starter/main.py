@@ -7,12 +7,11 @@ solicitar function calls.
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_06_tool_chest.starter.main \
-    "¿Qué archivos hay en la raíz?"
+    arkanum run 6 "¿Qué archivos hay en la raíz?"
 
 Una vez hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_06_tool_chest.check
+    arkanum check 6
 """
 
 import argparse
@@ -33,23 +32,22 @@ show_quest_header(
     "El agente descubre sus primeras herramientas.",
 )
 
-# TODO 1:
-
+# TODO 6.0 — Preparación:
 # Copia tu solución del Quest 04 en este archivo.
+# No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.x … 4.x — esos pasos ya los resolviste.
+#
 # Puedes usar:
-#
-# quests/quest_04_arkanum_laws/solution/solution.py
-#
-# o tu propia versión completada.
-#
-# No copies los imports ni la función show_quest_header,
-# solo el código que va después.
+# - quests/quest_04_arkanum_laws/solution/solution.py, o
+# - tu propia versión completada.
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 06
-# ============================================
 
-# TODO 2:
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 06                       ║
+# ║   A partir de aquí, los TODOs son nuevos (6.x).      ║
+# ╚══════════════════════════════════════════════════════╝
+
+# TODO 6.1:
 # Abre el archivo:
 #
 # common/prompts/system_prompt.py
@@ -73,13 +71,14 @@ show_quest_header(
 # - Ejecutar archivos Python
 # """
 
-# TODO 3:
-
+# TODO 6.2:
 # Completa los schemas faltantes en:
 #
 # common/functions/get_file_content.py
 # common/functions/write_file.py
 # common/functions/run_python_file.py
+#
+# (en cada uno verás el marcador `TODO 6.2`).
 #
 # Usa como referencia el schema ya existente en:
 #
@@ -88,8 +87,7 @@ show_quest_header(
 # También puedes revisar esta entrada del códice:
 # docs/agents/tool_schemas.md
 
-# TODO 4:
-
+# TODO 6.3:
 # Abre:
 #
 # common/functions/call_function.py
@@ -102,7 +100,7 @@ show_quest_header(
 #     ]
 # )
 
-# TODO 5:
+# TODO 6.4:
 # Importa:
 #
 # available_functions
@@ -113,7 +111,7 @@ show_quest_header(
 #
 # Preferiblemente, al inicio del archivo, junto con los otros imports.
 
-# TODO 6:
+# TODO 6.5:
 # En la llamada a:
 #
 # client.models.generate_content(...)
@@ -126,18 +124,32 @@ show_quest_header(
 #     temperature=0,
 # )
 
-# TODO 7:
-# Después de recibir la respuesta, revisa:
+# TODO 6.6:
+# Después de recibir la respuesta, revisa si el modelo pidió herramientas:
 #
-# response.function_calls
+# - Si response.function_calls existe, itera sobre ellas e imprime cada una:
 #
-# Si existen function calls, itera sobre ellas e imprime:
+#       Calling function: {function_call.name}({function_call.args})
 #
-# Calling function: {function_call.name}({function_call.args})
+# - Si NO hay function_calls, el agente respondió con texto normal:
+#   muéstralo con agent(response.text).
 #
-# Si no existen function calls, imprime la respuesta del agente normalmente.
+# Pista:
+#
+# function_calls = response.function_calls
+#
+# if function_calls:
+#     for function_call in function_calls:
+#         print(f"Calling function: {function_call.name}({function_call.args})")
+# else:
+#     agent(response.text)
+#
+# Nota: tratamos los dos casos como excluyentes (if/else). Accede a
+# response.text SOLO cuando no hay tools; si lees response.text mientras la
+# respuesta trae un function_call, Gemini emite un warning
+# ("non-text parts in the response: ['function_call']").
 
-# TODO 8:
+# TODO 6.7:
 # Ejecuta el programa con prompts que deberían activar tools.
 #
 # Ejemplo:
@@ -149,7 +161,7 @@ show_quest_header(
 #
 # Calling function: get_files_info({'directory': '.'})
 #
-# Cuando hayas validado que las tools se están llamando correctamente, 
+# Cuando hayas validado que las tools se están llamando correctamente,
 # ejecuta el check para completar la quest:
 #
-# uv run python -m quests.quest_06_tool_chest.check
+# arkanum check 6

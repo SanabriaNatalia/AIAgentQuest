@@ -26,7 +26,10 @@ def start_cmd(
         help="Modo desarrollo: foreground con auto-reload (no se detacha)",
     ),
 ) -> None:
-    """Arrancar el dashboard (detached por default)."""
+    """Arrancar el dashboard (detached por default) y abrirlo en el navegador.
+
+    El modo `--dev` corre en foreground y no abre el navegador.
+    """
     if dev:
         console.print("[bold magenta]Modo desarrollo[/]: foreground con auto-reload.")
         console.print("Ctrl+C para detener.\n")
@@ -35,11 +38,13 @@ def start_cmd(
 
     if lifecycle.is_running():
         st = lifecycle.status()
+        url = f"http://127.0.0.1:{st['port']}"
         console.print(
             f"[yellow]El dashboard ya está activo[/] "
             f"(PID {st['pid']}, puerto {st['port']})"
         )
-        console.print(f"http://127.0.0.1:{st['port']}")
+        console.print(url)
+        webbrowser.open(url)
         return
 
     console.print("Iniciando dashboard arcano...")
@@ -50,10 +55,12 @@ def start_cmd(
         raise typer.Exit(1)
 
     st = lifecycle.status()
+    url = f"http://127.0.0.1:{st['port']}"
     console.print(
         f"[green]Dashboard activo[/] (PID {pid}, puerto {st['port']})"
     )
-    console.print(f"http://127.0.0.1:{st['port']}")
+    console.print(url)
+    webbrowser.open(url)
 
 
 @dashboard_app.command("stop")

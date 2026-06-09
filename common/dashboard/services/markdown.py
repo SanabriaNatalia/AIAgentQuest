@@ -37,6 +37,12 @@ _HEADING_RE = re.compile(r"^(#{1,3})\s+(.+?)\s*$", re.MULTILINE)
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
 _HTML_HREF_RE = re.compile(r"(<a\b[^>]*?\bhref=)([\"'])(.*?)\2", re.IGNORECASE)
 _HTML_SRC_RE = re.compile(r"(<img\b[^>]*?\bsrc=)([\"'])(.*?)\2", re.IGNORECASE)
+_DOC_LINK_RE = re.compile(
+    r"""<a\b([^>]*\bhref=["'](?:https?://[^"']*|/(?:codex|quest|assets)(?:/[^"']*)?)["'][^>]*)>""",
+    re.IGNORECASE,
+)
+_HAS_TARGET_RE = re.compile(r"\btarget\s*=", re.IGNORECASE)
+_HAS_REL_RE = re.compile(r"\brel\s*=", re.IGNORECASE)
 
 _PYGMENTS_FORMATTER = HtmlFormatter(nowrap=False, cssclass="hl", style="monokai", noclasses=False)
 
@@ -215,6 +221,31 @@ def _build_renderer(source_path: Path) -> MarkdownIt:
 
     md.renderer.rules["image"] = image
 
+    # Envolver cada tabla en un contenedor con scroll horizontal propio. En
+    # pantallas estrechas una tabla ancha (p. ej. la de comandos del Códex)
+    # desbordaría el viewport; el wrapper la deja hacer scroll sin empujar el
+    # ancho de la página. No se toca el `<table>` en sí, así que en desktop
+    # se sigue renderizando igual.
+    default_table_open = md.renderer.rules.get("table_open")
+    default_table_close = md.renderer.rules.get("table_close")
+
+    def table_open(tokens, idx, options, env):
+        if default_table_open:
+            rendered = default_table_open(tokens, idx, options, env)
+        else:
+            rendered = md.renderer.renderToken(tokens, idx, options, env)
+        return '<div class="table-wrap">' + rendered
+
+    def table_close(tokens, idx, options, env):
+        if default_table_close:
+            rendered = default_table_close(tokens, idx, options, env)
+        else:
+            rendered = md.renderer.renderToken(tokens, idx, options, env)
+        return rendered + "</div>"
+
+    md.renderer.rules["table_open"] = table_open
+    md.renderer.rules["table_close"] = table_close
+
     default_heading_open = md.renderer.rules.get("heading_open")
     counters: dict[str, int] = {}
 
@@ -241,14 +272,43 @@ def _build_renderer(source_path: Path) -> MarkdownIt:
     return md
 
 
-def render_markdown_file(source_path: Path) -> RenderedMarkdown:
-    """Renderiza un archivo `.md`. Lanza FileNotFoundError si no existe."""
-    text = source_path.read_text(encoding="utf-8")
+def _open_doc_links_in_new_tab(html: str) -> str:
+    """Abre links a documentación en pestaña nueva.
+
+    Cubre links del contenido renderizado: `/codex/...`, `/quest/...`,
+    `/assets/...` y URLs externas (`http(s)://`). Mantiene la lectura del
+    pergamino sin interrumpirla: el aprendiz puede dejar la referencia
+    abierta en background o leerla en paralelo.
+
+    Quedan intactos: anchors internos (`#section`), `mailto:`/`tel:`, y
+    cualquier `<a>` que ya defina su propio `target`.
+    """
+    def add_target(match: re.Match) -> str:
+        attrs = match.group(1)
+        if _HAS_TARGET_RE.search(attrs):
+            return match.group(0)
+        addition = ' target="_blank"'
+        if not _HAS_REL_RE.search(attrs):
+            addition += ' rel="noopener noreferrer"'
+        return f"<a{attrs}{addition}>"
+
+    return _DOC_LINK_RE.sub(add_target, html)
+
+
+def _render_markdown_text(text: str, source_path: Path) -> RenderedMarkdown:
+    """Renderiza `text` como Markdown, reescribiendo enlaces relativos respecto
+    a `source_path` (que puede ser un archivo virtual para contenido generado)."""
     toc, title = _extract_toc(text)
     text = _rewrite_inline_html(source_path, text)
     md = _build_renderer(source_path)
     html = md.render(text)
+    html = _open_doc_links_in_new_tab(html)
     return RenderedMarkdown(html=html, toc=toc, title=title)
+
+
+def render_markdown_file(source_path: Path) -> RenderedMarkdown:
+    """Renderiza un archivo `.md`. Lanza FileNotFoundError si no existe."""
+    return _render_markdown_text(source_path.read_text(encoding="utf-8"), source_path)
 
 
 def pygments_css() -> str:
@@ -279,6 +339,68 @@ def resolve_codex_path(rel_path: str) -> Path | None:
     if base.is_file() and base.suffix.lower() == ".md":
         return base
     return None
+
+
+# Títulos legibles para las secciones (subcarpetas) del Códex. Si una carpeta
+# no está aquí, se usa su nombre capitalizado como fallback.
+_SECTION_TITLES = {
+    "terminal": "Terminal",
+    "cli": "CLI del laboratorio",
+    "python": "Python",
+    "LLMs": "Modelos de Lenguaje (LLMs)",
+    "agents": "Agentes",
+    "security": "Seguridad",
+}
+
+
+def resolve_codex_dir(rel_path: str) -> Path | None:
+    """Devuelve el Path de un subdirectorio de `docs/` (para renderizar un
+    índice de sección), o None si no es un directorio válido dentro de docs/."""
+    if not rel_path:
+        return None
+    safe = rel_path.strip("/").replace("\\", "/")
+    if ".." in safe.split("/"):
+        return None
+    base = (_DOCS_DIR / safe).resolve()
+    if base == _DOCS_DIR or _DOCS_DIR not in base.parents:
+        return None
+    return base if base.is_dir() else None
+
+
+def _doc_title(path: Path) -> str:
+    """Título (primer H1) de un .md; si no tiene, el nombre legible del archivo."""
+    try:
+        _, title = _extract_toc(path.read_text(encoding="utf-8"))
+    except OSError:
+        title = None
+    return title or path.stem.replace("_", " ").replace("-", " ")
+
+
+def render_codex_section(dir_path: Path) -> RenderedMarkdown:
+    """Genera y renderiza un índice de sección: lista las entradas (.md) del
+    directorio con su título, ordenadas alfabéticamente. Auto-generado, sin
+    necesidad de mantener un README por carpeta."""
+    rel = dir_path.relative_to(_DOCS_DIR).as_posix()
+    section_name = _SECTION_TITLES.get(rel, rel.replace("_", " ").title())
+    entries = sorted(
+        (
+            p for p in dir_path.iterdir()
+            if p.suffix.lower() == ".md" and p.name.lower() != "readme.md"
+        ),
+        key=lambda p: _doc_title(p).lower(),
+    )
+    lines = [f"# {section_name}", ""]
+    if entries:
+        lines.append(f"Entradas del Códex en esta sección ({len(entries)}):")
+        lines.append("")
+        for entry in entries:
+            lines.append(f"- [{_doc_title(entry)}](./{entry.name})")
+    else:
+        lines.append("_Esta sección aún no tiene entradas._")
+    text = "\n".join(lines) + "\n"
+    # `source_path` virtual dentro del directorio: hace que `./x.md` se reescriba
+    # a `/codex/<rel>/x` con la lógica de enlaces ya existente.
+    return _render_markdown_text(text, dir_path / "index.md")
 
 
 def resolve_quest_readme(slug: str) -> Path | None:

@@ -1,7 +1,9 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
 
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
@@ -45,10 +47,14 @@ def main() -> None:
     if not STARTER_FILE.exists():
         fail(f"No se encontró el archivo:\n{STARTER_FILE}")
 
+    # H-08: forzar COLUMNS=1000 para que rich.Console no envuelva líneas
+    # largas en el subprocess y rompa el `expected in output` de abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
-            sys.executable, 
-            "-m", 
+            sys.executable,
+            "-m",
             "quests.quest_01_first_invocation.starter.main"
         ],
         cwd=ROOT_DIR,
@@ -56,10 +62,19 @@ def main() -> None:
         text=True,
         encoding="utf-8",
         errors="replace",
+        env=env,
     )
 
     output = result.stdout.strip()
     error = result.stderr.strip()
+
+    # Reemite la salida del starter en la terminal del aprendiz, para que
+    # la respuesta del agente quede visible durante `arkanum check`.
+    if result.stdout:
+        sys.stdout.write(result.stdout)
+        if not result.stdout.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
 
     if result.returncode != 0:
         fail(
@@ -73,7 +88,13 @@ def main() -> None:
             "Asegúrate de imprimir la respuesta de Gemini con response.text."
         )
 
-    if "Agente:" not in output:
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 1",
+        output,
+        ["Agente:"],
+    )
+    console.print(table)
+    if missing:
         fail(
             "No encontré la sección de respuesta de Gemini.\n"
             "Asegúrate de usar agent(response.text) o imprimir la respuesta claramente."

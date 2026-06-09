@@ -13,4 +13,4 @@ response = client.models.generate_content(
 )
 ```
 
-`system_instruction` y `contents` son canales distintos: uno define **quién eres**, el otro **qué te están preguntando**. Por eso las leyes del Arkanum dominan sobre cualquier pregunta del usuario.
+`system_instruction` y `contents` son parámetros distintos: el primero define las reglas del modelo (no varían entre llamadas), el segundo es la conversación con el usuario. Por eso las reglas del system prompt prevalecen sobre lo que escriba el usuario.

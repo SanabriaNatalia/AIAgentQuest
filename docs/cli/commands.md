@@ -5,7 +5,7 @@
 >
 > — Zhyréon
 
-El laboratorio expone su voluntad a través de un único comando — `arkanum` — que despliega **diez subcomandos** según lo que necesites hacer. Esta entrada del Códex es tu mapa de bolsillo: explica para qué sirve cada uno, cuándo invocarlo y cuál es su efecto en el cronómetro, en la base de datos y en el dashboard.
+El laboratorio expone su voluntad a través de un único comando — `arkanum` — que despliega **nueve subcomandos** según lo que necesites hacer. Esta entrada del Códex es tu mapa de bolsillo: explica para qué sirve cada uno, cuándo invocarlo y cuál es su efecto en el cronómetro, en la base de datos y en el dashboard.
 
 > **Fuente de verdad:** `arkanum --help` (lista global) y `arkanum <comando> --help` (detalle por comando) son la referencia técnica. Si esta tabla desfasa con esos comandos, ganan los `--help`.
 
@@ -20,11 +20,10 @@ El laboratorio expone su voluntad a través de un único comando — `arkanum` �
 | [`arkanum current`](#arkanum-current) | Mostrar la quest actual | No | — |
 | [`arkanum next`](#arkanum-next) | Mostrar la próxima quest tras la actual | No | — |
 | [`arkanum progress`](#arkanum-progress) | Tabla con el estado de las 8 quests | No | — |
-| [`arkanum start N`](#arkanum-start-n) | Ejecutar el starter del quest N (iterar mientras desarrollas) | Sí (si el starter llama Gemini) | — |
+| [`arkanum run N`](#arkanum-run-n) | Ejecutar el starter del quest N; en Q07/Q08 emite traces al `/live-agent` automáticamente | Sí (si el starter llama Gemini) | Steps en `/live-agent` (Q07/Q08) |
 | [`arkanum check N`](#arkanum-check-n) | Validar la solución del quest N | Sí | Sella la quest + abre `/celebrate` |
-| [`arkanum run N`](#arkanum-run-n) | Como `start`, pero emite traces al `/live-agent` | Sí | Steps en `/live-agent` |
 | [`arkanum cost`](#arkanum-cost) | Tokens consumidos y costo estimado en USD | No | — |
-| [`arkanum dashboard`](#arkanum-dashboard) | Controlar el server (`start`/`stop`/`status`/`logs`) | No | Levanta o detiene el dashboard |
+| [`arkanum dashboard`](#arkanum-dashboard) | Controlar el server (`start`/`stop`/`status`/`logs`/`open`) | No | Levanta o detiene el dashboard |
 
 ---
 
@@ -91,15 +90,16 @@ arkanum progress
 
 ## Ejecutar y validar
 
-Tres comandos para correr código: `start`, `run` y `check`. La diferencia clave es **qué hace cada uno con el resultado**.
+Dos comandos para correr código: `run` y `check`. La diferencia clave es **qué hace cada uno con el resultado**.
 
-### `arkanum start N`
+### `arkanum run N`
 
 Ejecuta el archivo `quests/quest_NN_*/starter/main.py` directamente.
 
 ```bash
-arkanum start 1
-arkanum start 3 "¿Qué es un agente IA?"   # Q03+ recibe argumentos vía argparse
+arkanum run 1
+arkanum run 3 "¿Qué es un agente IA?"   # Q03+ recibe argumentos vía argparse
+arkanum run 7 "Lee notes.txt"           # Q07/Q08 trazan solas en /live-agent
 ```
 
 Qué hace:
@@ -109,7 +109,7 @@ Qué hace:
 3. Reenvía cualquier argumento extra al starter.
 4. Devuelve el exit code.
 
-Qué **no** hace:
+Qué **no** hace (en quests sin agent loop):
 
 - No arranca el cronómetro de la quest (lo hace el botón "Empezar ahora" del dashboard).
 - No valida la solución contra criterios.
@@ -118,6 +118,41 @@ Qué **no** hace:
 **Cuándo usarlo:** mientras iteras sobre tu solución y quieres ver el output crudo sin las verificaciones del check. Útil para experimentar con prompts en Q03+.
 
 > ⚠️ Aunque no "valida" nada, sí consume cuota de Gemini si el starter llama a `generate_content` (que es siempre desde Q01).
+
+#### Tracing automático del agent loop (Q07/Q08)
+
+En los quests con agent loop (`live_agent=True`, hoy **Q07 y Q08**), `run` **emite traces estructurados automáticamente** — sin ningún flag. La pestaña `/live-agent` del dashboard los muestra paso a paso.
+
+```bash
+arkanum run 7 "¿Qué archivos hay en la raíz?"
+arkanum run 8 "Lee notes.txt y dime qué contiene"
+```
+
+Qué hace de más en estos quests:
+
+1. Genera un `trace_id` único y lo imprime con el link a `/live-agent`.
+2. Inserta un `session_start` step en la tabla `agent_traces`.
+3. Corre el starter **siempre** en `--verbose` internamente: así el dashboard recibe el detalle completo (tokens, args y resultados sin recortar) y el parser reconoce las tool calls (que en verbose se imprimen con paréntesis).
+4. Parsea cada línea del stdout buscando patrones (`Calling function: ...`, `Prompt tokens: ...`, etc.) y emite los steps correspondientes.
+5. Inserta un `session_end` step al terminar.
+
+Esto te deja ver la secuencia `function_call → function_result → siguiente iteración` en vivo, lo que da intuición de cómo razona el agente.
+
+#### Dos niveles de detalle en consola
+
+El `--verbose` que **tú** escribes no cambia lo que recibe el dashboard (siempre completo); cambia cuánto detalle se imprime en tu **terminal**:
+
+- **Sin `--verbose`** (por defecto) — vista limpia: una banda por iteración (`· Iteración N · máx 20`, donde `máx 20` es el tope `MAX_ITERS`, no un progreso), cada tool con sus args resumidos (`🛠 get_files_info(directory=".")`) y un resumen de su resultado (`↳ ok (155 B)`), más la respuesta final (`🤖 Agente: …`).
+- **Con `--verbose`** — además: tokens por iteración, los args completos y el resultado completo de cada tool (recortado a ~2 KB en consola; el íntegro siempre queda en el dashboard).
+
+```bash
+arkanum run 8 "Lee notes.txt y dime qué contiene"            # vista limpia
+arkanum run 8 "Lee notes.txt y dime qué contiene" --verbose  # detalle completo
+```
+
+En el dashboard, el toggle **🔍 Verbose** de `/live-agent` hace lo mismo sobre la timeline: apagado muestra el esqueleto (prompt → iteraciones → tools → respuesta); encendido añade tokens, latencia, memoria del loop y el razonamiento del agente.
+
+> ℹ️ **Opt-out:** con `ARKANUM_NO_DASHBOARD=1` el tracing se desactiva (útil en CI), coherente con `check` e `init`. El flag oculto `--live` permite forzar el tracing en cualquier quest; rara vez hace falta.
 
 ---
 
@@ -142,28 +177,6 @@ Qué hace:
 
 ---
 
-### `arkanum run N "prompt"`
-
-Como `start`, pero **emite traces estructurados** que la pestaña `/live-agent` del dashboard muestra paso a paso.
-
-```bash
-arkanum run 7 "¿Qué archivos hay en la raíz?"
-arkanum run 8 "Lee notes.txt y dime qué contiene" --verbose
-```
-
-Qué hace además de `start`:
-
-1. Genera un `trace_id` único y lo imprime con el link a `/live-agent`.
-2. Inserta un `session_start` step en la tabla `agent_traces`.
-3. Parsea cada línea del stdout del starter buscando patrones (`Calling function: ...`, `Prompt tokens: ...`, etc.) y emite los steps correspondientes.
-4. Inserta un `session_end` step al terminar.
-
-**Cuándo usarlo:** principalmente en **Q07 y Q08** (agent loop con tool calling), donde ver la secuencia `function_call → function_result → siguiente iteración` en vivo te da intuición de cómo razona el agente.
-
-Para Q01..Q06 funciona pero no aporta mucho — el agent loop no existe todavía.
-
----
-
 ## Observabilidad y costo
 
 ### `arkanum cost`
@@ -183,16 +196,19 @@ Las tarifas usadas son las de Gemini 2.5 Flash al momento de implementar el mód
 
 ### `arkanum dashboard`
 
-Cuatro subcomandos para controlar el server del dashboard.
+Cinco subcomandos para controlar el server del dashboard.
 
 ```bash
-arkanum dashboard start            # arranca el server (detached por default)
-arkanum dashboard start --dev      # arranca en foreground con uvicorn --reload
+arkanum dashboard start            # arranca el server (detached) y abre el navegador
+arkanum dashboard start --dev      # arranca en foreground con uvicorn --reload (no abre browser)
 arkanum dashboard stop             # detiene el server
 arkanum dashboard status           # muestra PID + puerto
 arkanum dashboard logs             # muestra las últimas líneas del log
 arkanum dashboard logs --lines 100 # con un tamaño específico
+arkanum dashboard open             # arranca (si hace falta) y abre el navegador
 ```
+
+> ℹ️ `start` levanta el server **y abre el navegador automáticamente** (excepto en `--dev`, que corre en foreground). Si el server ya estaba activo, igual abre la pestaña. `open` queda como atajo equivalente cuando solo quieres abrir el navegador.
 
 El puerto por defecto es **8765**. Si está ocupado, el lifecycle intenta 8766, 8767, 8768 antes de rendirse.
 
@@ -207,9 +223,10 @@ El server sobrevive al cierre de la terminal porque se desacopla con `Popen` + r
 Todos los comandos `arkanum *` aceptan `--help`:
 
 ```bash
-arkanum --help               # lista los 10 comandos
+arkanum --help               # lista los 9 comandos
 arkanum check --help         # detalle de check (incluyendo --dry-run, --yes)
-arkanum dashboard --help     # lista los 4 sub-subcomandos
+arkanum run --help         # detalle de run
+arkanum dashboard --help     # lista los 5 sub-subcomandos
 arkanum dashboard start --help
 ```
 
@@ -227,8 +244,8 @@ uv run arkanum --help
 |---|---|
 | Empezar desde cero | `arkanum init` |
 | Ver qué quest estoy haciendo | `arkanum current` |
-| Probar mi código sin "sellar" la quest | `arkanum start N` |
-| Probar mi agente y ver el agent loop en vivo | `arkanum run N "..."` |
+| Probar mi código sin "sellar" la quest | `arkanum run N` |
+| Probar mi agente y ver el agent loop en vivo | `arkanum run N "..."` (Q07/Q08 trazan solas) |
 | Validar la solución y completar la quest | `arkanum check N` |
 | Saber cuántos tokens llevo gastados | `arkanum cost` |
 | Verificar que todo el setup está sano | `arkanum doctor` |

@@ -17,11 +17,11 @@ En este Quest trabajarás en dos lugares:
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_05_forbidden_directory.starter.main
+    arkanum run 5
 
 Una vez hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_05_forbidden_directory.check
+    arkanum check 5
 """
 
 from common.functions.get_valid_target_path import get_valid_target_path
@@ -51,7 +51,7 @@ for path in valid_paths:
 
     test(f"Validando ruta permitida: {path}")
 
-    # TODO 1:
+    # TODO 5.7:
     # Ejecuta get_valid_target_path(WORKING_DIRECTORY, path).
     #
     # Si la ruta es válida, usa:
@@ -66,7 +66,7 @@ for path in invalid_paths:
 
     test(f"Validando ruta prohibida: {path}")
 
-    # TODO 2:
+    # TODO 5.8:
     # Ejecuta get_valid_target_path(WORKING_DIRECTORY, path).
     #
     # Si la ruta prohibida NO genera error, usa:

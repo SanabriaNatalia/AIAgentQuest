@@ -47,5 +47,5 @@ def current() -> None:
         )
     )
     console.print()
-    console.print("Para empezar:")
-    console.print(f"  [cyan]arkanum start {quest.order}[/]")
+    console.print("Para ejecutarla:")
+    console.print(f"  [cyan]arkanum run {quest.order}[/]")

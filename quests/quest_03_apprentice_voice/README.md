@@ -4,6 +4,8 @@
     <img src="../../assets/images/quest-3-banner.png" alt="Quest 3 Banner" width="100%">
 </p>
 
+## 🎭 Lore
+
 > *“Un agente que solo repite instrucciones fijas no escucha realmente.*
 >
 > *La verdadera conversación comienza cuando el aprendiz puede hablar.”*
@@ -12,24 +14,23 @@
 
 ## Información del Quest
 
-|Acto| Dificultad | Tiempo estimado |
+| Acto | Dificultad | Tiempo estimado |
 |---|---|---|
-| I - Fundamentos del Agente | 🟢 Fácil | 10–15 mins |
+| I — Fundamentos del Agente | 🟢 Fácil | 10–15 mins |
 
 ---
 
-## Objetivo
+## 🎯 Objetivo
 
-Hasta ahora nuestro agente utilizaba un prompt hardcoded dentro del código.
+Reemplazar el prompt hardcoded por uno que llega desde la terminal, y enviarlo al modelo como un **mensaje estructurado** usando los tipos de Gemini.
 
-Eso funciona para pruebas simples, pero no es muy útil:
-cada vez que queremos cambiar el prompt, tenemos que modificar el archivo manualmente.
-
-En este Quest aprenderás a recibir input desde la terminal y a construir mensajes estructurados usando los tipos de Gemini.
+Hasta ahora nuestro agente usaba un prompt fijo dentro del código. Eso funciona para pruebas simples, pero no es útil: cada cambio de prompt requería editar el archivo.
 
 ---
 
-## Qué aprenderás
+## 📚 Conceptos clave
+
+### Qué aprenderás
 
 - usar `argparse`
 - recibir argumentos desde consola
@@ -37,42 +38,27 @@ En este Quest aprenderás a recibir input desde la terminal y a construir mensaj
 - trabajar con roles (`user`)
 - enviar listas de mensajes al modelo
 
----
+### `argparse` — argumentos por CLI
 
-## Argumentos por CLI
-
-Usaremos el módulo estándar de Python `argparse` para pasar prompts por consola directamente, de modo que el usuario pueda escribir sus propmts al invocar el modelo.
-
-
-### Introducción a `argparse`
-
-Python incluye un módulo estándar llamado:
+Python incluye un módulo estándar:
 
 ```python
 import argparse
 ```
 
-Este módulo permite construir aplicaciones de terminal capaces de recibir argumentos desde consola.
+Permite construir aplicaciones de terminal que reciben argumentos desde consola.
 
 Por ejemplo:
 
 ```bash
-arkanum start 3 "¿Qué es un agente IA?"
+arkanum run 3 "¿Qué es un agente IA?"
 ```
 
-(o el equivalente legacy: `uv run python -m quests.quest_03_apprentice_voice.starter.main "¿Qué es un agente IA?"`)
+(equivalente legacy: `uv run python -m quests.quest_03_apprentice_voice.starter.main "¿Qué es un agente IA?"`)
 
-Aquí el texto:
-
-```text
-"¿Qué es un agente IA?"
-```
-
-será recibido por el programa como un argumento.
+El texto `"¿Qué es un agente IA?"` será recibido por el programa como argumento.
 
 #### 1. Crear un parser
-
-Primero creamos un parser:
 
 ```python
 parser = argparse.ArgumentParser(
@@ -80,11 +66,7 @@ parser = argparse.ArgumentParser(
 )
 ```
 
-El parser será el encargado de interpretar los argumentos enviados desde terminal.
-
 #### 2. Agregar argumentos
-
-Luego definimos qué argumentos esperamos recibir:
 
 ```python
 parser.add_argument(
@@ -94,32 +76,31 @@ parser.add_argument(
 )
 ```
 
-En este caso:
 - `user_prompt` será obligatorio
 - el valor será un string
 - `help` define el mensaje de ayuda
 
 #### 3. Parsear argumentos
 
-Finalmente:
-
 ```python
 args = parser.parse_args()
 ```
 
-Esto procesa los argumentos enviados desde consola.
+Luego accedes al prompt con `args.user_prompt`.
 
-Luego podemos acceder al prompt usando:
+(Más info en la [entrada del códex](../../docs/python/argparse.md) o la [documentación oficial](https://docs.python.org/es/3/library/argparse.html)).
 
-```python
-args.user_prompt
+#### Validación automática
+
+Si ejecutas el programa sin enviar un prompt:
+
+```bash
+arkanum run 3
 ```
 
-(Si te interesa saber más sobre `argparse` puedes consultar la [entrada del códex](../../docs/python/argparse.md) o la [documentación oficial](https://docs.python.org/es/3/library/argparse.html))
+`argparse` mostrará un error explicando qué argumento falta.
 
----
-
-## Ejemplo completo
+### Ejemplo completo de `argparse`
 
 ```python
 import argparse
@@ -139,25 +120,7 @@ args = parser.parse_args()
 print(args.user_prompt)
 ```
 
----
-
-## Validación automática
-
-Una ventaja importante de `argparse`
-es que Python valida automáticamente los argumentos.
-
-Por ejemplo, si ejecutas el programa sin enviar un prompt:
-
-```bash
-arkanum start 3
-```
-
-`argparse` mostrará un error explicando qué argumento falta.
-
-
----
-
-## Roles y mensajes
+### Roles y mensajes
 
 Hasta ahora enviábamos un string simple:
 
@@ -165,42 +128,26 @@ Hasta ahora enviábamos un string simple:
 contents="¿Qué es un agente de IA?"
 ```
 
-Eso funciona para prompts sencillos. 
-Pero los agentes modernos trabajan con conversaciones estructuradas.
-
-En lugar de recibir únicamente texto, el modelo recibe una lista de mensajes:
-
-```text
-user → mensaje del usuario
-
-model → respuesta del modelo
-
-user → nueva pregunta
-```
-
-Cada mensaje tiene:
+Eso funciona para prompts sencillos. Pero los agentes modernos trabajan con conversaciones estructuradas: el modelo recibe una **lista de mensajes**, donde cada mensaje tiene:
 
 - un rol (`user`, `model`, etc.)
 - contenido
 - partes (`parts`)
 
-Por eso Gemini utiliza estructuras como:
+```text
+user → mensaje del usuario
+model → respuesta del modelo
+user → nueva pregunta
+```
+
+Gemini utiliza:
 
 ```python
 types.Content
-```
-
-y:
-
-```python
 types.Part
 ```
 
----
-
-## Estructura de un mensaje
-
-Un mensaje básico se ve así:
+### Estructura de un mensaje
 
 ```python
 types.Content(
@@ -213,13 +160,9 @@ types.Content(
 )
 ```
 
----
+### ¿Por qué existe `parts`?
 
-## ¿Por qué existe `parts`?
-
-Porque un mensaje no necesariamente contiene solo texto.
-
-En el futuro, un mensaje podría incluir:
+Porque un mensaje no necesariamente contiene solo texto. En el futuro podría incluir:
 
 - imágenes
 - audio
@@ -227,13 +170,9 @@ En el futuro, un mensaje podría incluir:
 - múltiples fragmentos
 - contenido multimodal
 
-Por eso incluso un mensaje simple usa una lista de `parts`.
+### Lista de mensajes
 
----
-
-## Lista de mensajes
-
-Finalmente, el modelo recibe una conversación completa:
+El modelo recibe una conversación completa:
 
 ```python
 messages = [
@@ -255,18 +194,15 @@ response = client.models.generate_content(
 )
 ```
 
-En este Quest la conversación tiene un solo mensaje, pero más adelante construiremos historiales conversacionales completos,
-permitiendo que el agente recuerde interacciones anteriores.
+En este Quest la conversación tiene un solo mensaje, pero más adelante construirás historiales completos para que el agente recuerde interacciones anteriores.
 
-(Si te interesa el tema puedes consultar la [entrada del códice](../../docs/LLMs/roles_and_messages.md))
+(Más info en la [entrada del códice](../../docs/LLMs/roles_and_messages.md)).
 
 ---
 
-## Tu misión
+## 📋 Tu misión
 
-Continúa trabajando sobre el agente construido en el Quest 02.
-
-### Deberás:
+Continúa trabajando sobre el agente del Quest 02.
 
 1. reemplazar el prompt hardcoded usando `argparse`
 2. importar `types` desde `google.genai`
@@ -276,7 +212,7 @@ Continúa trabajando sobre el agente construido en el Quest 02.
 
 ---
 
-## Resultado esperado
+## ✅ Resultado esperado
 
 ```text
 🧑 User prompt:
@@ -291,3 +227,8 @@ La memoria permite que un agente mantenga contexto...
 
 ---
 
+## 🔗 Referencias
+
+- [argparse en el códex](../../docs/python/argparse.md)
+- [Documentación oficial de argparse](https://docs.python.org/es/3/library/argparse.html)
+- [Roles y mensajes](../../docs/LLMs/roles_and_messages.md)

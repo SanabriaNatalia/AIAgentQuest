@@ -1,5 +1,5 @@
 ## El susurro
 
-> El modelo dice "ejecuta `get_files_info` con `directory='.'`". Tú tienes el diccionario de funciones reales. ¿Cómo despachas el nombre que te llega a la función que toca, y le devuelves un resultado que el modelo entienda como observación?
+> El modelo te pide "ejecuta `get_files_info` con `directory='.'`". Tienes el diccionario de funciones reales. ¿Cómo conectas el nombre que llega con la función que corresponde, y le devuelves el resultado en el formato que el modelo entiende como observación?
 
-Dos pasos separados: **ejecutar** la función real y **envolver** su retorno en una `Content` con el rol correcto.
+Son dos pasos separados: (1) **ejecutar** la función real desde el `function_map`, y (2) **envolver** su retorno en un `types.Content` con `role="tool"`.

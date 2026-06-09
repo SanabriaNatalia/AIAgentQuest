@@ -97,7 +97,8 @@ h1, h2, h3, h4 {
   padding: 1rem 2rem;
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem 2rem;
+  flex-wrap: wrap;
   backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
@@ -115,7 +116,8 @@ h1, h2, h3, h4 {
 .arkanum-nav-links {
   list-style: none;
   display: flex;
-  gap: 1.75rem;
+  flex-wrap: wrap;
+  gap: 0.6rem 1.75rem;
   margin-left: auto;
 }
 
@@ -131,9 +133,20 @@ h1, h2, h3, h4 {
   text-shadow: 0 0 12px rgba(192, 132, 252, 0.4);
 }
 
+/* Link de nav atenuado: una vista aún bloqueada por progreso (p. ej. Live
+   Agent antes de Q07). Sigue siendo clickable —lleva al panel que explica
+   cómo desbloquearla— pero se ve apagado y sin el glow del hover. */
+.arkanum-nav-links a.arkanum-nav-locked,
+.arkanum-nav-links a.arkanum-nav-locked:hover {
+  color: var(--arkanum-muted);
+  opacity: 0.45;
+  text-shadow: none;
+  cursor: help;
+}
+
 /* === Main layout === */
 .arkanum-main {
-  max-width: 920px;
+  max-width: 1100px;
   width: 100%;
   margin: 0 auto;
   padding: 3rem 2rem;
@@ -1365,7 +1378,7 @@ code {
   font-size: 1rem;
   line-height: 1.7;
   color: var(--arkanum-text);
-  max-width: 720px;
+  max-width: 800px;
 }
 
 .viewer-prose h1,
@@ -1441,11 +1454,33 @@ code {
   margin: 1rem 0;
 }
 
+/* Wrapper de scroll horizontal para tablas anchas (inyectado por el
+   renderer de Markdown). En móvil deja que la tabla haga scroll en vez de
+   desbordar el viewport o empujar el ancho de la página. */
+.viewer-prose .table-wrap {
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  /* Sangría visual sutil que insinúa que hay scroll cuando la tabla se corta. */
+  background:
+    linear-gradient(90deg, var(--arkanum-bg) 30%, transparent),
+    linear-gradient(90deg, transparent, var(--arkanum-bg) 70%) 100% 0;
+  background-repeat: no-repeat;
+  background-size: 24px 100%, 24px 100%;
+  background-attachment: local, local;
+}
+
 .viewer-prose table {
   width: 100%;
   border-collapse: collapse;
   margin: 1.25rem 0;
   font-size: 0.92rem;
+}
+
+/* Dentro del wrapper el margen lo lleva el contenedor; la tabla no se
+   estruja en pantallas chicas. */
+.viewer-prose .table-wrap table {
+  margin: 0;
+  min-width: 32rem;
 }
 
 .viewer-prose th,
@@ -2536,6 +2571,27 @@ code {
   border-radius: 12px;
   padding: 0.85rem 1.1rem;
   margin-bottom: 1.25rem;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.live-agent-toolbar--stale {
+  border-color: rgba(232, 122, 122, 0.55);
+  background: rgba(232, 122, 122, 0.08);
+}
+
+.live-agent-toolbar--stale .live-agent-dot {
+  background: var(--arkanum-fail);
+  box-shadow: 0 0 12px var(--arkanum-fail);
+}
+
+.live-agent-toolbar--sealed {
+  border-color: rgba(101, 209, 150, 0.45);
+}
+
+.live-agent-toolbar--sealed .live-agent-dot {
+  background: var(--arkanum-success);
+  box-shadow: 0 0 12px var(--arkanum-success);
+  animation: none;
 }
 
 .live-agent-status {
@@ -2566,11 +2622,595 @@ code {
   font-size: 0.9rem;
 }
 
+/* Acciones del toolbar: export, replay, verbose (mejoras #14, #15, #16). */
+.live-agent-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Selector de quest: filtra el grafo (tools) y el historial al quest elegido. */
+.live-agent-questsel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.live-agent-questsel-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--arkanum-muted);
+}
+
+.live-agent-questsel-select {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  background: rgba(13, 10, 31, 0.6);
+  color: var(--arkanum-text);
+  cursor: pointer;
+}
+
+.live-agent-questsel-select:hover {
+  border-color: var(--arkanum-glow);
+}
+
+.live-agent-action {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding: 0.32rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  background: rgba(13, 10, 31, 0.6);
+  color: var(--arkanum-muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.live-agent-action:hover {
+  color: var(--arkanum-glow);
+  border-color: var(--arkanum-glow);
+}
+
+.live-agent-action--flash {
+  color: var(--arkanum-success);
+  border-color: var(--arkanum-success);
+  background: rgba(101, 209, 150, 0.08);
+}
+
+.live-agent-action--toggle {
+  cursor: pointer;
+}
+
+.live-agent-action--toggle input {
+  appearance: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 3px;
+  margin: 0;
+  position: relative;
+  cursor: pointer;
+}
+
+.live-agent-action--toggle input:checked {
+  background: var(--arkanum-glow);
+  border-color: var(--arkanum-glow);
+}
+
+.live-agent-action--toggle input:checked::after {
+  content: "✓";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: var(--arkanum-bg);
+}
+
+/* Modo verbose OFF (vista limpia, por defecto): oculta el detalle técnico y
+   deja el esqueleto narrativo (prompt → iteraciones → tools → respuesta). El
+   dashboard conserva estos datos; solo se ocultan de la vista. Cubre el polling
+   vivo, el replay y el historial porque todos comparten estas clases.
+   - .trace-band-meta        : chips de tokens, latencia y costo por iteración.
+   - .trace-context-growth   : panel de memoria del loop (context_growth).
+   - .trace-step--agent_thought : razonamiento del modelo entre tool calls.
+   - .trace-step--tokens / --latency : por si algún camino los pinta como tarjeta. */
+.live-agent:not(.live-agent--verbose) .trace-band-meta,
+.live-agent:not(.live-agent--verbose) .trace-context-growth,
+.live-agent:not(.live-agent--verbose) .trace-step--tokens,
+.live-agent:not(.live-agent--verbose) .trace-step--latency,
+.live-agent:not(.live-agent--verbose) .trace-step--agent_thought {
+  display: none;
+}
+
+/* Modo verbose ON: nota pedagógica 💡 por step. Se muestra/oculta al instante
+   con el toggle, sobre las tarjetas ya visibles — no requiere re-ejecutar el
+   agente. Estilo de "callout" para que el cambio sea evidente. (Las bandas de
+   iteración no llevan nota: era genérica y repetitiva, no aportaba por paso.) */
+.live-agent--verbose .trace-step[data-explainer]::after {
+  display: block;
+  margin-top: 0.55rem;
+  padding: 0.45rem 0.6rem;
+  border-left: 3px solid var(--arkanum-glow);
+  border-radius: 6px;
+  background: rgba(139, 92, 246, 0.14);
+  color: var(--arkanum-text);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-style: normal;
+  line-height: 1.5;
+  content: "💡 " attr(data-explainer);
+}
+
+/* Launcher de traces desde el dashboard (mejora #7). */
+.live-agent-launcher {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(192, 132, 252, 0.35);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem;
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.live-agent-launcher summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--arkanum-glow);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.live-agent-launcher summary::-webkit-details-marker { display: none; }
+
+.live-agent-launcher summary::after {
+  content: "▸";
+  margin-left: auto;
+  color: var(--arkanum-muted);
+  transition: transform 0.18s ease;
+}
+
+.live-agent-launcher[open] summary::after { transform: rotate(90deg); }
+
+.live-agent-launcher-label {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  letter-spacing: 0.06em;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.live-agent-launcher-hint {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--arkanum-muted);
+  font-style: italic;
+}
+
+.live-agent-launcher-form {
+  display: flex;
+  gap: 0.55rem;
+  align-items: end;
+  margin-top: 0.85rem;
+  flex-wrap: wrap;
+}
+
+.live-agent-launcher-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--arkanum-muted);
+}
+
+.live-agent-launcher-field--grow { flex: 1 1 18rem; }
+
+.live-agent-launcher-field input,
+.live-agent-launcher-field select {
+  background: rgba(13, 10, 31, 0.7);
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  color: var(--arkanum-text);
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+
+.live-agent-launcher-field input:focus,
+.live-agent-launcher-field select:focus {
+  outline: none;
+  border-color: var(--arkanum-glow);
+}
+
+.live-agent-launcher-status {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--arkanum-muted);
+  flex-basis: 100%;
+}
+
+/* Historial de traces (mejora #4): franja horizontal con cards clickeables. */
+.live-agent-history {
+  margin-bottom: 1rem;
+  border: 1px solid rgba(201, 169, 97, 0.18);
+  border-radius: 12px;
+  padding: 0.7rem 0.85rem 0.85rem;
+  background: rgba(13, 10, 31, 0.45);
+}
+
+.live-agent-history-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.55rem;
+}
+
+.live-agent-history-label {
+  font-family: var(--font-serif);
+  letter-spacing: 0.08em;
+  color: var(--arkanum-gold);
+  font-size: 0.92rem;
+  text-transform: uppercase;
+}
+
+.live-agent-history-status {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--arkanum-muted);
+}
+
+.live-agent-history-list {
+  list-style: none;
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0;
+  margin: 0;
+  scroll-snap-type: x proximity;
+}
+
+.live-agent-history-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  position: relative;
+}
+
+.live-agent-history-button {
+  width: 16rem;
+  min-height: 5.5rem;
+  text-align: left;
+  background: rgba(26, 21, 53, 0.6);
+  border: 1px solid rgba(201, 169, 97, 0.18);
+  border-radius: 9px;
+  padding: 0.55rem 0.7rem 0.55rem 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--arkanum-text);
+  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+/* Botón ✕ para borrar trace (esquina superior derecha de la card). */
+.live-agent-history-close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.3rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(13, 10, 31, 0.6);
+  color: var(--arkanum-muted);
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+  z-index: 2;
+}
+
+.live-agent-history-item:hover .live-agent-history-close {
+  opacity: 1;
+}
+
+.live-agent-history-close:hover {
+  background: rgba(232, 122, 122, 0.2);
+  color: var(--arkanum-fail);
+}
+
+.live-agent-history-close:disabled {
+  opacity: 0.4;
+  cursor: progress;
+}
+
+/* Badge Q{N} antes del título de la card. */
+.live-agent-history-q-badge {
+  display: inline-block;
+  padding: 0.05rem 0.4rem;
+  margin-right: 0.35rem;
+  background: rgba(192, 132, 252, 0.18);
+  color: var(--arkanum-glow);
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  vertical-align: middle;
+}
+
+.live-agent-history-button:hover {
+  border-color: rgba(192, 132, 252, 0.5);
+  transform: translateY(-1px);
+}
+
+.live-agent-history-item--active .live-agent-history-button {
+  border-color: var(--arkanum-glow);
+  box-shadow: 0 0 14px rgba(192, 132, 252, 0.25);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.live-agent-history-button-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.live-agent-history-status-pill {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  padding: 0.08rem 0.45rem;
+  border-radius: 9px;
+  background: rgba(168, 159, 196, 0.12);
+  color: var(--arkanum-muted);
+  border: 1px solid rgba(168, 159, 196, 0.25);
+}
+
+.live-agent-history-status-pill--live {
+  color: var(--arkanum-glow);
+  border-color: rgba(192, 132, 252, 0.55);
+  background: rgba(192, 132, 252, 0.16);
+}
+
+.live-agent-history-time {
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.live-agent-history-title {
+  font-family: var(--font-serif);
+  color: var(--arkanum-gold);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.live-agent-history-prompt {
+  color: var(--arkanum-text);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.live-agent-history-meta {
+  margin-top: auto;
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+/* HUD sticky con KPIs en vivo (mejora #13). */
+.live-agent-hud {
+  position: sticky;
+  top: 4.25rem;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.55rem;
+  background: rgba(13, 10, 31, 0.88);
+  border: 1px solid rgba(201, 169, 97, 0.28);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 1.25rem;
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 22px -16px rgba(192, 132, 252, 0.5);
+}
+
+@media (max-width: 720px) {
+  .live-agent-hud {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.live-agent-kpi {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.18rem;
+  text-align: center;
+}
+
+.live-agent-kpi-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--arkanum-muted);
+}
+
+.live-agent-kpi-value {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  color: var(--arkanum-gold);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
 .live-agent-empty {
   border: 1px dashed rgba(201, 169, 97, 0.3);
   border-radius: 12px;
   padding: 1.5rem 1.4rem;
   margin-bottom: 1.5rem;
+}
+
+/* Paneles de prompts (mejora #10): user prompt + system prompt. */
+.live-agent-prompts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (max-width: 720px) {
+  .live-agent-prompts {
+    grid-template-columns: 1fr;
+  }
+}
+
+.live-agent-prompt-panel {
+  background: rgba(13, 10, 31, 0.55);
+  border: 1px solid rgba(201, 169, 97, 0.22);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.live-agent-prompt-panel[open] {
+  border-color: rgba(192, 132, 252, 0.4);
+}
+
+.live-agent-prompt-panel summary {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.65rem 0.95rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.live-agent-prompt-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.live-agent-prompt-panel summary::after {
+  content: "▸";
+  margin-left: auto;
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  transition: transform 0.18s ease;
+}
+
+.live-agent-prompt-panel[open] summary::after {
+  transform: rotate(90deg);
+  color: var(--arkanum-glow);
+}
+
+.live-agent-prompt-icon {
+  font-size: 1.05rem;
+}
+
+.live-agent-prompt-label {
+  font-family: var(--font-serif);
+  letter-spacing: 0.06em;
+  color: var(--arkanum-gold);
+  font-size: 0.92rem;
+}
+
+.live-agent-prompt-preview {
+  margin-left: 0.4rem;
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 18rem;
+}
+
+.live-agent-prompt-body {
+  padding: 0.75rem 1rem 1rem;
+  margin: 0;
+  color: var(--arkanum-text);
+  line-height: 1.55;
+  font-size: 0.92rem;
+  border-top: 1px solid rgba(201, 169, 97, 0.12);
+}
+
+.live-agent-prompt-body--mono {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--arkanum-glow);
+}
+
+.live-agent-prompt-body--muted {
+  color: var(--arkanum-muted);
+  font-style: italic;
+}
+
+.live-agent-prompt-note {
+  padding: 0 1rem 0.85rem;
+  margin: 0;
+  color: var(--arkanum-muted);
+  font-size: 0.78rem;
+}
+
+.live-agent-prompt-note--warn {
+  color: var(--arkanum-warn);
+}
+
+/* Editor del system prompt (mejora #18). */
+.live-agent-prompt-actions {
+  padding: 0 1rem 0.55rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.live-agent-prompt-textarea {
+  display: block;
+  width: calc(100% - 1.5rem);
+  margin: 0.65rem 0.75rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(192, 132, 252, 0.45);
+  border-radius: 8px;
+  color: var(--arkanum-text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 0.55rem 0.7rem;
+  resize: vertical;
+  line-height: 1.4;
+}
+
+.live-agent-prompt-edit-actions {
+  display: flex;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  padding: 0 0.75rem 0.85rem;
 }
 
 .live-agent-empty pre {
@@ -2591,6 +3231,320 @@ code {
   gap: 0.7rem;
   margin: 0;
   padding: 0;
+}
+
+/* Banda por iteración del loop (mejora #3). */
+.trace-band {
+  list-style: none;
+  background: rgba(13, 10, 31, 0.4);
+  border: 1px solid rgba(139, 92, 246, 0.22);
+  border-radius: 12px;
+  padding: 0.85rem 0.95rem 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  position: relative;
+}
+
+.trace-band::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(
+    180deg,
+    rgba(192, 132, 252, 0.6),
+    rgba(201, 169, 97, 0.3)
+  );
+  border-radius: 3px 0 0 3px;
+}
+
+.trace-band-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0 0 0.45rem;
+  border-bottom: 1px dashed rgba(201, 169, 97, 0.18);
+}
+
+.trace-band-icon {
+  font-size: 1rem;
+  color: var(--arkanum-glow);
+}
+
+.trace-band-label {
+  font-family: var(--font-serif);
+  letter-spacing: 0.08em;
+  color: var(--arkanum-gold);
+  font-size: 0.95rem;
+  text-transform: uppercase;
+}
+
+.trace-band-meta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--arkanum-muted);
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.trace-band-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.08rem 0.45rem;
+  background: rgba(13, 10, 31, 0.55);
+  border: 1px solid rgba(201, 169, 97, 0.22);
+  border-radius: 9px;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.trace-band-meta-icon {
+  color: var(--arkanum-gold);
+  font-size: 0.78rem;
+  line-height: 1;
+}
+
+.trace-band-meta-value {
+  color: var(--arkanum-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.trace-band-steps {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0;
+}
+
+/* Card TL;DR al final del trace (mejora UX problema E). */
+.trace-summary-card {
+  list-style: none;
+  margin-top: 1.25rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  background: linear-gradient(165deg, rgba(201, 169, 97, 0.12), rgba(26, 21, 53, 0.85));
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  border-radius: 14px;
+  box-shadow: 0 14px 28px -22px rgba(201, 169, 97, 0.6);
+}
+
+.trace-summary-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px dashed rgba(201, 169, 97, 0.3);
+}
+
+.trace-summary-eyebrow {
+  font-family: var(--font-serif);
+  letter-spacing: 0.18em;
+  color: var(--arkanum-gold);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.trace-summary-trace-id {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--arkanum-muted);
+}
+
+.trace-summary-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.trace-summary-row {
+  display: grid;
+  grid-template-columns: 9rem 1fr;
+  gap: 0.85rem;
+  align-items: baseline;
+  font-size: 0.93rem;
+  line-height: 1.5;
+}
+
+.trace-summary-label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  color: var(--arkanum-muted);
+  text-transform: lowercase;
+}
+
+.trace-summary-value {
+  color: var(--arkanum-text);
+  font-family: var(--font-sans);
+}
+
+.trace-summary-value--muted {
+  color: var(--arkanum-muted);
+  font-style: italic;
+}
+
+.trace-summary-value--prose {
+  font-family: var(--font-sans);
+  font-style: italic;
+  white-space: pre-wrap;
+}
+
+.trace-summary-row--final {
+  margin-top: 0.45rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(192, 132, 252, 0.25);
+}
+
+.trace-summary-row--final .trace-summary-label {
+  color: var(--arkanum-glow);
+}
+
+/* Toggle "ver más" para payloads largos (mejora UX problema F). */
+.trace-step-payload-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.trace-step-payload-wrap .trace-step-payload,
+.trace-step-payload-wrap .trace-step-result-payload {
+  margin-top: 0;
+}
+
+.trace-step-payload-toggle {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed rgba(192, 132, 252, 0.4);
+  color: var(--arkanum-glow);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.trace-step-payload-toggle:hover {
+  background: rgba(192, 132, 252, 0.12);
+  color: var(--arkanum-gold);
+  border-color: var(--arkanum-gold);
+}
+
+/* Banner aclaratorio cuando un trace de Q07 termina sin agent_final (H-22). */
+.trace-q07-banner {
+  list-style: none;
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.95rem 1.1rem;
+  margin-top: 0.5rem;
+  background: rgba(139, 92, 246, 0.10);
+  border: 1px dashed rgba(192, 132, 252, 0.45);
+  border-radius: 10px;
+}
+
+.trace-q07-banner-icon {
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+.trace-q07-banner-body {
+  flex: 1;
+  color: var(--arkanum-text);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.trace-q07-banner-body strong {
+  color: var(--arkanum-glow);
+}
+
+/* Panel de contexto creciente / diff (mejoras #11 + #17). */
+.trace-context-growth {
+  margin-top: 0.45rem;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px dashed rgba(201, 169, 97, 0.22);
+  border-radius: 8px;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.84rem;
+}
+
+.trace-context-growth summary {
+  cursor: pointer;
+  list-style: none;
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.trace-context-growth summary::-webkit-details-marker { display: none; }
+
+.trace-context-growth[open] summary {
+  color: var(--arkanum-glow);
+}
+
+.trace-context-summary-text {
+  letter-spacing: 0.03em;
+}
+
+.trace-context-delta-pill {
+  margin-left: 0.4rem;
+  background: rgba(101, 209, 150, 0.15);
+  border: 1px solid rgba(101, 209, 150, 0.45);
+  color: var(--arkanum-success);
+  padding: 0.05rem 0.4rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+}
+
+.trace-context-delta-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.trace-context-delta-item {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--arkanum-text);
+  padding: 0.3rem 0.5rem;
+  background: rgba(13, 10, 31, 0.55);
+  border-radius: 6px;
+}
+
+.trace-context-delta-role {
+  color: var(--arkanum-gold);
+  letter-spacing: 0.04em;
+}
+
+.trace-context-delta-kind {
+  color: var(--arkanum-glow);
+}
+
+.trace-context-delta-preview {
+  flex: 1 1 18rem;
+  color: var(--arkanum-muted);
+  font-style: italic;
+  overflow-wrap: anywhere;
 }
 
 .trace-step {
@@ -2621,6 +3575,30 @@ code {
 .trace-step--session_start,
 .trace-step--session_end {
   border-left-color: var(--arkanum-gold);
+}
+
+.trace-step--agent_thought {
+  border-left-color: var(--arkanum-glow);
+  background:
+    linear-gradient(165deg, rgba(139, 92, 246, 0.18) 0%, rgba(26, 21, 53, 0.95) 100%);
+}
+
+.trace-step--agent_final {
+  border-left-color: var(--arkanum-gold);
+  background:
+    linear-gradient(165deg, rgba(201, 169, 97, 0.18) 0%, rgba(26, 21, 53, 0.95) 100%);
+}
+
+.trace-step--iteration_start {
+  border-left-color: var(--arkanum-purple);
+  background: rgba(13, 10, 31, 0.55);
+  padding: 0.5rem 0.85rem;
+}
+
+.trace-step--latency {
+  border-left-color: var(--arkanum-warn);
+  background: rgba(13, 10, 31, 0.45);
+  padding: 0.45rem 0.85rem;
 }
 
 .trace-step-head {
@@ -2666,4 +3644,790 @@ code {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-x: auto;
+}
+
+/* Pensamiento del agente / respuesta final: prosa en serif para enfatizar
+   que es lenguaje natural del modelo, no payload técnico. */
+.trace-step-prose {
+  margin-top: 0.6rem;
+  padding: 0.65rem 0.95rem;
+  color: var(--arkanum-text);
+  font-family: var(--font-sans);
+  font-size: 0.96rem;
+  line-height: 1.55;
+  background: rgba(0, 0, 0, 0.22);
+  border-left: 2px solid rgba(192, 132, 252, 0.45);
+  border-radius: 0 8px 8px 0;
+  white-space: pre-wrap;
+  font-style: italic;
+}
+
+.trace-step--agent_final .trace-step-prose {
+  border-left-color: var(--arkanum-gold);
+  font-style: normal;
+  font-weight: 500;
+}
+
+/* function_call agrupada con su function_result (mejora #2). */
+.trace-step--function_call[data-pair-status="pending"] {
+  border-left-color: var(--arkanum-glow);
+  opacity: 0.92;
+}
+
+.trace-step--paired {
+  border-left-color: var(--arkanum-success);
+}
+
+.trace-step-pending {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--arkanum-muted);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-style: italic;
+}
+
+.trace-step-pending-spinner {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  border: 2px solid rgba(192, 132, 252, 0.3);
+  border-top-color: var(--arkanum-glow);
+  animation: trace-spinner 0.9s linear infinite;
+}
+
+@keyframes trace-spinner {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.trace-step-result {
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(101, 209, 150, 0.45);
+}
+
+.trace-step-result-label {
+  display: inline-block;
+  margin-bottom: 0.3rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--arkanum-success);
+  text-transform: uppercase;
+}
+
+.trace-step-result-payload {
+  margin: 0.3rem 0 0;
+  padding: 0.55rem 0.85rem;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 8px;
+  color: var(--arkanum-text);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+/* Chip (latencia, etc.) — pequeño bloque a la derecha del header. */
+.trace-step-chip {
+  margin-left: auto;
+  background: rgba(232, 185, 77, 0.15);
+  border: 1px solid rgba(232, 185, 77, 0.45);
+  color: var(--arkanum-warn);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 9px;
+  letter-spacing: 0.04em;
+}
+
+/* Contador de iteración — visual de separador. */
+.trace-step-counter {
+  margin-left: auto;
+  font-family: var(--font-serif);
+  font-size: 0.9rem;
+  color: var(--arkanum-glow);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   Live Agent — grafo "Constelación del Agente" (estilo n8n).
+   Vista unificada: el grafo va arriba (en vivo) y el timeline debajo
+   (paso a paso). No hay toggle — ambos se ven a la vez.
+   ════════════════════════════════════════════════════════════════════ */
+
+.live-agent-graph {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 880px) {
+  .live-agent-graph {
+    grid-template-columns: minmax(0, 1.7fr) minmax(240px, 1fr);
+    align-items: start;
+  }
+}
+
+.live-agent-graph-stage {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(139, 92, 246, 0.22), transparent 62%),
+    linear-gradient(180deg, #16122e 0%, #0f0c24 100%);
+  border: 1px solid rgba(201, 169, 97, 0.4);
+  border-radius: 16px;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+/* Encabezado que separa el grafo (arriba) del timeline (abajo). */
+.live-agent-steps-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(201, 169, 97, 0.2);
+}
+.live-agent-steps-heading-icon { font-size: 1.05rem; }
+.live-agent-steps-heading-text {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--arkanum-gold);
+  letter-spacing: 0.06em;
+}
+.live-agent-steps-heading-hint {
+  color: var(--arkanum-muted);
+  font-size: 0.82rem;
+}
+
+.live-agent-graph-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-serif);
+}
+
+/* ---- Aristas agente↔herramienta ---- */
+.la-edge-base {
+  stroke: rgba(185, 174, 224, 0.45);
+  stroke-width: 2;
+}
+.la-edge-pulse {
+  stroke: transparent;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 14 220;
+  stroke-dashoffset: 0;
+  opacity: 0;
+}
+.la-edge-pulse.is-firing-out {
+  stroke: var(--arkanum-gold);
+  opacity: 1;
+  animation: la-pulse-out 0.8s ease-out;
+}
+.la-edge-pulse.is-firing-in {
+  stroke: var(--arkanum-success);
+  opacity: 1;
+  animation: la-pulse-in 0.8s ease-out;
+}
+@keyframes la-pulse-out {
+  from { stroke-dashoffset: 234; opacity: 1; }
+  to   { stroke-dashoffset: 0;   opacity: 0; }
+}
+@keyframes la-pulse-in {
+  from { stroke-dashoffset: 0;   opacity: 1; }
+  to   { stroke-dashoffset: 234; opacity: 0; }
+}
+
+/* ---- Nodo agente ---- */
+.la-agent-core {
+  fill: #3a2f73;
+  stroke: var(--arkanum-gold);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 14px rgba(201, 169, 97, 0.55));
+}
+.la-agent-ring {
+  fill: none;
+  stroke: rgba(192, 132, 252, 0.65);
+  stroke-width: 2.5;
+  stroke-dasharray: 6 10;
+  opacity: 0.6;
+}
+.la-agent-ring.is-thinking {
+  opacity: 1;
+  /* fill-box ancla el giro al centro del propio anillo. Sin esto, el
+     transform-origin se resuelve contra el viewBox del SVG (no contra el
+     círculo) y, como el anillo cuelga de un grupo trasladado a (388,270),
+     acaba orbitando un punto lejano: parece un halo que sale disparado del
+     mago hacia la derecha y se va del cuadro. */
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: la-spin 3.2s linear infinite;
+}
+@keyframes la-spin {
+  to { transform: rotate(360deg); }
+}
+.la-agent-label {
+  fill: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: #0f0c24;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* Sombrero de mago del agente (vectorial, on-brand). */
+.la-wiz-brim { fill: var(--arkanum-gold); }
+.la-wiz-cone {
+  fill: #241a52;
+  stroke: var(--arkanum-gold);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.la-wiz-band { fill: var(--arkanum-gold); }
+.la-wiz-buckle {
+  fill: #241a52;
+  stroke: var(--arkanum-gold);
+  stroke-width: 1;
+}
+.la-wiz-star {
+  fill: #f7ecc9;
+  animation: la-twinkle 2.6s ease-in-out infinite;
+}
+@keyframes la-twinkle {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 1; }
+}
+
+/* ---- Nodo aprendiz (usuario, entrada del flujo) ---- */
+.la-user { cursor: pointer; outline: none; }
+.la-user-core {
+  fill: #1f2b52;
+  stroke: #7fb0e0;
+  stroke-width: 2.5;
+  transition: stroke 0.2s ease, fill 0.2s ease;
+}
+.la-user.has-run .la-user-core { stroke: var(--arkanum-glow); }
+.la-user:hover .la-user-core,
+.la-user:focus-visible .la-user-core,
+.la-user.is-selected .la-user-core {
+  stroke: var(--arkanum-glow);
+  fill: #2a3a6a;
+}
+.la-learner-body { fill: #5a6dbf; }
+.la-learner-hood { fill: #41509a; stroke: var(--arkanum-gold); stroke-width: 1; }
+.la-learner-head { fill: #f0e6cf; }
+
+/* Arista aprendiz→mago (la entrada que dispara la secuencia). */
+.la-edge-user {
+  stroke: rgba(127, 176, 224, 0.55);
+  stroke-width: 2.5;
+  stroke-dasharray: 5 6;
+}
+
+/* Chispa que recorre la arista aprendiz↔mago (DIST = 388 − 96 = 292). */
+.la-spark-user {
+  fill: var(--arkanum-gold);
+  opacity: 0;
+  filter: drop-shadow(0 0 6px rgba(201, 169, 97, 0.9));
+}
+.la-spark-user.is-in { animation: la-spark-in 0.95s ease-out; }
+.la-spark-user.is-back {
+  fill: var(--arkanum-glow);
+  filter: drop-shadow(0 0 6px rgba(192, 132, 252, 0.9));
+  animation: la-spark-back 0.95s ease-out;
+}
+@keyframes la-spark-in {
+  0%   { transform: translateX(0);     opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(292px); opacity: 0; }
+}
+@keyframes la-spark-back {
+  0%   { transform: translateX(292px); opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(0);     opacity: 0; }
+}
+
+/* El mago también es clicable (muestra su system prompt). */
+.la-agent { cursor: pointer; outline: none; }
+.la-agent:hover .la-agent-core,
+.la-agent:focus-visible .la-agent-core,
+.la-agent.is-selected .la-agent-core {
+  stroke: var(--arkanum-glow);
+}
+
+/* ---- Nodos herramienta ---- */
+.la-tool {
+  cursor: pointer;
+  outline: none;
+}
+.la-tool-core {
+  fill: #2c2658;
+  stroke: #b9aee0;
+  stroke-width: 2.5;
+  transition: stroke 0.2s ease, fill 0.2s ease;
+}
+.la-tool.has-run .la-tool-core {
+  fill: #3a3168;
+  stroke: var(--arkanum-gold);
+}
+.la-tool.has-error .la-tool-core {
+  stroke: var(--arkanum-fail);
+}
+.la-tool:hover .la-tool-core,
+.la-tool:focus-visible .la-tool-core,
+.la-tool.is-selected .la-tool-core {
+  stroke: var(--arkanum-glow);
+  fill: #443a7a;
+}
+.la-tool.is-active .la-tool-core {
+  stroke: var(--arkanum-gold);
+  filter: drop-shadow(0 0 12px rgba(201, 169, 97, 0.9));
+}
+.la-tool.flash-ok .la-tool-core {
+  stroke: var(--arkanum-success);
+  filter: drop-shadow(0 0 12px rgba(101, 209, 150, 0.9));
+}
+.la-tool.flash-error .la-tool-core {
+  stroke: var(--arkanum-fail);
+  filter: drop-shadow(0 0 12px rgba(232, 122, 122, 0.9));
+}
+
+/* Halo de actividad de la herramienta: gira mientras la tool está en
+   ejecución (llamada pero aún sin resultado). Blanco y discreto a propósito
+   —menos intenso que el anillo púrpura del mago— para que de un vistazo se
+   vea dónde ocurre la acción. Si el agente llama a varias tools a la vez,
+   cada una enciende el suyo. fill-box ancla el giro a su propio centro. */
+.la-tool-ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 2;
+  stroke-dasharray: 4 7;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.la-tool.is-waiting .la-tool-ring {
+  opacity: 0.9;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: la-spin 2.4s linear infinite;
+}
+.la-tool-icon {
+  font-size: 30px;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+.la-tool-label {
+  fill: #ece8f6;
+  font-size: 14px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: #0f0c24;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.la-tool.has-run .la-tool-label {
+  fill: #ffffff;
+}
+
+/* Badge contador sobre el nodo. */
+.la-tool-badge { opacity: 0; transition: opacity 0.2s ease; }
+.la-tool-badge.is-visible { opacity: 1; }
+.la-tool-badge-bg {
+  fill: var(--arkanum-gold);
+  stroke: var(--arkanum-bg);
+  stroke-width: 2;
+}
+.la-tool.has-error .la-tool-badge-bg {
+  fill: var(--arkanum-fail);
+}
+.la-tool-badge-text {
+  fill: var(--arkanum-bg);
+  font-size: 14px;
+  font-weight: 700;
+  dominant-baseline: middle;
+}
+
+/* ---- Panel de detalle ---- */
+.live-agent-graph-detail {
+  background: rgba(13, 10, 31, 0.55);
+  border: 1px solid rgba(201, 169, 97, 0.28);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  min-height: 120px;
+}
+.live-agent-graph-detail-hint {
+  margin: 0;
+  color: var(--arkanum-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.la-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.la-detail-icon { font-size: 1.4rem; }
+.la-detail-title {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--arkanum-text);
+}
+.la-detail-count {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: var(--arkanum-gold);
+  letter-spacing: 0.04em;
+}
+.la-detail-desc {
+  margin: 0 0 0.5rem;
+  color: var(--arkanum-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+.la-detail-name {
+  display: inline-block;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  color: var(--arkanum-glow);
+  background: rgba(139, 92, 246, 0.12);
+  border-radius: 6px;
+  padding: 0.1rem 0.45rem;
+  margin-bottom: 0.75rem;
+}
+.la-detail-section { margin-top: 0.75rem; }
+.la-detail-section-label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arkanum-muted);
+  margin-bottom: 0.3rem;
+}
+.la-detail-args {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.6rem;
+  font-size: 0.84rem;
+}
+.la-detail-args dt {
+  font-family: var(--font-mono, monospace);
+  color: var(--arkanum-gold-soft);
+}
+.la-detail-args dd {
+  margin: 0;
+  color: var(--arkanum-text);
+  word-break: break-word;
+}
+.la-detail-result-label {
+  font-size: 0.78rem;
+  color: var(--arkanum-success);
+  margin-bottom: 0.3rem;
+}
+.la-detail-result {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  background: rgba(13, 10, 31, 0.7);
+  border: 1px solid rgba(168, 159, 196, 0.2);
+  border-radius: 8px;
+  padding: 0.6rem 0.7rem;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--arkanum-text);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.la-detail-result.is-error {
+  border-color: rgba(232, 122, 122, 0.4);
+  color: #f2c4c4;
+}
+/* Respuesta final del agente: prosa legible (no mono) y acento dorado, igual
+   que la burbuja agent_final del timeline. */
+.la-detail-result--final {
+  font-family: inherit;
+  font-size: 0.86rem;
+  border-color: rgba(214, 178, 92, 0.4);
+  background: rgba(214, 178, 92, 0.06);
+}
+.la-detail-result-label.is-error { color: var(--arkanum-fail); }
+.la-detail-empty {
+  margin: 0.5rem 0 0;
+  color: var(--arkanum-muted);
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* Lista de invocaciones de una herramienta (una tarjeta por llamada). */
+.la-inv-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.la-inv {
+  border: 1px solid rgba(168, 159, 196, 0.18);
+  border-left: 3px solid var(--arkanum-gold-soft);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  background: rgba(13, 10, 31, 0.4);
+}
+.la-inv.is-error { border-left-color: var(--arkanum-fail); }
+.la-inv-num {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--arkanum-gold);
+  margin-bottom: 0.3rem;
+}
+.la-inv .la-detail-args { margin-bottom: 0.35rem; }
+.la-inv .la-detail-result { max-height: 160px; }
+
+/* ---- Tooltip arcano (reemplaza los nativos del navegador) ---- */
+.la-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  max-width: 280px;
+  transform: translate(-50%, -100%);
+  padding: 0.45rem 0.65rem;
+  background: linear-gradient(180deg, #221a47 0%, #14102f 100%);
+  border: 1px solid rgba(201, 169, 97, 0.55);
+  border-radius: 9px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: var(--arkanum-text);
+  font-family: var(--font-serif);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+.la-tooltip[hidden] { display: none; }
+
+/* ---- Popover de velocidad del replay (reemplaza window.prompt) ---- */
+.live-agent-actions { position: relative; }
+.live-agent-replay-pop {
+  position: absolute;
+  z-index: 60;
+  display: grid;
+  gap: 4px;
+  padding: 0.5rem;
+  min-width: 170px;
+  background: linear-gradient(180deg, #1b1640 0%, #120f2e 100%);
+  border: 1px solid rgba(201, 169, 97, 0.5);
+  border-radius: 11px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+.live-agent-replay-pop[hidden] { display: none; }
+.live-agent-replay-pop-title {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--arkanum-muted);
+  padding: 0.1rem 0.2rem 0.25rem;
+}
+.live-agent-replay-speed {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px solid rgba(201, 169, 97, 0.25);
+  border-radius: 8px;
+  color: var(--arkanum-text);
+  font-family: var(--font-serif);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+.live-agent-replay-speed:hover,
+.live-agent-replay-speed:focus-visible {
+  background: rgba(139, 92, 246, 0.22);
+  border-color: var(--arkanum-gold);
+  outline: none;
+}
+
+/* Accesibilidad: sin movimiento, todo queda estático y legible. */
+@media (prefers-reduced-motion: reduce) {
+  .la-edge-pulse.is-firing-out,
+  .la-edge-pulse.is-firing-in,
+  .la-agent-ring.is-thinking,
+  .la-tool.is-waiting .la-tool-ring,
+  .la-wiz-star,
+  .la-spark-user.is-in,
+  .la-spark-user.is-back {
+    animation: none;
+  }
+}
+
+/* ── Mejoras de claridad de pasos (ronda 2026-06) ───────────────────── */
+
+/* Args de una function_call como lista clave/valor (en vez de repr crudo). */
+.trace-step-args {
+  margin: 0.5rem 0 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.2rem 0.7rem;
+  padding: 0.55rem 0.85rem;
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 8px;
+  font-size: 0.86rem;
+}
+.trace-step-args dt {
+  font-family: var(--font-mono);
+  color: var(--arkanum-glow);
+  white-space: nowrap;
+}
+.trace-step-args dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  color: var(--arkanum-text);
+  word-break: break-word;
+}
+
+/* Línea corta en lenguaje llano bajo cada tarjeta — siempre visible, para
+   que el aprendiz entienda el paso sin activar el modo Verbose. */
+.trace-step-why {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-sans);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--arkanum-muted);
+  font-style: italic;
+}
+
+/* Resultado de tool que fue un error. */
+.trace-step-result--error {
+  border-top-color: rgba(232, 122, 122, 0.55);
+}
+.trace-step-result--error .trace-step-result-label {
+  color: var(--arkanum-fail);
+}
+.trace-step--errored {
+  border-left-color: var(--arkanum-fail) !important;
+}
+
+/* Step de error (excepción del loop / tope de iteraciones). */
+.trace-step--error {
+  border-left-color: var(--arkanum-fail);
+  background:
+    linear-gradient(165deg, rgba(232, 122, 122, 0.16) 0%, rgba(26, 21, 53, 0.95) 100%);
+}
+.trace-step-error-text {
+  border-left-color: var(--arkanum-fail);
+  color: var(--arkanum-fail);
+  font-style: normal;
+}
+
+/* Resumen de herramientas en el header de la banda de iteración. */
+.trace-band-tools {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.trace-band-tool-chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 8px;
+  background: rgba(192, 132, 252, 0.14);
+  border: 1px solid rgba(192, 132, 252, 0.3);
+  color: var(--arkanum-glow);
+}
+
+/* Hilo vertical que conecta los pasos de una iteración como una cadena
+   (pensó → llamó → observó), reforzando que es un solo flujo causal. */
+.trace-band-steps {
+  position: relative;
+}
+.trace-band-steps > .trace-step::before {
+  content: "";
+  position: absolute;
+  left: -0.62rem;
+  top: 0.4rem;
+  bottom: -0.55rem;
+  width: 2px;
+  background: rgba(192, 132, 252, 0.22);
+}
+.trace-band-steps > .trace-step:last-child::before {
+  display: none;
+}
+.trace-band-steps > .trace-step {
+  position: relative;
+}
+
+/* "· máx N" del header de banda: secundario, para que no se lea como fracción. */
+.trace-band-max {
+  color: var(--arkanum-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* Pista visual de que estos elementos tienen explicación al pasar el cursor. */
+.trace-band-meta-chip,
+.trace-step-chip,
+.trace-band-tool-chip,
+.trace-step-counter[title],
+.trace-band-label[title],
+.trace-context-growth[title],
+.live-agent-kpi[title],
+[data-la-tip] {
+  cursor: help;
+}
+
+/* Tarjeta de entrada del timeline: el prompt que envió el aprendiz. */
+.trace-prompt-card {
+  list-style: none;
+  border: 1px solid rgba(201, 169, 97, 0.45);
+  background: linear-gradient(180deg, rgba(201, 169, 97, 0.10), rgba(13, 10, 31, 0.30));
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.7rem;
+}
+.trace-prompt-card .trace-step-type {
+  color: var(--arkanum-gold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8rem;
+}
+.trace-prompt-card-tag {
+  margin-left: auto;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--arkanum-bg);
+  background: var(--arkanum-gold);
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+}
+.trace-prompt-card-text {
+  margin: 0.4rem 0 0;
+  color: var(--arkanum-text);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }

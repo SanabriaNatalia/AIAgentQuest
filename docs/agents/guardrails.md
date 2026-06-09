@@ -26,7 +26,7 @@ Los guardrails ayudan a que un sistema:
 
 No hacen que un sistema sea perfectamente seguro.
 
-Pero sí ayudan a controlar daños y reducir errores.  Puedes leer más en la [documentación oficial de IBM](https://www.ibm.com/think/topics/ai-guardrails?utm_source=chatgpt.com).
+Pero sí ayudan a controlar daños y reducir errores.  Puedes leer más en la [documentación oficial de IBM](https://www.ibm.com/think/topics/ai-guardrails).
 
 ---
 
@@ -39,6 +39,8 @@ os.path.commonpath(...)
 ```
 
 Evita que el agente escape del `working_directory`.
+
+> Ver [validación de rutas](../security/path_validation.md) para el detalle.
 
 ---
 
@@ -115,7 +117,7 @@ Por ejemplo:
 
 Por eso los agentes reales utilizan múltiples capas de guardrails.  
 
-Acá dejamos la [la documentación oficial de Guardrails de Langchain.](https://docs.langchain.com/oss/python/langchain/guardrails?utm_source=chatgpt.com) por si te interesa profundizar.
+Acá dejamos la [documentación oficial de Guardrails de Langchain](https://docs.langchain.com/oss/python/langchain/guardrails) por si te interesa profundizar.
 
 ---
 
@@ -129,7 +131,7 @@ Los modelos todavía pueden:
 - ser manipulados
 - sufrir jailbreaks
 
-Los guardrails reducen riesgos, pero no eliminan todos los problemas.En este [artículo de The Guardian](https://www.theguardian.com/technology/article/2024/may/20/ai-chatbots-safeguards-can-be-easily-bypassed-say-uk-researchers?utm_source=chatgpt.com) se muestra cómo se pueden eludir fácilmente medidas de seguridad en los LLMs.
+Los guardrails reducen riesgos, pero no eliminan todos los problemas. En este [artículo de The Guardian](https://www.theguardian.com/technology/article/2024/may/20/ai-chatbots-safeguards-can-be-easily-bypassed-say-uk-researchers) se muestra cómo se pueden eludir fácilmente medidas de seguridad en los LLMs.
 
 ---
 

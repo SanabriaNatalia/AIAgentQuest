@@ -17,7 +17,12 @@
       <li><a href="/map">Mapa</a></li>
       <li><a href="/ranks">Rangos</a></li>
       <li><a href="/milestones">Hitos</a></li>
+      {% if live_agent_unlocked() %}
       <li><a href="/live-agent">Live Agent</a></li>
+      {% else %}
+      <li><a href="/live-agent" class="arkanum-nav-locked"
+             title="Se desbloquea en el Quest 07">Live Agent 🔒</a></li>
+      {% endif %}
       <li><a href="/codex">Códex</a></li>
       <li><a href="/setup">Setup</a></li>
     </ul>

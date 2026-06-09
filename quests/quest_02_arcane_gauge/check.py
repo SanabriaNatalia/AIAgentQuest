@@ -1,6 +1,8 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
@@ -39,6 +41,10 @@ def success() -> None:
 
 
 def main() -> None:
+    # H-08: COLUMNS=1000 evita que rich.Console envuelva líneas largas
+    # del subprocess y rompa la búsqueda `in output` de abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
             sys.executable,
@@ -51,10 +57,19 @@ def main() -> None:
         encoding="utf-8",
         errors="replace",
         timeout=20,
+        env=env,
     )
 
     output = result.stdout
     error = result.stderr
+
+    # Reemite la salida del starter en la terminal del aprendiz, para que
+    # la respuesta del agente quede visible durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
 
     if result.returncode != 0:
         fail(
@@ -62,20 +77,14 @@ def main() -> None:
             f"{error}"
         )
 
-    if "Prompt tokens:" not in output:
-        fail(
-            "No encontré 'Prompt tokens:' en la salida."
-        )
-
-    if "Response tokens:" not in output:
-        fail(
-            "No encontré 'Response tokens:' en la salida."
-        )
-
-    if "Agente:" not in output:
-        fail(
-            "No encontré la respuesta del agente."
-        )
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 2",
+        output,
+        ["Prompt tokens:", "Response tokens:", "Agente:"],
+    )
+    console.print(table)
+    if missing:
+        fail(f"Faltaron {len(missing)} salida(s) esperada(s) en la consola.")
 
     success()
 

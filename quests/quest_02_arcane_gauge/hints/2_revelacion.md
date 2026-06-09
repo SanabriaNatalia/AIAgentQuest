@@ -1,8 +1,8 @@
 ## La revelación
 
-La medida del costo vive en **`response.usage_metadata`**. Es un objeto con varios contadores; los dos que importan ahora son:
+La metadata de uso vive en **`response.usage_metadata`**. Es un objeto con varios contadores; los dos que importan ahora son:
 
-- `prompt_token_count` — lo que costó **tu** mensaje.
-- `candidates_token_count` — lo que costó la **respuesta** del modelo.
+- `prompt_token_count` — tokens consumidos por tu mensaje (entrada).
+- `candidates_token_count` — tokens consumidos por la respuesta del modelo (salida).
 
-Si `usage_metadata` viene `None`, algo salió mal en la invocación: protégete con un `RuntimeError`. Recuerda imprimir los tokens **antes** de mostrar la respuesta — el orden importa para el check.
+Si `usage_metadata` viene `None`, algo salió mal en la llamada: lanza un `RuntimeError`. Imprime los tokens **antes** de mostrar la respuesta del agente — el check valida ese orden.

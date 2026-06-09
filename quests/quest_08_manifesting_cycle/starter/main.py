@@ -7,19 +7,16 @@ utilizando tool calls y observaciones.
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_08_manifesting_cycle.starter.main \
-    "Lee notes.txt y dime qué contiene"
+    arkanum run 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
 
 También puedes usar modo verbose:
 
-    uv run python -m quests.quest_08_manifesting_cycle.starter.main \
-    "Lee notes.txt y dime qué contiene" \
-    --verbose
+    arkanum run 8 "Los tests de calculator están fallando. Ayúdame a corregir el error." --verbose
 
-Una vez hayas terminado, y el agente haya solucionado el bug, 
+Una vez hayas terminado, y el agente haya solucionado el bug,
 valida tu solución ejecutando:
 
-    uv run python -m quests.quest_08_manifesting_cycle.check
+    arkanum check 8
 """
 
 import argparse
@@ -40,27 +37,25 @@ show_quest_header(
     "El agente se manifiesta en un ciclo de acción, observación y reflexión.",
 )
 
-# TODO 1:
+# TODO 8.0 — Preparación:
 # Copia tu solución del Quest 07 en este archivo.
+# No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.x … 7.x — esos pasos ya los resolviste.
 #
 # Puedes usar:
+# - quests/quest_07_agent_incarnation/solution/solution.py, o
+# - tu propia versión completada.
 #
-# quests/quest_07_agent_incarnation/solution/main.py
-#
-# o tu propia versión completada.
-#
-# No copies los imports ni la función show_quest_header,
-# solo el código que va después.
-#
-# En este quest refactorizarás tu código, por lo que prepárate para 
+# En este quest refactorizarás tu código, por lo que prepárate para
 # mover partes de tu solución a nuevas funciones.
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 08
-# ============================================
 
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 08                       ║
+# ║   A partir de aquí, los TODOs son nuevos (8.x).      ║
+# ╚══════════════════════════════════════════════════════╝
 
-# TODO 2:
+# TODO 8.1:
 # Refactoriza tu archivo para que la lógica principal viva dentro de:
 #
 # def main():
@@ -76,7 +71,7 @@ show_quest_header(
 def main():
     pass
 
-# TODO 3:
+# TODO 8.2:
 # Crea una función llamada:
 #
 # generate_content(messages, verbose)
@@ -93,7 +88,7 @@ def generate_content(messages, verbose=False):
     pass
 
 
-# TODO 4:
+# TODO 8.3:
 # Importa:
 #
 # MAX_ITERS
@@ -101,15 +96,15 @@ def generate_content(messages, verbose=False):
 # desde:
 #
 # common.config
-# 
-# Preferiblemente al inicio de tu archivo, 
+#
+# Preferiblemente al inicio de tu archivo,
 # junto con los otros imports.
 #
 # Este valor limitará la cantidad máxima
 # de iteraciones del agente.
 
 
-# TODO 5:
+# TODO 8.4:
 # Dentro de main(), crea un loop usando:
 #
 # for _ in range(MAX_ITERS):
@@ -122,7 +117,7 @@ def generate_content(messages, verbose=False):
 # - continuar si el agente solo ejecutó tools
 
 
-# TODO 6:
+# TODO 8.5:
 # Dentro de generate_content(...), cuando recibas response.candidates,
 # agrega el content del modelo al historial:
 #
@@ -132,7 +127,7 @@ def generate_content(messages, verbose=False):
 #             messages.append(candidate.content)
 
 
-# TODO 7:
+# TODO 8.6:
 # Dentro de generate_content(...), si NO hay function calls:
 #
 # return response.text
@@ -140,7 +135,7 @@ def generate_content(messages, verbose=False):
 # Esto romperá el loop principal.
 
 
-# TODO 8:
+# TODO 8.7:
 # Después de ejecutar las tools, agrega sus resultados al historial:
 #
 # messages.append(
@@ -150,17 +145,37 @@ def generate_content(messages, verbose=False):
 #     )
 # )
 #
-# Esto permitirá que el agente reflexione sobre los resultados 
+# Esto permitirá que el agente reflexione sobre los resultados
 # de las tools en la siguiente iteración.
 
 
-# TODO 9:
+# TODO 8.8:
 # Si el agente alcanza MAX_ITERS sin respuesta final,
 # imprime:
 #
 # Maximum iterations ({MAX_ITERS}) reached.
 #
 # Esto evitará loops infinitos en caso de que el agente no logre resolver la tarea.
+
+
+# TODO 8.9:
+# Afina tu system prompt para el agent loop.
+#
+# El prompt minimalista del Quest 06 bastaba para tareas de un solo paso,
+# pero aquí el agente ejecuta tareas de varios pasos. Vuelve a:
+#
+# common/prompts/system_prompt.py
+#
+# y mejora el `system_prompt` para guiar mejor el ciclo: pídele que razone
+# paso a paso, que trabaje con rutas relativas (no debe especificar el
+# working_directory) y que responda al usuario en español al terminar.
+#
+# Tienes un ejemplo en el README de este Quest (sección "Afina tu system
+# prompt").
+#
+# Nota: `arkanum check 8` no valida el prompt directamente, pero verás la
+# diferencia en el comportamiento del agente al correr `arkanum run 8 "..."`.
+
 
 if __name__ == "__main__":
     main()

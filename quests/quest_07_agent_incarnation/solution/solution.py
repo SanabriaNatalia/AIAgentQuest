@@ -20,7 +20,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-# TODO 4
+# TODO 7.3:
 from common.functions.call_function import available_functions, call_function
 from common.prompts.system_prompt import system_prompt
 from common.utils.ui import (
@@ -36,7 +36,8 @@ show_quest_header(
     "El agente manifiesta su voluntad en el mundo.",
 )
 
-# TODO 1:
+# TODO 7.0 — Preparación: código heredado del Quest 06.
+
 load_dotenv()
 
 api_key = os.environ.get("GEMINI_API_KEY")
@@ -52,7 +53,7 @@ success("Cliente de Gemini inicializado.")
 
 parser = argparse.ArgumentParser(description="AI Agent Quest — Quest 07")
 parser.add_argument("user_prompt", type=str, help="Prompt del usuario")
-# TODO 3:
+# TODO 7.2:
 parser.add_argument(
     "--verbose",
     action="store_true",
@@ -92,13 +93,18 @@ if usage is None:
 
 success("Respuesta recibida.")
 
-#TODO 3 (continuación):
+
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 07                       ║
+# ╚══════════════════════════════════════════════════════╝
+
+# TODO 7.2 (continuación):
 if args.verbose:
     print(f"User prompt: {args.user_prompt}")
     print(f"Prompt tokens: {usage.prompt_token_count}")
     print(f"Response tokens: {usage.candidates_token_count}")
 
-# TODO 5
+# TODO 7.4:
 function_results = []
 
 for function_call in response.function_calls or []:
@@ -120,7 +126,7 @@ for function_call in response.function_calls or []:
 
     function_results.append(part)
 
-    # TODO 6
+    # TODO 7.5:
     if args.verbose:
         print(f"-> {part.function_response.response}")
 

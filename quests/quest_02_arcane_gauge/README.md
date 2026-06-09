@@ -4,6 +4,8 @@
     <img src="../../assets/images/quest-2-banner.png" alt="Quest 2 Banner" width="100%">
 </p>
 
+## 🎭 Lore
+
 > *“Toda invocación consume energía.*
 > *Los aprendices imprudentes agotan sus recursos antes de comprender el costo de sus palabras.”*
 >
@@ -11,26 +13,34 @@
 
 ## Información del Quest
 
-|Acto| Dificultad | Tiempo estimado |
+| Acto | Dificultad | Tiempo estimado |
 |---|---|---|
-| I - Fundamentos del Agente | 🟢 Fácil | 5–15 mins |
+| I — Fundamentos del Agente | 🟢 Fácil | 5–15 mins |
 
-## Metadata de Tokens
+---
 
-Cuando trabajamos con modelos de lenguaje, es importante entender cuántos tokens consumimos.
+## 🎯 Objetivo
 
-Los tokens son las unidades que utiliza el modelo para procesar texto.
+Inspeccionar la metadata de uso (`usage_metadata`) que Gemini devuelve junto con cada respuesta, para entender cuántos tokens consume una invocación.
+
+A partir de este Quest el agente evoluciona progresivamente: no construyes ejercicios separados, **construyes un agente** que va sumando capacidades (memoria, herramientas, contexto, workflows, autonomía).
+
+---
+
+## 📚 Conceptos clave
+
+### Tokens
+
+Cuando trabajamos con modelos de lenguaje, es importante entender cuántos tokens consumimos. Los tokens son las unidades que utiliza el modelo para procesar texto.
 
 Mientras más contexto enviamos y más texto genera el modelo:
 - más tokens consumimos
 - más costo tiene la invocación
 - más cerca estamos de los límites de uso
 
-(Puedes consultar más [aquí](../../docs/LLMs/tokens.md))
+(Más info [aquí](../../docs/LLMs/tokens.md)).
 
----
-
-## Usage Metadata
+### Usage Metadata
 
 La respuesta de Gemini incluye una propiedad llamada:
 
@@ -38,44 +48,16 @@ La respuesta de Gemini incluye una propiedad llamada:
 response.usage_metadata
 ```
 
-Esta contiene información útil sobre la invocación.
-
-En este Quest utilizaremos:
+En este Quest usaremos dos campos de esa metadata:
 
 ```python
-prompt_token_count
+prompt_token_count       # tokens enviados al modelo
+candidates_token_count   # tokens generados en la respuesta
 ```
-
-Cantidad de tokens enviados al modelo.
-
-y:
-
-```python
-candidates_token_count
-```
-
-Cantidad de tokens generados en la respuesta.
 
 ---
 
-## Continuando el laboratorio
-
-A partir de este Quest, el agente evolucionará progresivamente.
-
-Cada nuevo Quest expandirá el código construido anteriormente:
-- agregando memoria
-- herramientas
-- contexto
-- workflows
-- capacidades autónomas
-
-No estás construyendo ejercicios separados.
-
-Estás construyendo un agente.
-
----
-
-## Tu misión
+## 📋 Tu misión
 
 Actualiza el starter para:
 
@@ -85,7 +67,7 @@ Actualiza el starter para:
 
 ---
 
-## Resultado esperado
+## ✅ Resultado esperado
 
 ```text
 🧑 User prompt:
@@ -97,6 +79,12 @@ Response tokens: 96
 🤖 Gemini:
 Un agente IA es...
 ```
+
+---
+
+## 🔗 Referencias
+
+- [Tokens](../../docs/LLMs/tokens.md)
 
 ---
 

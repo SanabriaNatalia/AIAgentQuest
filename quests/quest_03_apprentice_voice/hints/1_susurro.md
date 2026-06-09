@@ -1,5 +1,5 @@
 ## El susurro
 
-> Un prompt fijo en código es una voz prestada. Si quieres que el aprendiz hable, necesitas dos cosas: una forma de _escuchar_ desde la terminal, y una manera de _empaquetar_ esa voz en algo que el modelo entienda como mensaje.
+> Necesitas dos cambios respecto al Quest 02: (1) leer el prompt desde la línea de comandos en lugar de hardcodearlo, y (2) enviarlo al modelo como un mensaje estructurado en vez de un string suelto.
 
-La primera ya la conoces de cualquier script Python. La segunda se llama distinto que un `str`.
+Para (1) hay un módulo estándar de Python que probablemente ya conoces. Para (2), el SDK de Gemini expone tipos específicos que envuelven el texto junto con un `role`.

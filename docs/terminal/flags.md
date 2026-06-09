@@ -34,7 +34,7 @@ Normalmente muestran ayuda sobre el comando.
 Ejemplo:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main -h
+uv run python -m quests.quest_03_apprentice_voice.starter.main -h
 ```
 
 Salida aproximada:

@@ -1,6 +1,8 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
@@ -41,6 +43,10 @@ def success() -> None:
 def main() -> None:
     prompt = "¿Qué es un agente IA? Responde en un párrafo corto."
 
+    # H-08: COLUMNS=1000 evita que rich.Console envuelva líneas largas
+    # del subprocess y rompa la búsqueda `prompt in output` de abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
             sys.executable,
@@ -52,10 +58,19 @@ def main() -> None:
         capture_output=True,
         text=True,
         timeout=30,
+        env=env,
     )
 
     output = result.stdout
     error = result.stderr
+
+    # Reemite la salida del starter en la terminal del aprendiz, para que
+    # la respuesta del agente quede visible durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
 
     if result.returncode != 0:
         fail(
@@ -63,20 +78,17 @@ def main() -> None:
             f"{error or output}"
         )
 
-    if prompt not in output:
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 3",
+        output,
+        [prompt, "Prompt tokens:", "Response tokens:", "Gemini"],
+    )
+    console.print(table)
+    if missing:
         fail(
-            "No encontré el prompt del usuario en la salida.\n"
-            "Asegúrate de recibirlo desde argparse y mostrarlo con show_prompt(prompt)."
+            f"Faltaron {len(missing)} salida(s) esperada(s) en la consola. "
+            "Revisa que recibas el prompt con argparse y muestres tokens + respuesta."
         )
-
-    if "Prompt tokens:" not in output:
-        fail("No encontré 'Prompt tokens:' en la salida.")
-
-    if "Response tokens:" not in output:
-        fail("No encontré 'Response tokens:' en la salida.")
-
-    if "Gemini" not in output:
-        fail("No encontré la respuesta del agente.")
 
     success()
 

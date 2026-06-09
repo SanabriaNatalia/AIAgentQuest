@@ -4,8 +4,11 @@
     <img src="../../assets/images/quest-8-banner.png" alt="Quest 8 Banner" width="100%">
 </p>
 
-> *“Una acción aislada puede ser accidente.  
-> La voluntad persistente transforma el mundo.”*  
+## 🎭 Lore
+
+> *“Una acción aislada puede ser accidente.*
+> *La voluntad persistente transforma el mundo.”*
+>
 > — Zhyréon
 
 ## Información del Quest
@@ -16,30 +19,17 @@
 
 ---
 
-## Objetivo
+## 🎯 Objetivo
 
-Hasta ahora, nuestro agente podía:
-- conversar
-- elegir herramientas
-- ejecutar funciones reales
+Construir el primer **agent loop** iterativo: el agente observa los resultados de sus tools, reacciona, vuelve a actuar, y persiste hasta resolver el objetivo.
 
-Pero todavía tenía una limitación importante:
-
-> solo podía actuar una vez.
-
-En este Quest construiremos el primer ciclo autónomo del agente.
-
-Por primera vez, el agente podrá:
-- observar resultados
-- reaccionar a observaciones
-- continuar iterando
-- perseguir un objetivo durante múltiples pasos
-
-**El agente entra en el ciclo de la manifestación.**
+Hasta ahora el agente podía conversar, elegir herramientas y ejecutar funciones reales, pero solo podía actuar **una vez**. En este Quest entra en el ciclo de la manifestación: observar, reaccionar, iterar.
 
 ---
 
-## Qué aprenderás
+## 📚 Conceptos clave
+
+### Qué aprenderás
 
 - qué es un agent loop
 - cómo mantener historial conversacional
@@ -52,9 +42,7 @@ Por primera vez, el agente podrá:
   - ejecución
   - observación
 
----
-
-## La idea clave
+### La idea clave
 
 Los agentes modernos no funcionan como:
 
@@ -75,11 +63,7 @@ objetivo
 
 **Ese ciclo iterativo es el corazón de los sistemas agénticos.**
 
----
-
-## El flujo completo
-
-En este Quest construiremos:
+### El flujo completo
 
 ```text
 usuario
@@ -92,14 +76,9 @@ usuario
 → respuesta final
 ```
 
-Por primera vez:
-- el modelo verá resultados de herramientas
-- podrá reaccionar a ellos
-- podrá continuar trabajando
+Por primera vez el modelo verá resultados de herramientas, podrá reaccionar a ellos y continuar trabajando.
 
----
-
-## El agent loop
+### El agent loop
 
 El loop principal utilizará:
 
@@ -107,84 +86,37 @@ El loop principal utilizará:
 for _ in range(MAX_ITERS):
 ```
 
-Esto permite:
-- limitar iteraciones
-- evitar loops infinitos
-- mantener control del agente
+Esto permite limitar iteraciones, evitar loops infinitos y mantener control del agente.
 
----
+### ¿Por qué `MAX_ITERS`?
 
-## ¿Por qué MAX_ITERS?
+Los agentes pueden atascarse, repetir acciones, alucinar o caer en loops. Por eso necesitamos límites explícitos.
 
-Los agentes pueden:
-- atascarse
-- repetir acciones
-- alucinar
-- caer en loops
+El laboratorio ya incluye `MAX_ITERS` en `common/config.py`.
 
-Por eso necesitamos límites explícitos.
+### Refactorizando `generate_content()`
 
-El laboratorio ya incluye:
-
-```python
-MAX_ITERS
-```
-
-en:
-
-```text
-common/config.py
-```
-
----
-
-## Refactorizando generate_content()
-
-Hasta ahora, toda la lógica estaba mezclada dentro de `main.py`.
-
-En este Quest separaremos:
+Hasta ahora, toda la lógica estaba mezclada dentro de `main.py`. En este Quest separaremos:
 
 ```python
 generate_content(messages, verbose)
 ```
 
-Esto hará mucho más fácil:
-- iterar
-- mantener historial
-- reutilizar lógica
-- construir loops agentic
+Esto hará mucho más fácil iterar, mantener historial, reutilizar lógica y construir loops agentic.
 
----
+### Historial conversacional
 
-## Historial conversacional
-
-El agente necesita recordar:
-- prompts
-- respuestas
-- tool calls
-- observaciones
-
-Por eso trabajaremos sobre:
+El agente necesita recordar prompts, respuestas, tool calls y observaciones. Por eso trabajaremos sobre:
 
 ```python
 messages = [...]
 ```
 
-Cada iteración agregará:
-- respuestas del modelo
-- resultados de herramientas
+Cada iteración agregará respuestas del modelo y resultados de herramientas.
 
----
+### Tool responses
 
-## Tool responses
-
-Después de ejecutar una tool:
-
-```python
-call_function(...)
-```
-
-debemos devolver el resultado al modelo usando:
+Después de ejecutar una tool con `call_function(...)`, debemos devolver el resultado al modelo usando:
 
 ```python
 types.Content(
@@ -193,60 +125,38 @@ types.Content(
 )
 ```
 
-Esto permite que el modelo:
-- vea observaciones
-- interprete resultados
-- continúe razonando
+Esto permite que el modelo vea observaciones, interprete resultados y continúe razonando.
 
----
+### ¿Qué rompe el loop?
 
-## ¿Qué rompe el loop?
-
-El loop termina cuando contiene una respuesta final del modelo.
+El loop termina cuando contiene una respuesta final del modelo:
 
 ```python
 response.text
 ```
 
-Si el modelo todavía quiere usar herramientas:
-- el loop continúa
-
-Si el modelo responde normalmente:
-- el ciclo termina
+- Si el modelo todavía quiere usar herramientas: el loop continúa.
+- Si el modelo responde normalmente: el ciclo termina.
 
 ---
 
-## Tu misión
+## 📋 Tu misión
 
-En este Quest trabajarás en cinco partes.
-
----
+En este Quest trabajarás en seis partes.
 
 ### 1. Refactorizar la arquitectura principal
 
-Debes reorganizar tu programa utilizando:
+Reorganiza tu programa usando:
 
 ```python
-
 def main():
-
-```
-
-y:
-
-```python
+    ...
 
 def generate_content(messages, verbose):
-
+    ...
 ```
 
-La idea es separar:
-
-- orquestación
-- generación de respuestas
-- ejecución del ciclo
-
-[`main()`](../../docs/python/main_function.md) será responsable de:
+`main()` será responsable de:
 
 - validar API key
 - crear el parser
@@ -262,26 +172,18 @@ La idea es separar:
 - agregar observaciones
 - devolver respuesta final
 
-Al final del archivo debes agregar:
+Al final del archivo agrega:
 
 ```python
 if __name__ == "__main__":
     main()
 ```
 
-Esto permitirá:
-
-- mantener el programa organizado
-- separar definición y ejecución
-- facilitar testing y reutilización
-
-Si no estás familiarizado con el **método main en Python** puedes leer [esta entrada del Códice](../../docs/python/main_function.md).
-
----
+Si no estás familiarizado con el [método main en Python](../../docs/python/main_function.md), revisa la entrada del Códice.
 
 ### 2. Construir el agent loop
 
-Debes crear:
+Crea:
 
 ```python
 for _ in range(MAX_ITERS):
@@ -292,24 +194,9 @@ El loop debe:
 - detenerse cuando exista respuesta final
 - continuar cuando existan tools pendientes
 
----
-
 ### 3. Agregar historial conversacional
 
-Debes mantener:
-
-```python
-messages = [...]
-```
-
-actualizado en cada iteración.
-
-El historial debe incluir:
-- prompts del usuario
-- respuestas del modelo
-- resultados de herramientas
-
----
+Mantén `messages = [...]` actualizado en cada iteración. El historial debe incluir prompts del usuario, respuestas del modelo y resultados de herramientas.
 
 ### 4. Manejar tool responses
 
@@ -318,7 +205,7 @@ Después de ejecutar tools:
 - valida `.function_response`
 - valida `.response`
 
-Luego agrega:
+Luego agrega al historial:
 
 ```python
 types.Content(
@@ -327,59 +214,76 @@ types.Content(
 )
 ```
 
-al historial.
-
----
-
 ### 5. Manejar errores y límites
 
-Debes:
 - capturar errores de ejecución
 - manejar iteraciones máximas
 - lanzar errores si no existe `response.text`
 - evitar loops infinitos
 
+### 6. Afina tu system prompt
+
+Hasta ahora tu agente resolvía tareas de **un solo paso**, y el system prompt minimalista del Quest 06 bastaba. Pero el agent loop de este Quest ejecuta **tareas de varios pasos** (explorar → leer → ejecutar tests → corregir → volver a ejecutar): ahí un prompt mejor guiado marca la diferencia.
+
+Vuelve a `common/prompts/system_prompt.py` y mejora el `system_prompt`. Considera pedirle al agente que:
+
+- **razone paso a paso** antes de actuar,
+- trabaje siempre con **rutas relativas** al directorio de trabajo (nosotros le inyectamos el `working_directory`, él no debe especificarlo),
+- y, al terminar, **responda al usuario en español**, de forma clara y concisa.
+
+Por ejemplo, partiendo del prompt del Quest 06 y añadiéndole ese cierre:
+
+```text
+Eres un agente de IA especializado en programación.
+Cuando el usuario haga una pregunta o solicitud,
+debes crear un plan de uso de herramientas.
+
+Puedes realizar las siguientes operaciones:
+
+- Listar archivos y directorios
+- Leer contenido de archivos
+- Escribir archivos
+- Ejecutar archivos Python
+
+Todas las rutas son relativas al directorio de trabajo permitido;
+trabaja siempre con rutas relativas. Razona paso a paso: inspecciona
+lo que necesites con las herramientas y, cuando tengas información
+suficiente, responde al usuario en español, de forma clara y concisa.
+```
+
+> ℹ️ `arkanum check 8` **no** valida el system prompt directamente (solo verifica que el bug quede corregido y que los tests pasen). Pero con un prompt mejor guiado verás al agente trabajar de forma más consistente al correr `arkanum run 8 "..."`. Experimenta: cambia el prompt y observa cómo cambia su comportamiento.
+
 ---
 
-## El primer ciclo real
+## 🧪 El primer ciclo real
 
-Dentro del `workspace/` encontrarás un pequeño programa llamado:
+Dentro del `workspace/` encontrarás un pequeño programa:
 
 ```text
 calculator.py
-```
-
-y una suite de tests:
-
-```text
 tests.py
 ```
 
-Uno de los tests está fallando.
+Uno de los tests está fallando. Tu agente debería ser capaz de:
 
-Tu agente debería ser capaz de:
-- explorar archivos
-- leer contenido
-- ejecutar tests
-- identificar el problema
-- corregir el bug
-- volver a ejecutar los tests
+1. explorar archivos
+2. leer contenido
+3. ejecutar tests
+4. identificar el problema
+5. corregir el bug
+6. volver a ejecutar los tests
 
 Todo utilizando el ciclo de manifestación.
 
----
+### Prompt sugerido
 
-## Prompt sugerido
-
-Usa este prompt cuando valides con `arkanum check 8` (o cuando experimentes con tu agente):
+Usa este prompt cuando valides con `arkanum check 8`:
 
 ```text
 Los tests de calculator están fallando. Ayúdame a corregir el error.
 ```
 
----
-
-## Qué deberías observar
+### Qué deberías observar
 
 Si todo funciona correctamente, el agente debería:
 
@@ -391,36 +295,42 @@ Si todo funciona correctamente, el agente debería:
 6. volver a ejecutar tests
 7. generar una respuesta final
 
-Verás algo parecido a:
+Verás algo parecido a esto en la terminal (vista limpia, sin `--verbose`):
 
 ```text
-- Calling function: get_files_info
-- Calling function: get_file_content
-- Calling function: run_python_file
-- Calling function: write_file
-- Calling function: run_python_file
+· Iteración 1/20
+  🛠 get_files_info(directory=".")
+     ↳ ok (155 B)
+· Iteración 2/20
+  🛠 get_file_content(file_path="calculator.py")
+     ↳ ok (204 B)
+· Iteración 3/20
+  🛠 run_python_file(file_path="tests.py")
+     ↳ error: AssertionError en test_add
+· Iteración 4/20
+  🛠 write_file(file_path="calculator.py", content="…")
+     ↳ ok
+· Iteración 5/20
+  🛠 run_python_file(file_path="tests.py")
+     ↳ ok
 
-Final response:
+🤖 Agente:
 El problema fue corregido correctamente.
 ```
 
-Este será el primer momento donde el agente:
-- itera
-- aprende de observaciones
-- ajusta comportamiento
-- persiste hasta resolver un problema
+Los valores exactos (tamaños, número de iteraciones) variarán. Añade `--verbose` para ver además los tokens por iteración, los args completos y el resultado completo de cada tool.
 
-Ese patrón es el corazón de los sistemas agénticos modernos.
+Este será el primer momento donde el agente itera, aprende de observaciones, ajusta comportamiento y persiste hasta resolver un problema. Ese patrón es el corazón de los sistemas agénticos modernos.
 
 ---
 
-## Importante
+## ⚠️ Importante
 
 En este Quest:
-- el agente todavía NO tiene memoria persistente
-- todavía NO tiene planificación compleja
-- todavía NO tiene sub-agentes
-- todavía NO tiene razonamiento explícito
+- el agente todavía **NO** tiene memoria persistente
+- todavía **NO** tiene planificación compleja
+- todavía **NO** tiene sub-agentes
+- todavía **NO** tiene razonamiento explícito
 
 Pero sí tiene:
 
@@ -432,3 +342,47 @@ Y eso cambia todo.
 
 ---
 
+## 🧭 Dos comandos, dos propósitos
+
+| Comando | Para qué | Toca Live Agent |
+|---|---|---|
+| `arkanum run 8 "..."` | Correr tu solución + ver el agent loop iterativo en el dashboard | **Sí** (automático) |
+| `arkanum check 8` | Validar que `calculator.py` quedó arreglado y sellar la quest | No |
+
+`arkanum check 8` aquí es especial: **no ejecuta el agente**, solo verifica que `workspace/calculator.py` tenga `return a + b` y que `python tests.py` pase. Para ver al agente arreglar el bug en vivo necesitas `arkanum run 8 "..."` — en Q08 el tracing es automático.
+
+## 🪞 Ver el ciclo en vivo (este es el momento)
+
+Q08 es la quest donde el agent loop importa más visualmente. Con el dashboard arrancado:
+
+```bash
+arkanum dashboard start
+arkanum run 8 "Los tests de calculator están fallando. Ayúdame a corregir el error."
+```
+
+Abre [http://127.0.0.1:8765/live-agent](http://127.0.0.1:8765/live-agent). Por defecto verás la **vista limpia**:
+
+- una **banda por iteración** del loop (Iteración 1, 2, 3…),
+- las tool calls agrupadas con su resultado anidado,
+- la **respuesta final** dorada cuando el agente sale del loop.
+
+Activa el toggle **🔍 Verbose** (arriba a la derecha) para añadir el detalle completo:
+
+- el **pensamiento** del modelo antes de cada tool call,
+- la **latencia, tokens y costo** por iteración en el header de cada banda,
+- el **contexto creciente** (cuántos `messages` tiene el historial tras cada vuelta),
+- y una nota pedagógica 💡 bajo cada paso.
+
+> ℹ️ Si abres `/live-agent` y solo ves la celebración tras `arkanum check 8`, eso es esperado: `check` no emite traces. Solo `arkanum run 8 "..."` lo hace.
+
+---
+
+## ✅ Resultado esperado
+
+El agente identifica y corrige autónomamente el bug en `calculator.py`, ejecutando múltiples tool calls hasta validar que los tests pasen.
+
+---
+
+## 🔗 Referencias
+
+- [Método `main` en Python](../../docs/python/main_function.md)

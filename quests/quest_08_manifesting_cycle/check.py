@@ -5,6 +5,7 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from common.utils.ui import warning
 
@@ -92,17 +93,30 @@ def main() -> None:
     output = result.stdout
     error = result.stderr
 
+    # Reemite la salida de los tests en la terminal del aprendiz, para que
+    # los resultados queden visibles durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
+
     if result.returncode != 0:
         fail(
             "Los tests de calculator todavía fallan.\n\n"
             f"{error or output}"
         )
 
-    if "All tests passed!" not in output:
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 8",
+        output,
+        ["All tests passed!"],
+    )
+    console.print(table)
+    if missing:
         fail(
-            "Los tests corrieron, pero no encontré el mensaje esperado:\n"
-            "All tests passed!\n\n"
-            f"Salida:\n{output}"
+            "Los tests corrieron, pero no encontré 'All tests passed!' "
+            "en la salida. Revisa tests.py."
         )
 
     success()

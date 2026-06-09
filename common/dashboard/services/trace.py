@@ -42,6 +42,14 @@ class TraceSummary:
     started_at: str
     last_step_at: str
     steps: int
+    # `steps` es el conteo crudo de filas (incluye tokens, latency, session_*,
+    # function_result, etc.). Para el historial/toolbar mostramos en su lugar
+    # `iterations` (vueltas del loop) y `tool_calls`, que sí coinciden con lo
+    # que el timeline hace visible.
+    iterations: int = 0
+    tool_calls: int = 0
+    seconds_since_last_step: float | None = None
+    has_session_end: bool = False
 
 
 def start_trace() -> str:
@@ -100,6 +108,83 @@ def recent_steps(limit: int = 200, trace_id: str | None = None) -> list[TraceSte
     ]
 
 
+def recent_trace_summaries(
+    limit: int = 10, quest_db_id: str | None = None
+) -> list[TraceSummary]:
+    """Devuelve los N últimos traces como summaries, sin sus steps.
+
+    Útil para el historial de `/live-agent` (mejora #4): permite mostrar
+    una lista clickable de ejecuciones previas sin cargar todos los
+    payloads. La consulta agrupa por `trace_id` y ordena por el step
+    más reciente de cada uno.
+
+    `quest_db_id` filtra a los traces de un quest concreto (selector de la
+    vista). Se aplica con `HAVING MIN(quest_id) = ?` para no distorsionar los
+    conteos por trace: COUNT/SUM siguen calculándose sobre todos sus steps.
+    """
+    init_db()
+    having = "HAVING MIN(quest_id) = ? " if quest_db_id else ""
+    params: tuple = (quest_db_id, limit) if quest_db_id else (limit,)
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT trace_id, "
+            "       MIN(created_at) AS started_at, "
+            "       MAX(created_at) AS last_step_at, "
+            "       COUNT(*)        AS steps, "
+            "       MIN(quest_id)   AS quest_id, "
+            "       MAX(id)         AS last_step_id, "
+            "       SUM(CASE WHEN step_type = 'iteration_start' THEN 1 ELSE 0 END) AS iterations, "
+            "       SUM(CASE WHEN step_type = 'function_call'   THEN 1 ELSE 0 END) AS tool_calls "
+            "FROM agent_traces "
+            "GROUP BY trace_id "
+            + having +
+            "ORDER BY last_step_id DESC "
+            "LIMIT ?",
+            params,
+        ).fetchall()
+
+    return [
+        TraceSummary(
+            trace_id=r[0],
+            quest=quest_by_db_id(r[4]) if r[4] else None,
+            started_at=r[1] or "",
+            last_step_at=r[2] or "",
+            steps=int(r[3] or 0),
+            iterations=int(r[6] or 0),
+            tool_calls=int(r[7] or 0),
+        )
+        for r in rows
+    ]
+
+
+def trace_first_user_prompt(trace_id: str) -> str | None:
+    """Extrae el `user_prompt` del primer session_start de un trace.
+
+    Devuelve None si no hay session_start, si su payload no es JSON o
+    si no contiene `user_prompt`. Usado por el historial para mostrar
+    una preview del prompt original.
+    """
+    init_db()
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT payload FROM agent_traces "
+            "WHERE trace_id = ? AND step_type = 'session_start' "
+            "ORDER BY id ASC LIMIT 1",
+            (trace_id,),
+        ).fetchone()
+    if row is None or not row[0]:
+        return None
+    try:
+        data = json.loads(row[0])
+    except (TypeError, ValueError):
+        return None
+    if isinstance(data, dict):
+        prompt = data.get("user_prompt")
+        if isinstance(prompt, str):
+            return prompt
+    return None
+
+
 def latest_trace_summary() -> TraceSummary | None:
     """Resumen del trace más reciente, para mostrar al tope de /live-agent."""
     init_db()
@@ -110,21 +195,47 @@ def latest_trace_summary() -> TraceSummary | None:
         if row is None:
             return None
         trace_id = row[0]
+        return trace_summary_for(trace_id)
+
+
+def trace_summary_for(trace_id: str) -> TraceSummary | None:
+    """Calcula el summary (con cálculo de staleness) para un trace_id dado."""
+    init_db()
+    with get_connection() as conn:
         stats = conn.execute(
-            "SELECT MIN(created_at), MAX(created_at), COUNT(*), MIN(quest_id) "
+            "SELECT MIN(created_at), MAX(created_at), COUNT(*), MIN(quest_id), "
+            "       SUM(CASE WHEN step_type = 'iteration_start' THEN 1 ELSE 0 END), "
+            "       SUM(CASE WHEN step_type = 'function_call'   THEN 1 ELSE 0 END) "
             "FROM agent_traces WHERE trace_id = ?",
             (trace_id,),
         ).fetchone()
+        if stats is None or stats[2] == 0:
+            return None
+        started_at, last_step_at, count, q_db_id, iterations, tool_calls = stats
+        has_end = conn.execute(
+            "SELECT 1 FROM agent_traces "
+            "WHERE trace_id = ? AND step_type = 'session_end' LIMIT 1",
+            (trace_id,),
+        ).fetchone() is not None
 
-    if stats is None:
-        return None
-    started_at, last_step_at, count, q_db_id = stats
+    seconds_since = None
+    if last_step_at:
+        try:
+            last_dt = datetime.fromisoformat(last_step_at)
+            seconds_since = max(0.0, (datetime.now() - last_dt).total_seconds())
+        except ValueError:
+            seconds_since = None
+
     return TraceSummary(
         trace_id=trace_id,
         quest=quest_by_db_id(q_db_id) if q_db_id else None,
         started_at=started_at or "",
         last_step_at=last_step_at or "",
         steps=int(count or 0),
+        iterations=int(iterations or 0),
+        tool_calls=int(tool_calls or 0),
+        seconds_since_last_step=seconds_since,
+        has_session_end=has_end,
     )
 
 

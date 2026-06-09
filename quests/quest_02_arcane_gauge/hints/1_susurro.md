@@ -1,5 +1,5 @@
 ## El susurro
 
-> El modelo no sólo responde — también _cobra_. Cada invocación deja un rastro de su costo. ¿En qué objeto te entrega esa contabilidad?
+> Cada llamada al modelo consume tokens, y la respuesta de Gemini te informa cuántos. ¿En qué atributo del objeto `response` viene esa información? (Pista: no es `.text`.)
 
-Mira con atención el `response` que ya tienes del Quest 01. No todo lo importante vive en `.text`.
+Revisa el `response` que ya tienes del Quest 01. Además del texto generado, trae un atributo con la metadata de uso (tokens consumidos en el prompt y en la respuesta).

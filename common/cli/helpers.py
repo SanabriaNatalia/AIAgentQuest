@@ -62,12 +62,16 @@ def check_path(quest: QuestMeta) -> Path:
     return REPO_ROOT / "quests" / quest.slug / "check.py"
 
 
-def run_module(module_path: str, extra_args: list[str] | None = None) -> int:
+def run_module(
+    module_path: str,
+    extra_args: list[str] | None = None,
+    env_extra: dict[str, str] | None = None,
+) -> int:
     cmd = [sys.executable, "-m", module_path]
     if extra_args:
         cmd.extend(extra_args)
     try:
-        result = subprocess.run(cmd, cwd=str(REPO_ROOT), env=_utf8_env())
+        result = subprocess.run(cmd, cwd=str(REPO_ROOT), env=_utf8_env(env_extra))
         return result.returncode
     except KeyboardInterrupt:
         return 130
@@ -78,6 +82,7 @@ def run_module_capturing(
     extra_args: list[str] | None = None,
     on_line=None,  # type: ignore[no-untyped-def]
     env_extra: dict[str, str] | None = None,
+    echo: bool = True,
 ) -> tuple[int, str]:
     """Ejecuta `python -m module_path` haciendo `tee` de stdout.
 
@@ -86,6 +91,13 @@ def run_module_capturing(
     invoca `on_line(line)` por cada línea (útil para streaming de traces).
     Errores dentro de `on_line` se loguean a stderr pero NO matan el
     subprocess. Devuelve `(returncode, captured_stdout)`.
+
+    `echo=False` silencia el reenvío crudo a `sys.stdout`: la línea se
+    sigue acumulando y se sigue pasando a `on_line`, pero NO se escribe a la
+    consola. Lo usa `arkanum run` (Q07/Q08) para que un "presentador"
+    formatee el stdout del agente en vez de volcarlo tal cual; el subprocess
+    sigue corriendo en `--verbose` para que el dashboard reciba todo el
+    detalle sin recortes.
     """
     cmd = [sys.executable, "-u", "-m", module_path]
     if extra_args:
@@ -113,8 +125,9 @@ def run_module_capturing(
     try:
         for line in proc.stdout:
             captured.append(line)
-            sys.stdout.write(line)
-            sys.stdout.flush()
+            if echo:
+                sys.stdout.write(line)
+                sys.stdout.flush()
             if on_line is not None:
                 try:
                     on_line(line)

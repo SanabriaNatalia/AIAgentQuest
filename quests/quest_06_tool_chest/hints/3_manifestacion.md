@@ -16,4 +16,4 @@ schema_get_file_content = types.FunctionDeclaration(
 )
 ```
 
-`working_directory` **no** se declara — lo inyectarás tú en el Quest 07. El modelo sólo conoce los args que el agente le permite controlar.
+`working_directory` **no** se declara en el schema — lo inyectarás tú en el Quest 07 desde el código. El modelo solo conoce los argumentos que estén explícitamente en el schema.

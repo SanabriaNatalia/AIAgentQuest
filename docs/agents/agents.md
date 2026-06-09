@@ -98,6 +98,8 @@ El agente decide:
 - con qué argumentos
 - en qué orden
 
+> En el Códex: cómo se describen las herramientas en [tool schemas](tool_schemas.md), cómo se ejecutan en [despacho de funciones](function_dispatch.md) y cómo se estructuran sus respuestas en [Content y Parts](content_and_parts.md).
+
 ---
 
 ## Memoria y contexto

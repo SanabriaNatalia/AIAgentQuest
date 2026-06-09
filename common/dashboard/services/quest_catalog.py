@@ -23,6 +23,15 @@ class QuestMeta:
     rank_unlocked: str
     banner: str
     quote_zhyreon: str
+    # True si `arkanum check N` ejecuta un starter que llama a Gemini.
+    # Permite condicionar el aviso "consume cuota de Gemini" (ver check.py).
+    uses_gemini: bool = True
+    # True si la quest emite traces que `/live-agent` puede visualizar.
+    # Solo Q07/Q08 hoy (agent loop con tools); el CLI ofrece lanzar
+    # `arkanum run N` automáticamente tras un check exitoso.
+    live_agent: bool = False
+    # Prompt sugerido si el aprendiz no pasó uno al check explícitamente.
+    live_agent_default_prompt: str | None = None
 
     @property
     def xp(self) -> int:
@@ -105,6 +114,7 @@ QUESTS: tuple[QuestMeta, ...] = (
             "Antes de entregar herramientas a un agente, traza los límites "
             "del mundo donde puede actuar."
         ),
+        uses_gemini=False,
     ),
     QuestMeta(
         slug="quest_06_tool_chest",
@@ -127,6 +137,8 @@ QUESTS: tuple[QuestMeta, ...] = (
         rank_unlocked="Conjurador de Encarnaciones",
         banner="quest-7-banner.png",
         quote_zhyreon="La voluntad deja de ser idea cuando encuentra manos.",
+        live_agent=True,
+        live_agent_default_prompt="¿Qué archivos hay en la raíz?",
     ),
     QuestMeta(
         slug="quest_08_manifesting_cycle",
@@ -140,6 +152,15 @@ QUESTS: tuple[QuestMeta, ...] = (
         quote_zhyreon=(
             "Una acción aislada puede ser accidente. "
             "La voluntad persistente transforma el mundo."
+        ),
+        # El check de Q08 valida estado del filesystem (calculator.py +
+        # python tests.py), NO invoca al agente. El agente lo corre el
+        # aprendiz antes con `arkanum run 8`.
+        uses_gemini=False,
+        live_agent=True,
+        live_agent_default_prompt=(
+            "Los tests de calculator están fallando. "
+            "Ayúdame a corregir el error."
         ),
     ),
 )

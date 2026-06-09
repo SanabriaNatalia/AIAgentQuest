@@ -1,5 +1,5 @@
 ## El susurro
 
-> Dos rutas absolutas. La primera define el territorio del agente; la segunda es a donde quiere ir. ¿Cómo verificas, sin ambigüedad, que la segunda no escapó de la primera?
+> Tienes dos rutas absolutas: el `working_directory` permitido y la ruta de destino. ¿Cómo verificas, sin ambigüedad, que la segunda está dentro de la primera?
 
-No basta comparar strings: `../foo` y `foo/../foo` se ven distintos pero apuntan al mismo sitio. Necesitas comparar rutas como **rutas**, no como texto.
+Comparar los strings directamente no funciona: `../foo` y `foo/../foo` se ven distintos pero pueden apuntar al mismo lugar. Necesitas comparar las rutas ya normalizadas, no su forma textual.

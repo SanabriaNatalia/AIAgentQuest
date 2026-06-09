@@ -10,11 +10,11 @@ construido en el Quest 02.
 
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_03_user_input.starter.main "¿Qué es un agente IA?"
+    arkanum run 3 "¿Qué es un agente IA?"
 
 Una vez que hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_03_apprentice_voice.check
+    arkanum check 3
 """
 import os
 
@@ -26,20 +26,8 @@ from common.utils.ui import (
     narrator,
     agent,
     success,
+    show_prompt,
 )
-
-# TODO 1:
-# Importa argparse.
-# Lo utilizaremos para recibir prompts desde consola.
-
-
-# TODO 2:
-# Importa `types` desde:
-#
-# from google.genai import types
-#
-# Los modelos conversacionales trabajan con mensajes
-# estructurados en lugar de strings simples.
 
 show_quest_header(
     "Quest 03 — La Voz del Aprendiz",
@@ -47,19 +35,36 @@ show_quest_header(
 )
 
 
-# TODO 3:
+# TODO 3.0 — Preparación:
 # Copia tu solución del Quest 02 en este archivo.
-# Puedes usar:
-# quests/quest_02_token_metadata/solution/solution.py
-# o tu propia versión completada.
 # No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.x y 2.x — esos pasos ya los resolviste.
+#
+# Puedes usar:
+# - quests/quest_02_arcane_gauge/solution/solution.py, o
+# - tu propia versión completada.
 
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 03
-# ============================================
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 03                       ║
+# ║   A partir de aquí, los TODOs son nuevos (3.x).      ║
+# ╚══════════════════════════════════════════════════════╝
 
-# TODO 4:
+# TODO 3.1:
+# Importa argparse al inicio del archivo (junto a los demás imports).
+# Lo utilizaremos para recibir prompts desde consola.
+
+
+# TODO 3.2:
+# Importa `types` al inicio del archivo (junto a los demás imports):
+#
+# from google.genai import types
+#
+# Los modelos conversacionales trabajan con mensajes
+# estructurados en lugar de strings simples.
+
+
+# TODO 3.3:
 # Reemplaza el prompt hardcoded utilizando argparse.
 #
 # El programa debe aceptar un argumento llamado:
@@ -68,11 +73,11 @@ show_quest_header(
 #
 # Ejemplo:
 #
-# uv run python -m quests.quest_03_user_input.starter.main \
+# uv run python -m quests.quest_03_apprentice_voice.starter.main \
 # "¿Qué es un agente IA?"
 
 
-# TODO 5:
+# TODO 3.4:
 # Reemplaza:
 #
 # prompt = ...
@@ -84,7 +89,7 @@ show_quest_header(
 # para utilizar el prompt enviado desde terminal.
 
 
-# TODO 6:
+# TODO 3.5:
 # Crea una lista llamada `messages`.
 #
 # Debe contener un único mensaje con:
@@ -107,7 +112,7 @@ show_quest_header(
 # ]
 
 
-# TODO 7:
+# TODO 3.6:
 # Reemplaza:
 #
 # contents=prompt
@@ -119,7 +124,7 @@ show_quest_header(
 # en la llamada a generate_content().
 
 
-# TODO 8:
+# TODO 3.7:
 # Mantén funcionando el medidor de tokens
 # del Quest 02.
 #
@@ -129,11 +134,11 @@ show_quest_header(
 # Response tokens: Y
 
 
-# TODO 9:
+# TODO 3.8:
 # Ejecuta el programa usando distintos prompts
 # desde terminal.
 #
 # Ejemplo:
 #
-# uv run python -m quests.quest_03_user_input.starter.main \
+# uv run python -m quests.quest_03_apprentice_voice.starter.main \
 # "Explícame qué es RAG en un párrafo"

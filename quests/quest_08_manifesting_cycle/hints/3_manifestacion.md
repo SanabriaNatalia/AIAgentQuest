@@ -25,4 +25,4 @@ def generate_content(messages, verbose=False):
     return None
 ```
 
-`return None` significa "sigue iterando"; `return response.text` rompe el bucle desde `main`.
+`return None` significa "sigue iterando"; `return response.text` rompe el bucle desde `main()`.

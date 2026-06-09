@@ -1,6 +1,8 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
+from common.cli.check_runner import render_required_outputs_table
 from common.progress.db import record_quest_completion
 from rich.console import Console
 from rich.panel import Panel
@@ -50,6 +52,11 @@ def success() -> None:
 
 
 def main() -> None:
+    # Forzamos COLUMNS=1000 para que rich.Console no envuelva líneas largas
+    # en el subprocess; sin esto, el wrap rompe el `expected in output` de
+    # más abajo cuando la terminal del aprendiz es estrecha. Ver H-08.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
             sys.executable,
@@ -60,10 +67,19 @@ def main() -> None:
         capture_output=True,
         text=True,
         timeout=20,
+        env=env,
     )
 
     output = result.stdout
     error = result.stderr
+
+    # Reemite la salida del starter en la terminal del aprendiz, para que
+    # la respuesta del agente quede visible durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
 
     if result.returncode != 0:
         fail(
@@ -77,13 +93,17 @@ def main() -> None:
             f"Salida:\n{output}"
         )
 
-    for expected in REQUIRED_OUTPUTS:
-        if expected not in output:
-            fail(
-                "No encontré una salida esperada.\n\n"
-                f"Faltó:\n{expected}\n\n"
-                f"Salida completa:\n{output}"
-            )
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 5",
+        output,
+        REQUIRED_OUTPUTS,
+    )
+    console.print(table)
+    if missing:
+        fail(
+            f"Faltaron {len(missing)} salida(s) esperada(s) en los tests. "
+            "Revisa los try/except del starter y la función validador."
+        )
 
     success()
 

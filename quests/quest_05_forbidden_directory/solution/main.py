@@ -7,7 +7,7 @@ Puedes usarlo como referencia para completar tu archivo starter/main.py,
 pero te recomendamos intentar resolverlo por tu cuenta primero.
 """
 
-from common.functions.get_files_info import get_valid_target_path
+from common.functions.get_valid_target_path import get_valid_target_path
 from common.utils.ui import show_quest_header, test, pass_test, fail_test
 
 show_quest_header(

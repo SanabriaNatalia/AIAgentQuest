@@ -5,20 +5,25 @@ Objetivo:
 Ejecutar las herramientas solicitadas por el modelo
 y convertir sus resultados en respuestas estructuradas.
 
+⚠️ En este Quest todavía NO devolvemos los resultados de las tools al
+modelo (eso lo harás en Q08, el agent loop). Aquí solo capturas los
+resultados y los imprimes; el agente nunca llega a "responder la
+pregunta" final. Por ejemplo, si preguntas "¿qué archivos hay?",
+verás `Calling function: get_files_info(...)` y su resultado, pero NO
+una respuesta en lenguaje natural como "hay 3 archivos: ...". Eso es
+intencional. Q08 cierra el loop.
+
 Ejecutar desde la raíz del proyecto:
 
-    uv run python -m quests.quest_07_agent_embodiment.starter.main \
-    "¿Qué archivos hay en la raíz?"
+    arkanum run 7 "¿Qué archivos hay en la raíz?"
 
 También puedes usar modo verbose:
 
-    uv run python -m quests.quest_07_agent_embodiment.starter.main \
-    "¿Qué archivos hay en la raíz?" \
-    --verbose
+    arkanum run 7 "¿Qué archivos hay en la raíz?" --verbose
 
 Una vez hayas terminado, valida tu solución ejecutando:
 
-    uv run python -m quests.quest_07_agent_embodiment.check
+    arkanum check 7
 """
 
 import argparse
@@ -39,29 +44,28 @@ show_quest_header(
     "El agente manifiesta su voluntad en el mundo.",
 )
 
-# TODO 1:
+# TODO 7.0 — Preparación:
 # Copia tu solución del Quest 06 en este archivo.
+# No copies los imports ni la función show_quest_header, solo el código que va después.
+# Lo que pegues conservará sus etiquetas TODO 1.x … 6.x — esos pasos ya los resolviste.
 #
 # Puedes usar:
-#
-# quests/quest_06_tool_chest/solution/solution.py
-#
-# o tu propia versión completada.
-#
-# No copies los imports ni la función show_quest_header,
-# solo el código que va después.
+# - quests/quest_06_tool_chest/solution/solution.py, o
+# - tu propia versión completada.
 
 
-# ============================================
-# NUEVO CONTENIDO DEL QUEST 07
-# ============================================
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 07                       ║
+# ║   A partir de aquí, los TODOs son nuevos (7.x).      ║
+# ╚══════════════════════════════════════════════════════╝
 
-# TODO 2:
+# TODO 7.1:
 # Abre:
 #
 # common/functions/call_function.py
 #
-# y completa TODOS los pasos del Quest 07.
+# y completa TODOS los pasos del Quest 07
+# (verás los marcadores `TODO 7.1 (call_function.py, paso N)`).
 #
 # Allí construirás:
 #
@@ -74,7 +78,7 @@ show_quest_header(
 # - devolver respuestas estructuradas
 
 
-# TODO 3:
+# TODO 7.2:
 # Agrega el flag:
 #
 # --verbose
@@ -101,7 +105,7 @@ show_quest_header(
 # if args.verbose:
 #     print(...)
 
-# TODO 4:
+# TODO 7.3:
 # Importa:
 #
 # call_function
@@ -109,10 +113,10 @@ show_quest_header(
 # desde:
 #
 # common.functions.call_function
-# 
+#
 # Preferiblemente, al inicio del archivo, junto con los otros imports.
 
-# TODO 5:
+# TODO 7.4:
 # Reemplaza el print de function_calls
 # por llamadas reales a:
 #
@@ -132,7 +136,7 @@ show_quest_header(
 # Puedes consultar la entrada del códice sobre content y parts para más detalles:
 # docs/agents/content_and_parts.md
 
-# TODO 6:
+# TODO 7.5:
 # Si verbose=True,
 # imprime el resultado de cada tool usando:
 #

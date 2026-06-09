@@ -4,11 +4,11 @@ from google.genai import types
 from common.functions.get_valid_target_path import get_valid_target_path
 
 
-# TODO 3 - Quest 6: Define el schema para la función write_file, 
+# TODO 6.2 (write_file.py): Define el schema para la función write_file,
 # similar a schema_get_files_info
 # Puedes revisar esta entrada si tienes dudas:
 # docs/agents/tool_schemas.md
-schema_get_file_content = None
+schema_write_file = None
 
 def write_file(working_directory, file_path, content):
     try:

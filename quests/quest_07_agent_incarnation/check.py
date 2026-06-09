@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -5,6 +6,10 @@ from pathlib import Path
 from rich.console import Console
 from rich.panel import Panel
 
+from common.cli.check_runner import (
+    render_any_of_table,
+    render_required_outputs_table,
+)
 from common.progress.db import record_quest_completion
 from common.utils.ui import warning
 
@@ -59,50 +64,85 @@ def success() -> None:
     )
 
 
+def validate_output(output: str, returncode: int = 0, error: str = "") -> None:
+    """Valida el stdout del starter. Llama a fail() si algo no cumple.
+
+    Reusable desde el wrapper CLI cuando se ejecuta el starter con tracing
+    en vivo: el wrapper captura el output y delega la validación aquí en
+    lugar de re-invocar Gemini desde un subprocess separado.
+    """
+    if returncode != 0:
+        fail(
+            "El programa terminó con errores.\n\n"
+            f"{error or output}"
+        )
+
+    table, missing = render_required_outputs_table(
+        "Salidas esperadas — Quest 7",
+        output,
+        EXPECTED_OUTPUTS,
+    )
+    console.print(table)
+    if missing:
+        fail(
+            f"Faltaron {len(missing)} salida(s) esperada(s). "
+            "El starter debe imprimir 'Calling function:' y un 'result' "
+            "del subprocess de cada tool."
+        )
+
+    tools_table, found_any = render_any_of_table(
+        "Tools válidas ejecutadas",
+        output,
+        VALID_FUNCTIONS,
+        item_label="Tool",
+    )
+    console.print(tools_table)
+    if not found_any:
+        fail(
+            "Ninguna de las tools válidas se ejecutó. "
+            "Revisa que tu agente esté llamando a get_files_info, "
+            "get_file_content, write_file o run_python_file."
+        )
+
+
 def main() -> None:
+    # H-13: el aprendiz puede pasar `arkanum check 7 "..."` y llega aquí
+    # vía ARKANUM_CHECK_PROMPT. Fallback al prompt canónico si no.
+    prompt = (
+        os.environ.get("ARKANUM_CHECK_PROMPT")
+        or "¿Qué archivos hay en la raíz?"
+    )
+    # H-08: forzar COLUMNS=1000 para evitar que rich.Console envuelva
+    # líneas largas y rompa el `expected in output` de más abajo.
+    env = os.environ.copy()
+    env["COLUMNS"] = "1000"
     result = subprocess.run(
         [
             sys.executable,
             "-m",
             "quests.quest_07_agent_incarnation.starter.main",
-            "¿Qué archivos hay en la raíz?",
+            prompt,
             "--verbose",
         ],
         cwd=ROOT_DIR,
         capture_output=True,
         text=True,
         timeout=30,
+        env=env,
     )
 
     output = result.stdout
     error = result.stderr
 
-    if result.returncode != 0:
-        fail(
-            "El programa terminó con errores.\n\n"
-            f"{error or output}"
-        )
+    # Reemite la salida del starter en la terminal del aprendiz, para que
+    # la respuesta del agente quede visible durante `arkanum check`.
+    if output:
+        sys.stdout.write(output)
+        if not output.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
 
-    for expected in EXPECTED_OUTPUTS:
-        if expected not in output:
-            fail(
-                "No encontré una salida esperada.\n\n"
-                f"Faltó:\n{expected}\n\n"
-                f"Salida completa:\n{output}"
-            )
-
-    found_valid_function = any(
-        function_name in output
-        for function_name in VALID_FUNCTIONS
-    )
-
-    if not found_valid_function:
-        fail(
-            "No encontré ninguna tool válida ejecutándose.\n\n"
-            f"Tools esperadas:\n{VALID_FUNCTIONS}\n\n"
-            f"Salida completa:\n{output}"
-        )
-
+    validate_output(output, result.returncode, error)
     success()
 
 

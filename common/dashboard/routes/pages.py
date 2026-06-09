@@ -14,7 +14,9 @@ from common.dashboard.services.hints import (
     list_hints_for,
 )
 from common.dashboard.services.markdown import (
+    render_codex_section,
     render_markdown_file,
+    resolve_codex_dir,
     resolve_codex_path,
     resolve_quest_readme,
 )
@@ -40,10 +42,14 @@ router = APIRouter()
 def profile_page(request: Request):
     setup_ctx = build_setup_context()
     counts = setup_ctx["counts"]
-    # Onboarding: si el setup tiene avisos o errores, llevamos al aprendiz a /setup.
-    # El perfil queda como destino reservado para cuando los 9 checks estén verdes.
-    # El querystring `?from=auto` evita ciclos si el usuario regresa con el botón "Atrás".
-    if (counts["warn"] + counts["fail"] > 0) and request.query_params.get("from") != "auto":
+    # Onboarding: solo los errores críticos (fail) — sin API key, sin dependencias,
+    # .env ausente, DB rota… — llevan al aprendiz a /setup para repararlos antes de
+    # empezar. Los avisos (warn) NO bloquean el perfil: varios son normales en el
+    # uso diario (el ping a la API se omite por defecto para no quemar cuota, el
+    # workspace/ se crea hasta el Acto II), y el aprendiz puede revisarlos cuando
+    # quiera desde el enlace "Setup" del menú. El querystring `?from=auto` evita
+    # ciclos si el usuario regresa con el botón "Atrás".
+    if counts["fail"] > 0 and request.query_params.get("from") != "auto":
         return RedirectResponse(url="/setup?from=auto", status_code=303)
 
     apprentice = get_apprentice()
@@ -121,15 +127,45 @@ def milestones_page(request: Request):
 
 @router.get("/live-agent", response_class=HTMLResponse)
 def live_agent_page(request: Request):
+    from common.dashboard.services.progress import (
+        get_current_quest,
+        live_agent_unlocked,
+    )
+
+    # Gating: la Constelación del Agente solo se habilita al llegar a Q07 (el
+    # primer quest con agent loop). Antes mostramos un panel explicativo en vez
+    # del grafo —que parecería tener tools ya construidas— para no confundir.
+    if not live_agent_unlocked():
+        return templates.TemplateResponse(
+            request,
+            "live_agent_locked.html",
+            {
+                "request": request,
+                "current_quest": get_current_quest(),
+            },
+        )
+
     from common.dashboard.services.trace import latest_trace_summary
 
     summary = latest_trace_summary()
+
+    # Selector de quest: solo los quests con agent loop (Q07/Q08). El default es
+    # el quest actual del aprendiz si es uno de ellos; si ya los pasó, el último.
+    la_quests = [q for q in QUESTS if getattr(q, "live_agent", False)]
+    current = get_current_quest()
+    default_order = (
+        current.order
+        if current and getattr(current, "live_agent", False)
+        else max((q.order for q in la_quests), default=None)
+    )
     return templates.TemplateResponse(
         request,
         "live_agent.html",
         {
             "request": request,
             "summary": summary,
+            "la_quests": la_quests,
+            "default_quest_order": default_order,
         },
     )
 
@@ -230,13 +266,19 @@ def celebrate_page(request: Request, quest: str | None = None):
 @router.get("/codex/{path:path}", response_class=HTMLResponse)
 def codex_page(request: Request, path: str = ""):
     resolved = resolve_codex_path(path)
-    if resolved is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Pergamino no encontrado en el Códex.",
-        )
-
-    rendered = render_markdown_file(resolved)
+    if resolved is not None:
+        rendered = render_markdown_file(resolved)
+    else:
+        # Si no es un .md pero sí un subdirectorio de docs/, mostramos un índice
+        # de sección auto-generado. Esto también hace que el breadcrumb del
+        # directorio (p. ej. "LLMs") sea una página válida en vez de un 404.
+        section_dir = resolve_codex_dir(path)
+        if section_dir is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Pergamino no encontrado en el Códex.",
+            )
+        rendered = render_codex_section(section_dir)
     crumbs = _build_codex_crumbs(path)
     return templates.TemplateResponse(
         request,

@@ -81,7 +81,7 @@ class TracePayload(BaseModel):
 
 @router.post("/events/trace")
 def trace_event(payload: TracePayload) -> dict:
-    """Recibe un step del agent loop capturado por `arkanum run`.
+    """Recibe un step del agent loop capturado por `arkanum run` (Q07/Q08).
 
     No usa la tabla `events` (que es para notificaciones one-shot);
     los traces viven en `agent_traces` para que `/live-agent` pueda

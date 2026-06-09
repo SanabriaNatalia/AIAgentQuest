@@ -89,7 +89,7 @@ def init(
             "[bold gold1]Laboratorio listo[/]\n\n"
             "Comandos útiles:\n"
             "  [cyan]arkanum current[/]   — quest actual\n"
-            "  [cyan]arkanum start 1[/]   — empezar Quest 1\n"
+            "  [cyan]arkanum run 1[/]   — ejecutar Quest 1\n"
             "  [cyan]arkanum progress[/]  — ver tu avance",
             border_style="purple",
         )
@@ -173,8 +173,12 @@ def _start_and_open_dashboard() -> None:
             console.print(
                 f"[green]✓[/] Dashboard activo (PID {pid}, puerto {st['port']})."
             )
-        url = f"http://127.0.0.1:{lifecycle.status()['port']}"
+        # Onboarding: en el primer arranque (init) llevamos al aprendiz directo
+        # a /setup para que lo primero que vea sea el diagnóstico de
+        # prerrequisitos. Los arranques posteriores (`arkanum dashboard start`)
+        # abren el perfil, que ya redirige a /setup solo si hay errores críticos.
+        url = f"http://127.0.0.1:{lifecycle.status()['port']}/setup"
         webbrowser.open(url)
         console.print(f"Abriendo {url}")
     except RuntimeError as exc:
-        console.print(f"[red]Error al iniciar dashboard:[/] {exc}")
+        console.print(f"[yellow]⚠ {exc}[/]")

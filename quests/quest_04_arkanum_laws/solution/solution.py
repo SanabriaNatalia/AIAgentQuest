@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
-# TODO 3:
+# TODO 4.2:
 from common.prompts.system_prompt import system_prompt
 from common.utils.ui import (
     show_quest_header,
@@ -32,6 +32,8 @@ show_quest_header(
     "Quest 04 — Las Leyes del Arkanum",
     "Las leyes del Arkanum son absolutas.",
 )
+
+# TODO 4.0 — Preparación: código heredado del Quest 03.
 
 load_dotenv()
 
@@ -65,7 +67,12 @@ messages = [
     )
 ]
 
-# TODO 5 y TODO 6:
+
+# ╔══════════════════════════════════════════════════════╗
+# ║   NUEVO CONTENIDO DEL QUEST 04                       ║
+# ╚══════════════════════════════════════════════════════╝
+
+# TODO 4.3 / 4.4:
 response = client.models.generate_content(
     model="gemini-2.5-flash",
     contents=messages,

@@ -23,4 +23,4 @@ return types.Content(
 )
 ```
 
-El `role="tool"` es lo que separa una **observación** (resultado de tool) de un **mensaje del usuario** o de un **mensaje del agente** en el historial. Sin él, el modelo no sabe distinguir.
+El `role="tool"` distingue una **observación** (resultado de tool) de un mensaje del usuario o de una respuesta del agente dentro del historial. Sin él, el modelo no sabe diferenciar.

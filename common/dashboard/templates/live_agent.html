@@ -10,14 +10,133 @@
   </p>
 </header>
 
-<section class="live-agent" data-trace-poll-url="/api/trace/current" aria-label="Agente en directo">
+<section class="live-agent"
+         data-trace-poll-url="/api/trace/current"
+         data-traces-history-url="/api/traces/recent?limit=10"
+         data-trace-delete-url="/api/traces/{trace_id}"
+         data-launcher-quests-url="/api/quests/live-agent"
+         data-system-prompt-url="/api/system-prompt"
+         data-agent-tools-url="/api/agent/tools"
+         aria-label="Agente en directo">
   <header class="live-agent-toolbar">
     <div class="live-agent-status" role="status" aria-live="polite">
       <span class="live-agent-dot" aria-hidden="true"></span>
       <span data-trace-status>Esperando trace…</span>
     </div>
     <div class="live-agent-meta" data-trace-meta></div>
+    {% if la_quests %}
+    <div class="live-agent-questsel">
+      <label for="la-quest-select" class="live-agent-questsel-label">Quest</label>
+      <select id="la-quest-select" class="live-agent-questsel-select"
+              data-quest-select aria-label="Elegir el quest a visualizar">
+        {% for q in la_quests %}
+        <option value="{{ q.order }}"{% if q.order == default_quest_order %} selected{% endif %}>Q{{ q.order }} — {{ q.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% endif %}
+    <div class="live-agent-actions">
+      <button type="button"
+              class="live-agent-action"
+              data-trace-replay
+              title="Reproducir paso a paso (Replay)">▶ Replay</button>
+      <label class="live-agent-action live-agent-action--toggle"
+             title="Modo verbose: tokens, latencia, memoria del loop, razonamiento del agente y notas explicativas. Apágalo para una vista limpia.">
+        <input type="checkbox" data-trace-verbose-toggle>
+        <span>🔍 Verbose</span>
+      </label>
+    </div>
   </header>
+
+  <details class="live-agent-launcher" data-trace-launcher>
+    <summary>
+      <span aria-hidden="true">▶</span>
+      <span class="live-agent-launcher-label">Lanzar nuevo prompt</span>
+      <span class="live-agent-launcher-hint">arkanum run desde el dashboard</span>
+    </summary>
+    <form class="live-agent-launcher-form" data-trace-launcher-form>
+      <label class="live-agent-launcher-field">
+        <span>Quest</span>
+        <select name="quest_order" data-launcher-quest>
+          <option value="" disabled selected>Cargando…</option>
+        </select>
+      </label>
+      <label class="live-agent-launcher-field live-agent-launcher-field--grow">
+        <span>Prompt</span>
+        <input type="text"
+               name="prompt"
+               data-launcher-prompt
+               placeholder='Ej: Lee notes.txt y dime qué contiene'
+               required>
+      </label>
+      <button type="submit" class="live-agent-action">▶ Ejecutar</button>
+      <span class="live-agent-launcher-status" data-launcher-status></span>
+    </form>
+  </details>
+
+  <nav class="live-agent-history" data-trace-history aria-label="Historial de ejecuciones">
+    <header class="live-agent-history-head">
+      <span class="live-agent-history-label">Historial</span>
+      <span class="live-agent-history-status" data-history-status>—</span>
+    </header>
+    <ol class="live-agent-history-list" data-history-list></ol>
+  </nav>
+
+  <aside class="live-agent-hud" data-trace-hud aria-label="Métricas del agente">
+    <div class="live-agent-kpi"
+         title="Vueltas del loop ejecutadas, junto al máximo permitido (MAX_ITERS). No es un progreso hacia el máximo.">
+      <span class="live-agent-kpi-label">Iteraciones</span>
+      <span class="live-agent-kpi-value" data-kpi-iter>0</span>
+    </div>
+    <div class="live-agent-kpi"
+         title="Cuántas veces el agente llamó a una herramienta en todo el trace.">
+      <span class="live-agent-kpi-label">Tools llamadas</span>
+      <span class="live-agent-kpi-value" data-kpi-tools>0</span>
+    </div>
+    <div class="live-agent-kpi"
+         title="Tokens totales consumidos (entrada + salida) en todas las llamadas a Gemini.">
+      <span class="live-agent-kpi-label">Tokens (total)</span>
+      <span class="live-agent-kpi-value" data-kpi-tokens>0</span>
+    </div>
+    <div class="live-agent-kpi"
+         title="Costo estimado en dólares de todo el trace, según el precio por millón de tokens de Gemini.">
+      <span class="live-agent-kpi-label">Costo estimado (USD)</span>
+      <span class="live-agent-kpi-value" data-kpi-cost>$0.0000</span>
+    </div>
+    <div class="live-agent-kpi"
+         title="Latencia promedio: tiempo medio que tardó Gemini en responder por llamada.">
+      <span class="live-agent-kpi-label">Latencia promedio</span>
+      <span class="live-agent-kpi-value" data-kpi-latency>—</span>
+    </div>
+  </aside>
+
+  <div class="live-agent-prompts" data-trace-prompts>
+    <details class="live-agent-prompt-panel">
+      <summary>
+        <span class="live-agent-prompt-icon" aria-hidden="true">🜂</span>
+        <span class="live-agent-prompt-label">Prompt del usuario</span>
+        <span class="live-agent-prompt-preview"
+              data-user-prompt-preview>—</span>
+      </summary>
+      <p class="live-agent-prompt-body"
+         data-user-prompt-body>
+        Lanza <code>arkanum run 7 "…"</code> o <code>arkanum run 8 "…"</code>
+        para registrar el prompt del aprendiz.
+      </p>
+    </details>
+    <details class="live-agent-prompt-panel">
+      <summary>
+        <span class="live-agent-prompt-icon" aria-hidden="true">⚜</span>
+        <span class="live-agent-prompt-label">System prompt</span>
+        <span class="live-agent-prompt-preview"
+              data-system-prompt-preview>Cargando…</span>
+      </summary>
+      <pre class="live-agent-prompt-body live-agent-prompt-body--mono"
+           data-system-prompt-body>Cargando…</pre>
+      <p class="live-agent-prompt-note"
+         data-system-prompt-note></p>
+    </details>
+  </div>
 
   <div class="live-agent-empty" data-trace-empty>
     <p class="arkanum-muted">
@@ -30,6 +149,40 @@
     </p>
   </div>
 
+  <div class="live-agent-graph" data-trace-graph>
+    <div class="live-agent-graph-stage">
+      <svg class="live-agent-graph-svg"
+           data-graph-svg
+           viewBox="0 0 820 540"
+           preserveAspectRatio="xMidYMid meet"
+           role="img"
+           aria-label="Grafo del agente y sus herramientas conectadas">
+        <defs>
+          <radialGradient id="la-agent-glow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(214,178,92,0.55)"></stop>
+            <stop offset="100%" stop-color="rgba(214,178,92,0)"></stop>
+          </radialGradient>
+        </defs>
+        <g data-graph-edges></g>
+        <g data-graph-nodes></g>
+      </svg>
+    </div>
+    <aside class="live-agent-graph-detail" data-graph-detail hidden>
+      <p class="live-agent-graph-detail-hint">
+        Toca el <strong>aprendiz</strong> para ver su petición, el <strong>mago</strong>
+        para ver su system prompt, o una <strong>herramienta</strong> para ver con qué
+        la llamó y qué devolvió.
+      </p>
+    </aside>
+  </div>
+
+  <header class="live-agent-steps-heading">
+    <span class="live-agent-steps-heading-icon" aria-hidden="true">📜</span>
+    <span class="live-agent-steps-heading-text">Paso a paso</span>
+    <span class="live-agent-steps-heading-hint">El detalle cronológico de cada llamada, observación y token</span>
+  </header>
   <ol class="live-agent-steps" data-trace-steps aria-live="polite"></ol>
 </section>
+
+<script src="/static/live_agent_graph.js" defer></script>
 {% endblock %}

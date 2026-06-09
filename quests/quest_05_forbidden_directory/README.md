@@ -4,30 +4,31 @@
     <img src="../../assets/images/quest-5-banner.png" alt="Quest 5 Banner" width="100%">
 </p>
 
-> *“Antes de entregar herramientas a un agente, traza los límites del mundo donde puede actuar.”*  
+## 🎭 Lore
+
+> *“Antes de entregar herramientas a un agente, traza los límites del mundo donde puede actuar.”*
+>
 > — Zhyréon
 
 ## Información del Quest
 
-|Acto| Dificultad | Tiempo estimado |
+| Acto | Dificultad | Tiempo estimado |
 |---|---|---|
 | II — Capacidad de Acción | 🟡 Intermedio | 15–25 mins |
 
 ---
 
-## Objetivo
+## 🎯 Objetivo
 
-Un agente con herramientas puede ser poderoso.
+Construir la **frontera de seguridad** del agente: un `working_directory` permitido y una función que valide rutas para impedir que el agente lea, escriba o ejecute fuera de ese territorio.
 
-Pero también puede ser peligroso.
-
-Antes de permitirle leer archivos, escribir contenido o ejecutar código, necesitamos asegurarnos de que solo pueda actuar dentro de un directorio permitido.
-
-En este Quest construiremos la frontera de seguridad del agente: su **working directory**.
+Un agente con herramientas puede ser poderoso, pero también peligroso. Antes de darle acceso a archivos, necesitamos asegurarnos de que solo pueda actuar dentro de un directorio permitido.
 
 ---
 
-## Qué aprenderás
+## 📚 Conceptos clave
+
+### Qué aprenderás
 
 - qué es un working directory
 - por qué un agente necesita límites
@@ -35,63 +36,21 @@ En este Quest construiremos la frontera de seguridad del agente: su **working di
 - cómo validar rutas con `abspath`, `normpath` y `commonpath`
 - por qué las herramientas (tools) deben devolver errores como texto
 
----
+### ¿Por qué existe `workspace/`?
 
-## ¿Por qué existe `workspace/`?
+La carpeta `workspace/` que viste vacía en quests anteriores es el **territorio permitido del agente**. Todo lo que el agente lea, escriba, modifique o ejecute debería vivir dentro de ese espacio.
 
-Seguramente ya viste la carpeta vacía :
-
-```text
-workspace/
-```
-
-en los Quests anteriores y te preguntaste:
-
-> “¿Y esto para qué es?”
-
-La respuesta es simple:
-
-```text
-workspace/
-```
-
-es el territorio permitido del agente.
-
-Todo lo que el agente:
-- lea
-- escriba
-- modifique
-- ejecute
-
-debería vivir dentro de ese espacio.
-
-En agentes reales, este tipo de aislamiento es extremadamente importante.
-
-Sin límites claros, un agente podría:
+En agentes reales este aislamiento es extremadamente importante. Sin límites claros, un agente podría:
 - acceder a archivos sensibles
 - modificar contenido accidentalmente
 - ejecutar código fuera de control
 - comprometer el sistema donde está corriendo
 
-Por eso muchos agentes modernos utilizan:
-- sandboxes
-- contenedores
-- directorios restringidos
-- entornos aislados
+Por eso muchos agentes modernos utilizan sandboxes, contenedores, directorios restringidos o entornos aislados. El `workspace/` del laboratorio es nuestra primera versión de esa idea.
 
-El `workspace/` del laboratorio es nuestra primera versión de esa idea.
+### Las herramientas del agente
 
----
-
-## Las herramientas del agente
-
-El laboratorio incluirá cuatro funciones base en:
-
-```text
-common/functions/
-```
-
-Estas funciones serán:
+El laboratorio incluirá cuatro funciones base en `common/functions/`:
 
 ```text
 get_files_info
@@ -100,41 +59,28 @@ write_file
 run_python_file
 ```
 
-Cada una representa una posible acción del agente sobre el sistema de archivos.
-
-Pero antes de usarlas libremente, deben obedecer una regla:
+Cada una representa una posible acción del agente sobre el sistema de archivos. Pero antes de usarlas libremente, deben obedecer una regla:
 
 > ninguna herramienta puede acceder a archivos por fuera del directorio permitido.
 
-> Nota: Puedes abrir las funciones si lo deseas, allí encontrarás algunos TODOs, pero no corresponden a este quest. Los veremos más adelante.
+> Nota: puedes abrir las funciones si lo deseas; allí encontrarás TODOs, pero no corresponden a este quest. Los veremos más adelante.
 
-## La idea clave
+### La idea clave
 
-Las herramientas del agente recibirán rutas como argumentos.
-
-Por ejemplo, una tool podría recibir:
+Las herramientas del agente recibirán rutas como argumentos:
 
 ```python
 directory = "src"
-```
-
-o:
-
-```python
 file_path = "notes.txt"
 ```
 
-Pero esas rutas deben interpretarse siempre como rutas relativas dentro del `working_directory`.
-
-El agente puede pedir qué archivo o carpeta quiere revisar.
-
-Nosotros definimos cuál es el territorio permitido.
+Esas rutas deben interpretarse siempre como rutas **relativas** dentro del `working_directory`. El agente puede pedir qué archivo o carpeta quiere revisar; nosotros definimos cuál es el territorio permitido:
 
 ```python
 working_directory = "workspace"
 ```
 
-Eso significa que el agente podrá explorar:
+El agente podrá explorar:
 
 ```text
 workspace/
@@ -142,7 +88,7 @@ workspace/src/
 workspace/notes.txt
 ```
 
-pero no debería poder escapar hacia:
+pero no debería escapar hacia:
 
 ```text
 ../
@@ -151,64 +97,26 @@ pero no debería poder escapar hacia:
 /etc
 ```
 
----
-
 ### ¿Por qué importa?
 
-Sin esta restricción, un agente con tools podría intentar leer o modificar archivos sensibles del computador.
-
-Por ejemplo:
+Sin esta restricción, un agente con tools podría intentar leer o modificar archivos sensibles:
 
 ```text
 ../../secrets.txt
-```
-
-o:
-
-```text
 /home/user/.ssh/id_rsa
 ```
 
-Incluso si el usuario no lo pidió maliciosamente, el modelo puede equivocarse.
-
-Por eso las tools deben tener [guardrails](../../docs/agents/guardrails.md).
-
-
-## La frontera del agente
-
-Usaremos un `working_directory` como frontera segura.
+Incluso si el usuario no lo pidió maliciosamente, el modelo puede equivocarse. Por eso las tools deben tener [guardrails](../../docs/agents/guardrails.md).
 
 ### Cómo validar la frontera
 
-La función que debes completar en este quest está en:
-
-```text
-common/functions/get_valid_target_path.py
-```
-
-Esta función recibirá:
-
-```python
-working_directory
-```
-
-y:
-
-```python
-target_path
-```
-
-**Tu trabajo será construir una ruta segura.**
-
-### Validación de rutas
-
-Para poder ejecutar esta validación, es necesario obtener primero la ruta absoluta del directorio de trabajo (working directory). Esto nos da una referencia absoluta del territorio permitido.
+Primero obtener la ruta absoluta del directorio de trabajo (referencia absoluta del territorio permitido):
 
 ```python
 working_dir_abs = os.path.abspath(working_directory)
 ```
 
-Luego debemos compararla con la ruta final solicitada (la del archivo que vamos a leer, escribir o ejecutar):
+Luego comparar con la ruta final solicitada:
 
 ```python
 target_path = os.path.normpath(
@@ -216,23 +124,17 @@ target_path = os.path.normpath(
 )
 ```
 
-Finalmente, debemos validar que la ruta final siga dentro del directorio permitido:
+Finalmente, validar que la ruta final siga dentro del directorio permitido:
 
 ```python
 os.path.commonpath([working_dir_abs, target_path]) == working_dir_abs
 ```
 
-Si esta condición es falsa, la herramienta debe bloquear la acción.
+Si esa condición es falsa, la herramienta debe bloquear la acción.
 
----
+### Errores como observaciones
 
-## Errores como observaciones
-
-Cuando una herramienta falla, no queremos que todo el agente explote.
-
-Queremos que la herramienta devuelva una [observación textual](../../docs/agents/error_handling.md).
-
-Ejemplo:
+Cuando una herramienta falla, no queremos que todo el agente explote. Queremos que la herramienta devuelva una [observación textual](../../docs/agents/error_handling.md):
 
 ```python
 try:
@@ -241,31 +143,20 @@ except Exception as e:
     return f"Error: {e}"
 ```
 
-Esto es importante porque el agente necesita poder leer el error y decidir qué hacer después.
+El agente necesita poder leer el error y decidir qué hacer después.
+
+### Validación de rutas — funciones
+
+Necesitarás trabajar con:
+
+- [`os.path.abspath()`](https://docs.python.org/es/3/library/os.path.html#os.path.abspath)
+- [`os.path.join()`](https://docs.python.org/es/3/library/os.path.html#os.path.join)
+- [`os.path.normpath()`](https://docs.python.org/es/3/library/os.path.html#os.path.normpath)
+- [`os.path.commonpath()`](https://docs.python.org/es/3/library/os.path.html#os.path.commonpath)
 
 ---
 
-## Resultado esperado
-
-Una llamada válida debería funcionar:
-
-```text
-get_files_info("./workspace", ".")
-```
-
-Una llamada inválida debería bloquearse:
-
-```text
-get_files_info("./workspace", "../")
-```
-
-Resultado esperado:
-
-```text
-Error: Cannot list '../' as it is outside the permitted working directory
-```
-
-## Tu misión
+## 📋 Tu misión
 
 En este quest trabajarás en dos archivos.
 
@@ -290,7 +181,7 @@ La función debe:
 
 También debes completar:
 
-```
+```text
 quests/quest_05_forbidden_directory/starter/main.py
 ```
 
@@ -298,36 +189,40 @@ Este archivo ejecuta casos de prueba manuales para validar rutas permitidas y pr
 
 Tu tarea será completar los bloques `try/except` para que:
 
-* las rutas permitidas muestren PASS
-* las rutas prohibidas también muestren PASS cuando sean bloqueadas correctamente
-* cualquier comportamiento inesperado muestre FAIL
+- las rutas permitidas muestren PASS
+- las rutas prohibidas también muestren PASS cuando sean bloqueadas correctamente
+- cualquier comportamiento inesperado muestre FAIL
 
 ---
 
-## Pista
+## ✅ Resultado esperado
 
-La validación principal debería verse parecida a esto:
+Una llamada válida debería funcionar:
 
-```python
-os.path.commonpath([working_dir_abs, resolved_target_path]) == working_dir_abs
+```text
+get_files_info("./workspace", ".")
 ```
 
-No copies la línea sin entenderla.
+Una llamada inválida debería bloquearse:
 
-Léela así:
+```text
+get_files_info("./workspace", "../")
+```
 
-> “La ruta común entre el territorio permitido y la ruta solicitada debe seguir siendo el territorio permitido.”
+Resultado:
+
+```text
+Error: '../' is outside the permitted working directory
+```
 
 ---
 
-## Validación de rutas
+## 🔗 Referencias
 
-Para implementar la frontera del agente necesitarás trabajar con:
-
+- [Guardrails](../../docs/agents/guardrails.md)
+- [Error handling](../../docs/agents/error_handling.md)
+- [Path validation — entrada del códice](../../docs/security/path_validation.md)
 - [`os.path.abspath()`](https://docs.python.org/es/3/library/os.path.html#os.path.abspath)
 - [`os.path.join()`](https://docs.python.org/es/3/library/os.path.html#os.path.join)
 - [`os.path.normpath()`](https://docs.python.org/es/3/library/os.path.html#os.path.normpath)
 - [`os.path.commonpath()`](https://docs.python.org/es/3/library/os.path.html#os.path.commonpath)
-
-Hacer click en los enlaces te llevará a la documentación oficial.
-También puedes consultar en [esta entrada del códice](../../docs/security/path_validation.md).

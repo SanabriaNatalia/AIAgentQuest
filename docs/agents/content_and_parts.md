@@ -173,6 +173,8 @@ Los modelos y APIs pueden:
 
 En sistemas de agentes, es importante validar estructuras antes de asumir que existen.
 
+> Ver también: [manejo de errores](error_handling.md).
+
 ---
 
 ## Más adelante...

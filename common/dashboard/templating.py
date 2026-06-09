@@ -10,15 +10,16 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 def _format_duration(seconds) -> str:
     """Renderiza un número de segundos como `XmYs` / `Xs` / `Xh Ym`.
 
-    Acepta None y devuelve "—" para que las plantillas no tengan que
-    chequear antes de pasarlo al filter.
+    Devuelve "N/A" cuando el cronómetro nunca arrancó (el aprendiz no pulsó
+    "⚜ Empezar ahora"), para que quede claro que el tiempo no se pudo
+    contabilizar — en lugar de mostrar "0s" engañoso.
     """
     if seconds is None:
-        return "—"
+        return "N/A"
     try:
         total = int(seconds)
     except (TypeError, ValueError):
-        return "—"
+        return "N/A"
     if total < 60:
         return f"{total}s"
     minutes, secs = divmod(total, 60)
@@ -29,3 +30,17 @@ def _format_duration(seconds) -> str:
 
 
 templates.env.filters["format_duration"] = _format_duration
+
+
+def _live_agent_unlocked() -> bool:
+    """Expuesto a las plantillas (nav) para atenuar el link de Live Agent hasta
+    que el aprendiz llega a Q07. Import lazy para evitar ciclos; fail-open: ante
+    cualquier error no escondemos la navegación."""
+    try:
+        from common.dashboard.services.progress import live_agent_unlocked
+        return live_agent_unlocked()
+    except Exception:
+        return True
+
+
+templates.env.globals["live_agent_unlocked"] = _live_agent_unlocked

@@ -52,7 +52,7 @@ cd nombre_de_carpeta
 Ejemplo:
 
 ```bash
-cd ai-agent-quest
+cd AIAgentQuest
 ```
 
 ---
@@ -86,7 +86,7 @@ En este proyecto usamos `uv`.
 Para ejecutar un Quest usamos:
 
 ```bash
-uv run python -m quests.quest_01_first_agent.starter.main
+uv run python -m quests.quest_01_first_invocation.starter.main
 ```
 
 La parte importante es:
@@ -97,6 +97,8 @@ python -m
 
 Eso ejecuta el archivo como módulo de Python y ayuda a que los imports funcionen correctamente.
 
+> En el curso normalmente no escribes esta forma larga: usas el CLI `arkanum run N "..."`, que hace lo mismo por ti. Verás todos los comandos en [comandos del CLI](../cli/commands.md).
+
 ---
 
 ## Pasar texto como argumento
@@ -104,7 +106,7 @@ Eso ejecuta el archivo como módulo de Python y ayuda a que los imports funcione
 Algunos Quests reciben un prompt desde consola:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "¿Qué es un agente IA?"
+uv run python -m quests.quest_03_apprentice_voice.starter.main "¿Qué es un agente IA?"
 ```
 
 El texto entre comillas se envía al programa como argumento.
