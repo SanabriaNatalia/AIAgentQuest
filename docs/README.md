@@ -47,6 +47,7 @@ Fundamentos para navegar la terminal y usar el CLI del laboratorio (`arkanum *`)
 
 Herramientas y conceptos del lenguaje utilizados durante el laboratorio.
 
+- [módulos y `python -m`](./python/python_modules.md)
 - [`argparse`](./python/argparse.md)
 - [función `main` / `__main__`](./python/main_function.md)
 - [variables de entorno](./python/environment_variables.md)
@@ -60,6 +61,7 @@ Los fundamentos sobre los que se construye todo agente. Si empiezas, lee esta se
 - [¿qué es un LLM?](./LLMs/llms.md)
 - [tokens](./LLMs/tokens.md)
 - [roles y mensajes](./LLMs/roles_and_messages.md)
+- [prompts](./LLMs/prompts.md)
 - [prompts de sistema](./LLMs/system_prompts.md)
 - [temperatura](./LLMs/temperature.md)
 

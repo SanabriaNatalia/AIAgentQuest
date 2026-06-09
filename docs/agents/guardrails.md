@@ -40,6 +40,8 @@ os.path.commonpath(...)
 
 Evita que el agente escape del `working_directory`.
 
+> Ver [validación de rutas](../security/path_validation.md) para el detalle.
+
 ---
 
 ### 🧠 System prompts

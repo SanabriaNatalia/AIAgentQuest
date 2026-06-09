@@ -128,20 +128,9 @@ Todo convertido en tokens.
 
 ## Context window
 
-Los modelos tienen un límite máximo de contexto que pueden procesar en una sola invocación.
+Los modelos tienen un límite máximo de contexto que pueden procesar en una sola invocación: el **context window**. Todo lo que envías (system prompt, historial, herramientas, archivos) comparte ese espacio.
 
-Ese límite se conoce como:
-
-```text
-context window
-```
-
-Todo lo enviado al modelo comparte ese espacio:
-- system prompts
-- historial conversacional
-- herramientas
-- archivos
-- respuestas previas
+> Lo vemos en detalle en la entrada de [tokens](tokens.md).
 
 ---
 

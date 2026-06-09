@@ -24,6 +24,8 @@ Con `argparse`, el usuario puede enviarlo desde terminal:
 uv run python -m quests.quest_03_apprentice_voice.starter.main "Explícame qué es un agente IA"
 ```
 
+> En el curso ejecutas esto con `arkanum run 3 "..."`: el CLI reenvía tu prompt al `argparse` del starter.
+
 ---
 
 ## Estructura básica

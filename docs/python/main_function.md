@@ -199,6 +199,8 @@ Solo se importan:
 
 ## ¿Por qué usamos main() en AI Agent Quest?
 
+Los primeros quests ejecutan el código directamente (a nivel de módulo) por simplicidad. A partir del **Quest 08**, cuando aparece el agent loop, refactorizas tu programa a `main()`.
+
 A medida que el laboratorio crece:
 - aparecen loops
 - múltiples funciones

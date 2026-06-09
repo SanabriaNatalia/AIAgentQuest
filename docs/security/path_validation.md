@@ -303,6 +303,8 @@ except Exception as e:
 
 Esto permite que el agente reciba el error como una observación y pueda decidir qué hacer.
 
+> Relacionado: [manejo de errores](../agents/error_handling.md), [guardrails](../agents/guardrails.md), y cómo el `working_directory` se mantiene fuera del control del modelo en [tool schemas](../agents/tool_schemas.md) y [despacho de funciones](../agents/function_dispatch.md).
+
 ---
 
 ## Idea importante

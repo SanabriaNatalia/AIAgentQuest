@@ -210,6 +210,8 @@ antes de ejecutar la función.
 
 Esto permite que el agente use herramientas sin controlar directamente los límites de seguridad.
 
+> Ese `working_directory` se valida en [validación de rutas](../security/path_validation.md).
+
 ---
 
 ## Idea importante

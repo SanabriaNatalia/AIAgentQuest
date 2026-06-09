@@ -186,6 +186,8 @@ Esto es una forma de:
 - seguridad
 - guardrail
 
+> Ese `working_directory` se inyecta en el [despacho de funciones](function_dispatch.md) y se valida en [validación de rutas](../security/path_validation.md).
+
 ---
 
 ## Parámetros obligatorios

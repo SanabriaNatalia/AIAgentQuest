@@ -55,22 +55,7 @@ uv run python main.py "hola" --verbose
 
 ### ¿Qué es un flag?
 
-Un flag es un argumento opcional que modifica el comportamiento del programa.
-
-Normalmente los flags comienzan con:
-
-```text
---
-```
-
-Ejemplos comunes:
-
-```bash
---help
---version
---verbose
---debug
-```
+Un flag es un argumento opcional que modifica el comportamiento del programa (normalmente empieza con `--`). Lo cubrimos en detalle en [flags](flags.md).
 
 ---
 
