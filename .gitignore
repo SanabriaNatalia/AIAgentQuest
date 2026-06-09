@@ -25,3 +25,9 @@ wheels/
 .setup_cache.json
 .last_celebrate.timestamp
 .quest_calls.log
+
+# Bitacoras de trabajo (locales, no compartir)
+Bitacoras/
+
+# Claude Code (configuracion local)
+.claude/
