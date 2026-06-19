@@ -26,28 +26,38 @@ from rich.table import Table
 def render_required_outputs_table(
     title: str,
     output: str,
-    expected: list[str],
+    expected: list[str | tuple[str, str]],
 ) -> tuple[Table, list[str]]:
-    """Tabla con cada `expected` marcado ✔/✘ según esté en `output`.
+    """Tabla con cada salida esperada marcada ✔/✘ según esté en `output`.
 
-    Devuelve `(table, missing)`. `missing` es la lista de strings que
-    no se encontraron — vacía si todo pasó.
+    Cada item de `expected` puede ser:
+    - un string: el texto que debe aparecer en la salida (se muestra tal cual).
+    - una tupla `(needle, label)`: `needle` es el texto que se busca en la
+      salida y `label` es una descripción legible que se muestra en la tabla.
+      Útil para marcadores crípticos (p.ej. `("Agente:", "La respuesta del
+      agente")`) que por sí solos no le dicen nada al aprendiz.
+
+    Devuelve `(table, missing)`. `missing` es la lista de `needle` que no se
+    encontraron — vacía si todo pasó.
     """
     table = Table(
         title=title,
         title_style="bold cyan",
+        caption="Cada fila es un texto que tu solución debe imprimir en la consola.",
+        caption_style="dim",
         show_lines=False,
     )
     table.add_column("", width=2, no_wrap=True)
-    table.add_column("Salida esperada", style="white")
+    table.add_column("Tu salida debe incluir", style="white")
 
     missing: list[str] = []
-    for exp in expected:
-        if exp in output:
-            table.add_row("[green]✔[/green]", _truncate(exp, 100))
+    for item in expected:
+        needle, label = item if isinstance(item, tuple) else (item, item)
+        if needle in output:
+            table.add_row("[green]✔[/green]", _truncate(label, 100))
         else:
-            table.add_row("[red]✘[/red]", _truncate(exp, 100))
-            missing.append(exp)
+            table.add_row("[red]✘[/red]", _truncate(label, 100))
+            missing.append(needle)
     return table, missing
 
 

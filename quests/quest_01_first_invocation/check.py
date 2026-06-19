@@ -91,7 +91,7 @@ def main() -> None:
     table, missing = render_required_outputs_table(
         "Salidas esperadas — Quest 1",
         output,
-        ["Agente:"],
+        [("Agente:", "La respuesta del agente (la línea 🤖 Agente: ...)")],
     )
     console.print(table)
     if missing:
