@@ -36,70 +36,35 @@ show_quest_header(
 )
 
 # TODO 1.1:
-# Carga las variables de entorno desde el archivo .env.
-# Pista: usa load_dotenv().
+load_dotenv()
 
 # TODO 1.2:
-# Lee la variable GEMINI_API_KEY desde el entorno.
-# Pista: usa os.environ.get("GEMINI_API_KEY").
-
+api_key = os.environ.get("GEMINI_API_KEY")
 
 # TODO 1.3:
-# Si api_key no existe, lanza un RuntimeError.
-# Pista:
-# if api_key is None:
-#     raise RuntimeError("...")
-# Asegúrate de incluir un mensaje claro indicando que no se
-# encontró la API key en el archivo .env.
-
-
+if api_key is None:
+    raise RuntimeError(
+        "No se encontró GEMINI_API_KEY en el archivo .env"
+    )
 
 success("API key encontrada.")
 
 # TODO 1.4:
-# Crea un cliente de Gemini usando la API key.
-# Pista: genai.Client(api_key=api_key)
-
-
+client = genai.Client(api_key=api_key)
 
 success("Cliente de Gemini inicializado.")
 
 # TODO 1.5:
-# Define un prompt fijo.
-# Solicita al modelo que explique qué es un agente IA en un párrafo corto.
-prompt = ""
-
-if not prompt:
-    raise SystemExit(
-        "\n❌ Falta resolver el TODO 1.5 (definir el prompt).\n"
-        "\nReemplaza:\n"
-        '  prompt = ""\n'
-        "\nPor algo como:\n"
-        '  prompt = "Explícame qué es un agente IA en un párrafo corto."\n'
-    )
+prompt = "Explícame qué es un agente IA en un párrafo corto."
 
 narrator("Enviando la primera invocación al modelo...")
 show_prompt(prompt)
 
 # TODO 1.6:
-# Usa client.models.generate_content() para enviar el prompt al modelo.
-# Debe recibir:
-# - model="gemini-2.5-flash"
-# - contents=prompt
-# Guarda la respuesta en la variable response.
-response = None
-
-if response is None:
-    raise SystemExit(
-        "\n❌ Falta resolver el TODO 1.6 (llamar al modelo).\n"
-        "\nReemplaza:\n"
-        "  response = None\n"
-        "\nPor una llamada a Gemini:\n"
-        "  response = client.models.generate_content(\n"
-        '      model="gemini-2.5-flash",\n'
-        "      contents=prompt,\n"
-        "  )\n"
-    )
+response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=prompt,
+)
 
 success("Respuesta recibida.")
 
