@@ -88,7 +88,12 @@ def main() -> None:
     table, missing = render_required_outputs_table(
         "Salidas esperadas — Quest 3",
         output,
-        [prompt, "Prompt tokens:", "Response tokens:", "Gemini"],
+        [
+            (prompt, f"Tu prompt en la consola: {prompt!r}"),
+            "Prompt tokens:",
+            "Response tokens:",
+            ("Gemini", "Cliente de Gemini inicializado"),
+        ],
     )
     console.print(table)
     if missing:
