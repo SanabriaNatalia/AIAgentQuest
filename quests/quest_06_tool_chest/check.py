@@ -18,7 +18,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 console = Console()
 
 REQUIRED_OUTPUTS = [
-    "Calling function:",
+    ("Calling function:", "El agente invocó una herramienta (línea 'Calling function:')"),
 ]
 
 VALID_FUNCTIONS = [

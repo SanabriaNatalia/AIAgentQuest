@@ -18,8 +18,8 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 console = Console()
 
 EXPECTED_OUTPUTS = [
-    "Calling function:",
-    "result",
+    ("Calling function:", "El agente invocó una herramienta (línea 'Calling function:')"),
+    ("result", "El resultado de la herramienta (-> {'result': ...})"),
 ]
 
 VALID_FUNCTIONS = [

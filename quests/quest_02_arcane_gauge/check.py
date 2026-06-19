@@ -80,7 +80,11 @@ def main() -> None:
     table, missing = render_required_outputs_table(
         "Salidas esperadas — Quest 2",
         output,
-        ["Prompt tokens:", "Response tokens:", "Agente:"],
+        [
+            "Prompt tokens:",
+            "Response tokens:",
+            ("Agente:", "La respuesta del agente (la línea 🤖 Agente: ...)"),
+        ],
     )
     console.print(table)
     if missing:
