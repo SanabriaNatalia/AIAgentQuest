@@ -41,7 +41,14 @@ def success() -> None:
 
 
 def main() -> None:
-    prompt = "¿Qué es un agente IA? Responde en un párrafo corto."
+    # Si el aprendiz pasó un prompt vía `arkanum check 3 "..."`, llega aquí
+    # como ARKANUM_CHECK_PROMPT. Si no, fallback al prompt canónico. Q03 trata
+    # justamente de "la voz del aprendiz", así que respetar su prompt es lo
+    # coherente (mismo patrón que Q06/Q07).
+    prompt = (
+        os.environ.get("ARKANUM_CHECK_PROMPT")
+        or "¿Qué es un agente IA? Responde en un párrafo corto."
+    )
 
     # H-08: COLUMNS=1000 evita que rich.Console envuelva líneas largas
     # del subprocess y rompa la búsqueda `prompt in output` de abajo.

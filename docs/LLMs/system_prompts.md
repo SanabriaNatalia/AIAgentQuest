@@ -9,7 +9,7 @@ Una de las piezas más importantes es el **system prompt**.
 
 ---
 
-# ¿Qué es un system prompt?
+## ¿Qué es un system prompt?
 
 Un system prompt es una instrucción especial enviada al modelo antes de la conversación.
 
@@ -100,6 +100,7 @@ response = client.models.generate_content(
     config=types.GenerateContentConfig(
         system_instruction=system_prompt
     ),
+)
 ```
 
 ---
@@ -152,28 +153,9 @@ Por eso **los system prompts no deben considerarse un mecanismo de seguridad abs
 
 ## Determinismo y temperatura
 
-Las respuestas de un modelo pueden variar incluso usando el mismo prompt.
+Para que un system prompt se respete de forma consistente conviene reducir la variabilidad del modelo con una **temperatura** baja (`temperature=0`).
 
-La temperatura controla el nivel de variabilidad.
-
-Ejemplo:
-
-```python
-temperature=0
-```
-
-Valores bajos producen respuestas más:
-
-- consistentes
-- predecibles
-- repetibles
-
-Esto es especialmente útil para:
-
-- testing
-- validaciones
-- workflows estructurados
-- agentes con reglas estrictas
+> Lo vemos en detalle en la entrada de [temperatura](temperature.md).
 
 ---
 

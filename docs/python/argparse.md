@@ -6,7 +6,7 @@
 
 `argparse` es un módulo estándar de Python que permite crear programas de terminal capaces de recibir argumentos.
 
-En AI Agent Quest lo usamos para que el agente reciba instrucciones desde consola sin tener que modificar el código, así como para parsarle opciones de ejecución ([flags](../terminal/flags.md)).
+En AI Agent Quest lo usamos para que el agente reciba instrucciones desde consola sin tener que modificar el código, así como para pasarle opciones de ejecución ([flags](../terminal/flags.md)).
 
 ---
 
@@ -21,8 +21,10 @@ prompt = "Explícame qué es un agente IA"
 Con `argparse`, el usuario puede enviarlo desde terminal:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "Explícame qué es un agente IA"
+uv run python -m quests.quest_03_apprentice_voice.starter.main "Explícame qué es un agente IA"
 ```
+
+> En el curso ejecutas esto con `arkanum run 3 "..."`: el CLI reenvía tu prompt al `argparse` del starter.
 
 ---
 
@@ -97,13 +99,13 @@ args.user_prompt
 `argparse` genera ayuda automáticamente.
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main -h
+uv run python -m quests.quest_03_apprentice_voice.starter.main -h
 ```
 
 También puedes usar:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main --help
+uv run python -m quests.quest_03_apprentice_voice.starter.main --help
 ```
 
 ---
@@ -113,7 +115,7 @@ uv run python -m quests.quest_03_user_input.starter.main --help
 Un argumento posicional es obligatorio y depende de su posición.
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "Hola agente"
+uv run python -m quests.quest_03_apprentice_voice.starter.main "Hola agente"
 ```
 
 Aquí:
@@ -135,7 +137,7 @@ args.user_prompt
 Si ejecutas el programa sin prompt:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main
+uv run python -m quests.quest_03_apprentice_voice.starter.main
 ```
 
 `argparse` detiene el programa y muestra un mensaje de error indicando qué argumento falta.
@@ -159,7 +161,7 @@ parser.add_argument(
 Y usarlo así:
 
 ```bash
-uv run python -m quests.quest_03_user_input.starter.main "Hola agente" --verbose
+uv run python -m quests.quest_03_apprentice_voice.starter.main "Hola agente" --verbose
 ```
 
 Si el usuario incluye `--verbose`, entonces:

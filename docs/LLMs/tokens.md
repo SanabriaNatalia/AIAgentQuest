@@ -102,7 +102,7 @@ print(usage.candidates_token_count)
 
 ## Context window
 
-Los modelos tienen un límite máximo de tokens que pueden procesar en una sola conversación.
+Los modelos tienen un límite máximo de tokens que pueden procesar en una sola invocación.
 
 Ese límite se conoce como:
 

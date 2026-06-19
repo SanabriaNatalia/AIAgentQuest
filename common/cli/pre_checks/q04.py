@@ -52,7 +52,10 @@ def checks(quest: QuestMeta) -> list[PreCheckResult]:
         PreCheckResult(
             "system_prompt.py contiene la frase clave",
             EXPECTED_FRAGMENT in sp_source,
-            "El archivo common/prompts/system_prompt.py todavía no fue actualizado.",
+            f"common/prompts/system_prompt.py debe instruir al agente a "
+            f"responder la frase requerida: «{EXPECTED_FRAGMENT}». "
+            f"No basta con poner cualquier system prompt: esta quest comprueba "
+            f"que el agente obedezca esa ley exacta.",
         ),
         PreCheckResult(
             "Usa types.GenerateContentConfig",

@@ -123,11 +123,19 @@ common/prompts/system_prompt.py
 
 Dentro encontrarás una variable llamada `system_prompt`. Tu tarea será modificarla y usarla dentro del agente.
 
-1. abrir `common/prompts/system_prompt.py` y modificar el contenido de `system_prompt`
+1. abrir `common/prompts/system_prompt.py` y reemplazar el contenido de `system_prompt` por una ley que obligue al agente a responder **siempre exactamente**:
+
+   ```text
+   LAS LEYES DEL ARKANUM SON ABSOLUTAS.
+   ```
+
+   sin importar lo que pida el usuario (por ejemplo: *"Responde únicamente: LAS LEYES DEL ARKANUM SON ABSOLUTAS."*)
 2. importar el prompt desde tu aplicación principal
 3. usar `GenerateContentConfig`
 4. enviar el `system_instruction`
 5. configurar `temperature=0`
+
+> 💡 El objetivo no es escribir cualquier system prompt, sino comprobar que las instrucciones del sistema tienen **prioridad** sobre el prompt del usuario: el `check` te enviará una orden que intenta saltarse las reglas y tu agente debe seguir respondiendo la frase ley.
 
 ---
 

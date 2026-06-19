@@ -13,7 +13,7 @@ quest con agent loop (Q07/Q08), donde el tracing es automático. Si corres
 `python -m quests…` directamente —o `run` en un quest sin agent loop—
 el módulo es no-op silencioso.
 
-| Variable de entorno      | Quien la set     | Para qué |
+| Variable de entorno      | Quién la define   | Para qué |
 |---|---|---|
 | `ARKANUM_TRACE_ID`       | `arkanum run`  | Identifica el trace activo. Sin esto, `emit` no hace nada. |
 | `ARKANUM_QUEST_DB_ID`    | `arkanum run`  | Asocia el trace a una quest concreta. |

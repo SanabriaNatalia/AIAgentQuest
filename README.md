@@ -239,21 +239,28 @@ Para que el comando `arkanum` esté disponible directamente:
 source .venv/bin/activate
 ```
 
-Verifica con `arkanum --help`.
-
-> **Alternativa sin activar el venv.** Puedes invocar el CLI con `uv run arkanum ...` desde cualquier terminal, sin activar nada. Por ejemplo: `uv run arkanum --help`.
-
 ### 4. Configurar tu API key de Gemini
 
 Crea el archivo `.env` a partir del ejemplo:
 
-**Windows (PowerShell):** `Copy-Item .env.example .env`
-**macOS / Linux:** `cp .env.example .env`
+**Windows (PowerShell):** 
+
+```
+Copy-Item .env.example .env
+```
+
+**macOS / Linux:** 
+
+```
+cp .env.example .env
+```
 
 Edita `.env` y pega tu clave real (la obtienes gratis en [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → *Create API key*):
 
+![Cómo activar tu API Key](assets/gifs/api_key.gif)
+
 ```env
-GEMINI_API_KEY=AIza...
+GEMINI_API_KEY=<TU-API-KEY>
 ```
 
 > Sin comillas, sin espacios, una sola línea.

@@ -14,7 +14,9 @@ from common.dashboard.services.hints import (
     list_hints_for,
 )
 from common.dashboard.services.markdown import (
+    render_codex_section,
     render_markdown_file,
+    resolve_codex_dir,
     resolve_codex_path,
     resolve_quest_readme,
 )
@@ -264,13 +266,19 @@ def celebrate_page(request: Request, quest: str | None = None):
 @router.get("/codex/{path:path}", response_class=HTMLResponse)
 def codex_page(request: Request, path: str = ""):
     resolved = resolve_codex_path(path)
-    if resolved is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Pergamino no encontrado en el Códex.",
-        )
-
-    rendered = render_markdown_file(resolved)
+    if resolved is not None:
+        rendered = render_markdown_file(resolved)
+    else:
+        # Si no es un .md pero sí un subdirectorio de docs/, mostramos un índice
+        # de sección auto-generado. Esto también hace que el breadcrumb del
+        # directorio (p. ej. "LLMs") sea una página válida en vez de un 404.
+        section_dir = resolve_codex_dir(path)
+        if section_dir is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Pergamino no encontrado en el Códex.",
+            )
+        rendered = render_codex_section(section_dir)
     crumbs = _build_codex_crumbs(path)
     return templates.TemplateResponse(
         request,

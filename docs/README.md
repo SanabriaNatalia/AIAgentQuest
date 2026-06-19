@@ -30,51 +30,69 @@ El Códice a comprender.
 
 # Índice del Códex
 
-## Terminal
+> ¿Por dónde empezar? Si eres nuevo, lee en este orden: **Terminal y CLI → Python → Modelos de Lenguaje (LLMs) → Agentes → Seguridad**.
 
-Fundamentos para navegar e interactuar con herramientas desde consola.
+## Terminal y CLI
+
+Fundamentos para navegar la terminal y usar el CLI del laboratorio (`arkanum *`).
 
 - [cli basics](./terminal/cli-basics.md)
 - [help flags](./terminal/flags.md)
 - [`--verbose` mode](./terminal/verbose_mode.md)
-
----
-
-## CLI del laboratorio
-
-Referencia de los comandos `arkanum *`: para qué sirve cada uno, cuándo invocarlos y qué efecto tienen en el cronómetro, la BD y el dashboard.
-
-- [comandos del CLI](./cli/commands.md)
+- [comandos del CLI (`arkanum *`)](./cli/commands.md)
 
 ---
 
 ## Python
 
-Herramientas y conceptos utilizados durante el laboratorio.
+Herramientas y conceptos del lenguaje utilizados durante el laboratorio.
 
-- [`argparse.md`](./python/argparse.md)
-- [`__main__` function](./python/main_function.md)
+- [módulos y `python -m`](./python/python_modules.md)
+- [`argparse`](./python/argparse.md)
+- [función `main` / `__main__`](./python/main_function.md)
 - [variables de entorno](./python/environment_variables.md)
 
 ---
 
-## Modelos y Agentes
+## Modelos de Lenguaje (LLMs)
 
-Conceptos fundamentales sobre LLMs y sistemas basados en agentes.
+Los fundamentos sobre los que se construye todo agente. Si empiezas, lee esta sección primero.
 
-- [agents](./agents/agents.md)
-- [`Content` y `Parts`](./agents/content_and_parts.md)
-- [definir herramientas para agentes](./agents/tool_schemas.md)
-- [expedición de funciones](./agents/function_dispatch.md)
-- [guardrails](./agents/guardrails.md)
-- [manejo de errores](./agents/error_handling.md)
-- [tracing — emitir al Live Agent](./agents/tracing.md)
 - [¿qué es un LLM?](./LLMs/llms.md)
+- [tokens](./LLMs/tokens.md)
 - [roles y mensajes](./LLMs/roles_and_messages.md)
+- [prompts](./LLMs/prompts.md)
 - [prompts de sistema](./LLMs/system_prompts.md)
 - [temperatura](./LLMs/temperature.md)
-- [tokens](./LLMs/tokens.md)
 
+---
+
+## Agentes
+
+Cómo un LLM se convierte en un agente que percibe, razona y actúa con herramientas.
+
+- [¿qué es un agente?](./agents/agents.md)
+- [`Content` y `Parts`](./agents/content_and_parts.md)
+- [definir herramientas (schemas)](./agents/tool_schemas.md)
+- [despacho de funciones](./agents/function_dispatch.md)
+- [manejo de errores](./agents/error_handling.md)
+- [guardrails](./agents/guardrails.md)
+
+---
+
+## Seguridad
+
+Cómo confinar al agente para que actúe solo dentro de su territorio permitido.
+
+- [validación de rutas](./security/path_validation.md)
+
+---
+
+## Interno (mantenedores)
+
+Documentación de infraestructura del propio laboratorio. No es necesaria para resolver las quests.
+
+- [tracing — emitir al Live Agent](./agents/tracing.md)
 
 ---
 

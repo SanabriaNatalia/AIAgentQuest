@@ -1,4 +1,4 @@
-# Error Handling
+# Manejo de errores
 
 > *“Un error que el agente puede leer no es un fracaso.  
 > Es una observación.”*  
@@ -106,7 +106,7 @@ El agente podría:
 
 ---
 
-## Errors as observations
+## Errores como observaciones
 
 En muchos agentes modernos:
 - respuestas de tools
