@@ -257,6 +257,8 @@ cp .env.example .env
 
 Edita `.env` y pega tu clave real (la obtienes gratis en [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) → *Create API key*):
 
+![Cómo activar tu API Key](assets/gifs/api_key.gif)
+
 ```env
 GEMINI_API_KEY=<TU-API-KEY>
 ```
